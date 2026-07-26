@@ -1,0 +1,51 @@
+{
+  "fault_id": "F05",
+  "group": "A_misleading_error",
+  "name": "lock_queue_blocks_readers_behind_pending_ddl",
+
+  "true_cause": "pending_ddl_in_lock_queue",
+  "true_cause_th": "ALTER TABLE รออยู่ในคิว lock แล้วคิวบล็อกทุกคนที่มาทีหลัง",
+
+  "surface_symptom": "SELECT ธรรมดาค้าง ทั้งที่ query เบามากและตารางปกติดี",
+  "surface_symptom_note_th": "บนโปรไฟล์ fragile ไม่มี timeout เลย (lock_timeout=0, statement_timeout=0) อาการจึงเป็น 'ค้างไม่จบ' ไม่ใช่ error · ถ้าตั้ง statement_timeout จะกลายเป็น 'canceling statement due to statement timeout' ซึ่งไปซ้ำกับ F03 พอดี และนั่นคือเหตุผลที่ F03 ต้องมี F03b",
+
+  "misleading_fixes": [
+    "โทษ network",
+    "โทษว่า DB ช้า แล้วไปไล่ optimize query ที่ไม่ได้ช้า",
+    "restart แอป",
+    "เพิ่ม connection pool"
+  ],
+
+  "correct_diagnosis": "ดู pg_locks หาแถวที่ granted = false แล้วไล่ห่วงโซ่ด้วย pg_blocking_pids() จะเห็นว่า SELECT ถูกบล็อกโดย ALTER TABLE ซึ่งเองก็กำลังรอ transaction ที่ค้างอยู่",
+
+  "correct_fix_th": "ตั้ง lock_timeout ให้ DDL เพื่อให้มันยอมแพ้แทนที่จะไปนั่งค้างในคิว และไล่หา transaction ที่ค้างซึ่งเป็นต้นคิว",
+
+  "evidence_query": "SELECT l.pid, l.granted, l.mode, a.state, left(a.query,60) AS query FROM pg_locks l JOIN pg_stat_activity a USING (pid) WHERE l.relation = 'orders'::regclass ORDER BY l.granted DESC, a.query_start",
+
+  "chain_query": "SELECT a.pid, pg_blocking_pids(a.pid) AS blocked_by, left(a.query,60) AS query FROM pg_stat_activity a WHERE a.datname = current_database() AND cardinality(pg_blocking_pids(a.pid)) > 0 ORDER BY a.query_start",
+
+  "evidence_expectation": {
+    "min_not_granted_locks": 2,
+    "min_blocked_chain_depth": 2,
+    "relation": "orders"
+  },
+
+  "reproduce": "faults/f05_lock_queue.sh",
+  "config_profile": "fragile",
+
+  "role_requirement_th": "session A และ C ต้องเป็น role app · session B (ALTER TABLE) ต้องเป็น role เจ้าของตาราง (lab) ไม่งั้นได้ 'must be owner of table orders' แล้ว fault ไม่เกิด — ดู E15",
+
+  "extends_to": "I03 — CREATE INDEX บน vector column โดยไม่ใช้ CONCURRENTLY ใช้กลไกเดียวกันทุกประการ",
+
+  "verified_on": {
+    "postgres_version": "17.10 (Debian 17.10-1.pgdg12+1)",
+    "pgvector_version": "0.8.5",
+    "image_tag": "pgvector/pgvector:0.8.5-pg17",
+    "config_profile": "fragile",
+    "date": "2026-07-26",
+    "consecutive_successful_runs": 3,
+    "observed_not_granted_locks": 2,
+    "observed_chain": "SELECT -> ALTER TABLE -> idle in transaction",
+    "note": "ห่วงโซ่ที่วัดได้จริง: pid ของ ALTER ถูกบล็อกโดย pid ของ session A และ pid ของ SELECT ถูกบล็อกโดย pid ของ ALTER"
+  }
+}

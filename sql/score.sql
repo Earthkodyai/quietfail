@@ -47,6 +47,11 @@ DECLARE
     min_secs  int;
     got_sess  int;
     got_secs  numeric;
+    min_locks int;
+    min_chain int;
+    rel       text;
+    got_locks int;
+    got_chain int;
 BEGIN
     FOR f IN
         SELECT name FROM pg_ls_dir('/groundtruth') AS name
@@ -102,6 +107,40 @@ BEGIN
                 INSERT INTO score_result VALUES (fid, 'NOT_DETECTED',
                     format('idle in transaction %s session (ต้อง >= %s) · ค้างนานสุด %s วิ (ต้อง >= %s)',
                            got_sess, min_sess, round(got_secs,1), min_secs),
+                    NULL);
+            END IF;
+
+        -- ---- ตัวตรวจของ F05: คิว lock บล็อกคนที่มาทีหลัง ----
+        ELSIF fid = 'F05' THEN
+            min_locks := (exp ->> 'min_not_granted_locks')::int;
+            min_chain := (exp ->> 'min_blocked_chain_depth')::int;
+            rel       := exp ->> 'relation';
+
+            IF to_regclass(rel) IS NULL THEN
+                INSERT INTO score_result VALUES (fid, 'CANNOT_CHECK',
+                    format('หาตาราง %L ไม่เจอ — ตรวจไม่ได้ อย่าถือว่าไม่พบ', rel), NULL);
+                CONTINUE;
+            END IF;
+
+            EXECUTE format(
+                'SELECT count(*) FROM pg_locks WHERE relation = %L::regclass AND NOT granted', rel
+            ) INTO got_locks;
+
+            -- ความลึกของห่วงโซ่: นับ session ที่กำลังรอ และตัวที่บล็อกมันก็รออยู่ด้วย
+            SELECT count(*) INTO got_chain
+            FROM pg_stat_activity a
+            WHERE a.datname = current_database()
+              AND cardinality(pg_blocking_pids(a.pid)) > 0;
+
+            IF got_locks >= min_locks AND got_chain >= min_chain THEN
+                INSERT INTO score_result VALUES (fid, 'DETECTED',
+                    format('lock ที่ granted=false %s แถว (ต้อง >= %s) · session ที่ถูกบล็อก %s (ต้อง >= %s)',
+                           got_locks, min_locks, got_chain, min_chain),
+                    doc ->> 'correct_diagnosis');
+            ELSE
+                INSERT INTO score_result VALUES (fid, 'NOT_DETECTED',
+                    format('lock ที่ granted=false %s แถว (ต้อง >= %s) · session ที่ถูกบล็อก %s (ต้อง >= %s)',
+                           got_locks, min_locks, got_chain, min_chain),
                     NULL);
             END IF;
 

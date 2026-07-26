@@ -1,0 +1,134 @@
+============================================================
+F05 - phase 1 cycle: inject -> diagnose -> score
+============================================================
+PostgreSQL 17.10 (Debian 17.10-1.pgdg12+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 12.2.0-14+deb12u1) 12.2.0, 64-bit
+2026-07-26 21:32:02.878592+07
+image_tag : pgvector/pgvector:0.8.5-pg17
+profile   : fragile (lock_timeout=0, statement_timeout=0)
+
+############################ RUN 1 ############################
+=== F05: สร้างคิว lock บนตาราง orders ===
+-- A: BEGIN แล้ว SELECT ค้างไว้ (ถือ ACCESS SHARE)
+-- B: ALTER TABLE ADD COLUMN โดย role เจ้าของ (ต้องการ ACCESS EXCLUSIVE จึงต้องรอ A)
+-- C: SELECT ธรรมดา — นี่คือ query ที่แอปจริงยิงทุกวินาที
+-- รอ 6 วินาที แล้วไปดูว่า C ยังค้างอยู่ไหม
+
+[1/3] ✅ C ยังค้างอยู่หลังผ่านไป 6 วินาที (ปกติ query นี้เสร็จใน < 10ms)
+[2/3] ✅ pg_locks มีแถวที่ granted = false จำนวน 2 แถว (ต้อง >= 2)
+[3/3] ✅ ไล่ห่วงโซ่ได้: SELECT ถูกบล็อกโดย ALTER TABLE ซึ่งเองก็กำลังรออยู่
+
+=== หลักฐาน: ต้นเหตุอยู่ที่คิว lock ไม่ใช่ที่ query หรือ network ===
+| 924 | t       | AccessShareLock     | idle in transaction | SELECT * FROM orders LIMIT 1;                |
+| 927 | f       | AccessExclusiveLock | active              | ALTER TABLE orders ADD COLUMN qf_f05_tmp int |
+| 940 | f       | AccessShareLock     | active              | SELECT * FROM orders LIMIT 1                 |
++-----+---------+---------------------+---------------------+----------------------------------------------+
+
+
+=== ห่วงโซ่การรอ: ใครรอใคร ===
+| 927 | {924}      | ALTER TABLE orders ADD COLUMN qf_f05_tmp int |
+| 940 | {927}      | SELECT * FROM orders LIMIT 1                 |
++-----+------------+----------------------------------------------+
+
+
+=== ค้าง fault ไว้ 12 วินาที ให้ตัวนับคะแนนมาตรวจ ===
+---- scorer while fault is live ----
+ F05      | DETECTED | lock ที่ granted=false 2 แถว (ต้อง >= 2) · session ที่ถูกบล็อก 2 (ต้อง >= 2)
+ detected | not_detected | cannot_check | total 
+        1 |            0 |            0 |     1
+
+=== ALTER TABLE ยังไม่ได้เริ่มทำงานเลย มันแค่ 'รอ' ===
+=== แต่การรอของมันทำให้ SELECT ที่ควรเสร็จใน 1ms ค้างไปด้วย ===
+=== วิธีแก้ที่ถูก: ตั้ง lock_timeout ให้ DDL แล้วให้มันยอมแพ้แทนที่จะไปค้างในคิว ===
+=== ไม่ใช่ restart แอป และไม่ใช่โทษ network ===
+
+--- เก็บกวาด ---
+injector exit code: 0
+---- scorer after cleanup (must flip to NOT_DETECTED) ----
+ F05      | NOT_DETECTED | lock ที่ granted=false 0 แถว (ต้อง >= 2) · session ที่ถูกบล็อก 0 (ต้อง >= 2)
+---- orders column count (must stay 8) ----
+8
+
+############################ RUN 2 ############################
+=== F05: สร้างคิว lock บนตาราง orders ===
+-- A: BEGIN แล้ว SELECT ค้างไว้ (ถือ ACCESS SHARE)
+-- B: ALTER TABLE ADD COLUMN โดย role เจ้าของ (ต้องการ ACCESS EXCLUSIVE จึงต้องรอ A)
+-- C: SELECT ธรรมดา — นี่คือ query ที่แอปจริงยิงทุกวินาที
+-- รอ 6 วินาที แล้วไปดูว่า C ยังค้างอยู่ไหม
+
+[1/3] ✅ C ยังค้างอยู่หลังผ่านไป 6 วินาที (ปกติ query นี้เสร็จใน < 10ms)
+[2/3] ✅ pg_locks มีแถวที่ granted = false จำนวน 2 แถว (ต้อง >= 2)
+[3/3] ✅ ไล่ห่วงโซ่ได้: SELECT ถูกบล็อกโดย ALTER TABLE ซึ่งเองก็กำลังรออยู่
+
+=== หลักฐาน: ต้นเหตุอยู่ที่คิว lock ไม่ใช่ที่ query หรือ network ===
+| 1161 | t       | AccessShareLock     | idle in transaction | SELECT * FROM orders LIMIT 1;                |
+| 1164 | f       | AccessExclusiveLock | active              | ALTER TABLE orders ADD COLUMN qf_f05_tmp int |
+| 1177 | f       | AccessShareLock     | active              | SELECT * FROM orders LIMIT 1                 |
++------+---------+---------------------+---------------------+----------------------------------------------+
+
+
+=== ห่วงโซ่การรอ: ใครรอใคร ===
+| 1164 | {1161}     | ALTER TABLE orders ADD COLUMN qf_f05_tmp int |
+| 1177 | {1164}     | SELECT * FROM orders LIMIT 1                 |
++------+------------+----------------------------------------------+
+
+
+=== ค้าง fault ไว้ 12 วินาที ให้ตัวนับคะแนนมาตรวจ ===
+---- scorer while fault is live ----
+ F05      | DETECTED | lock ที่ granted=false 2 แถว (ต้อง >= 2) · session ที่ถูกบล็อก 2 (ต้อง >= 2)
+ detected | not_detected | cannot_check | total 
+        1 |            0 |            0 |     1
+
+=== ALTER TABLE ยังไม่ได้เริ่มทำงานเลย มันแค่ 'รอ' ===
+=== แต่การรอของมันทำให้ SELECT ที่ควรเสร็จใน 1ms ค้างไปด้วย ===
+=== วิธีแก้ที่ถูก: ตั้ง lock_timeout ให้ DDL แล้วให้มันยอมแพ้แทนที่จะไปค้างในคิว ===
+=== ไม่ใช่ restart แอป และไม่ใช่โทษ network ===
+
+--- เก็บกวาด ---
+injector exit code: 0
+---- scorer after cleanup (must flip to NOT_DETECTED) ----
+ F05      | NOT_DETECTED | lock ที่ granted=false 0 แถว (ต้อง >= 2) · session ที่ถูกบล็อก 0 (ต้อง >= 2)
+---- orders column count (must stay 8) ----
+8
+
+############################ RUN 3 ############################
+=== F05: สร้างคิว lock บนตาราง orders ===
+-- A: BEGIN แล้ว SELECT ค้างไว้ (ถือ ACCESS SHARE)
+-- B: ALTER TABLE ADD COLUMN โดย role เจ้าของ (ต้องการ ACCESS EXCLUSIVE จึงต้องรอ A)
+-- C: SELECT ธรรมดา — นี่คือ query ที่แอปจริงยิงทุกวินาที
+-- รอ 6 วินาที แล้วไปดูว่า C ยังค้างอยู่ไหม
+
+[1/3] ✅ C ยังค้างอยู่หลังผ่านไป 6 วินาที (ปกติ query นี้เสร็จใน < 10ms)
+[2/3] ✅ pg_locks มีแถวที่ granted = false จำนวน 2 แถว (ต้อง >= 2)
+[3/3] ✅ ไล่ห่วงโซ่ได้: SELECT ถูกบล็อกโดย ALTER TABLE ซึ่งเองก็กำลังรออยู่
+
+=== หลักฐาน: ต้นเหตุอยู่ที่คิว lock ไม่ใช่ที่ query หรือ network ===
+| 1400 | t       | AccessShareLock     | idle in transaction | SELECT * FROM orders LIMIT 1;                |
+| 1403 | f       | AccessExclusiveLock | active              | ALTER TABLE orders ADD COLUMN qf_f05_tmp int |
+| 1416 | f       | AccessShareLock     | active              | SELECT * FROM orders LIMIT 1                 |
++------+---------+---------------------+---------------------+----------------------------------------------+
+
+
+=== ห่วงโซ่การรอ: ใครรอใคร ===
+| 1403 | {1400}     | ALTER TABLE orders ADD COLUMN qf_f05_tmp int |
+| 1416 | {1403}     | SELECT * FROM orders LIMIT 1                 |
++------+------------+----------------------------------------------+
+
+
+=== ค้าง fault ไว้ 12 วินาที ให้ตัวนับคะแนนมาตรวจ ===
+---- scorer while fault is live ----
+ F05      | DETECTED | lock ที่ granted=false 2 แถว (ต้อง >= 2) · session ที่ถูกบล็อก 2 (ต้อง >= 2)
+ detected | not_detected | cannot_check | total 
+        1 |            0 |            0 |     1
+
+=== ALTER TABLE ยังไม่ได้เริ่มทำงานเลย มันแค่ 'รอ' ===
+=== แต่การรอของมันทำให้ SELECT ที่ควรเสร็จใน 1ms ค้างไปด้วย ===
+=== วิธีแก้ที่ถูก: ตั้ง lock_timeout ให้ DDL แล้วให้มันยอมแพ้แทนที่จะไปค้างในคิว ===
+=== ไม่ใช่ restart แอป และไม่ใช่โทษ network ===
+
+--- เก็บกวาด ---
+injector exit code: 0
+---- scorer after cleanup (must flip to NOT_DETECTED) ----
+ F05      | NOT_DETECTED | lock ที่ granted=false 0 แถว (ต้อง >= 2) · session ที่ถูกบล็อก 0 (ต้อง >= 2)
+---- orders column count (must stay 8) ----
+8
+
