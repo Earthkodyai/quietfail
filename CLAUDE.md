@@ -14,6 +14,40 @@
 ติดอยู่ที่     : —
 ```
 
+## 🔵 เริ่มงานพรุ่งนี้ตรงนี้ (ค้างไว้ 2026-07-27 กลางคืน)
+
+**สิ่งที่ค้าง:** Q01 ที่ 500,000 แถว — สั่งรันเป็นงานเบื้องหลังไว้เมื่อ 18:23 UTC
+ผลจะไปอยู่ที่ `results/q01_recall_collapse_500k.txt`
+
+**ตรวจ 3 อย่างก่อนเชื่ออะไรทั้งสิ้น** (ตามลำดับ):
+
+```powershell
+# 1. มี session กำพร้าค้างไหม — บทเรียน E16/E23 ปิด Docker ระหว่างรันจะทิ้ง state ครึ่งๆ
+docker compose exec db psql -U lab -d faultlab -c "SELECT pid, state, round(extract(epoch FROM now()-query_start)) AS secs, left(query,50) FROM pg_stat_activity WHERE datname=current_database() AND state<>'idle'"
+
+# 2. corpus กับเฉลยครบไหม
+docker compose exec db psql -U lab -d faultlab -c "SELECT (SELECT count(*) FROM qf_corpus) AS corpus, (SELECT count(*) FROM qf_truth WHERE k=10) AS truth10, (SELECT count(*) FROM qf_queries) AS queries"
+
+# 3. ผลที่ได้ (ถ้ารันจบ)
+type results\q01_recall_collapse_500k.txt
+```
+
+**ถ้า pipeline ตายกลางคัน** (corpus ไม่ครบ 500,000 หรือ truth ไม่ครบ 200):
+ฆ่า orphan ก่อนเสมอ แล้วรันใหม่ทั้งชุด
+
+```powershell
+docker compose exec db psql -U lab -d faultlab -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname=current_database() AND pid<>pg_backend_pid() AND state<>'idle'"
+docker compose exec db psql -U lab -d faultlab -v rows=500000 -f /sql/qf12_seed_corpus.sql
+docker compose exec db psql -U lab -d faultlab -f /sql/qf13_recall.sql
+docker compose exec db psql -U lab -d faultlab -f /sql/q01_recall_collapse.sql
+```
+
+**อย่าเชื่อไฟล์ผลถ้าข้อ 2 ไม่ครบ** — assertion ของ `qf12` เคยกัน recall
+จาก corpus ว่างเปล่าไว้ได้ครั้งหนึ่งแล้ว (E23)
+
+**หลังได้ผล 500k แล้วต้องทำ:** เติมตารางใน `FAULTS.md` หัวข้อ "Q01 — ผลที่วัดได้จริง"
+· อัปเดต `README.md` · เพิ่มแถวใน `results/README.md` · เปลี่ยนสถานะเฟส 2 เป็นผ่าน
+
 ## Q01 — ตัวเลขหลักของโปรเจค (100k แถว, 2026-07-27)
 
 | | recall@10 | recall@100 | แย่สุด@10 | ครบ 10/10 | เร็วขึ้น |
