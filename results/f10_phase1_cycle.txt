@@ -1,0 +1,261 @@
+============================================================
+F10 - phase 1 cycle: stale statistics, no error at all
+============================================================
+PostgreSQL 17.10 (Debian 17.10-1.pgdg12+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 12.2.0-14+deb12u1) 12.2.0, 64-bit
+2026-07-27 00:11:50.759344+07
+image_tag : pgvector/pgvector:0.8.5-pg17
+profile   : fragile · bulk insert 300,000 rows with an unseen tag value
+
+############################ RUN 1 ############################
+=== F10: bulk insert แล้วไม่ ANALYZE (300000 แถว) ===
+!! มีตาราง qf_f10_* ค้างจากรอบก่อน 3 ตาราง — กำลังล้าง
+Timing is on.
+SET
+Time: 0.592 ms
+psql:/sql/f10_stale_stats.sql:31: NOTICE:  table "qf_f10_obs" does not exist, skipping
+psql:/sql/f10_stale_stats.sql:31: NOTICE:  table "qf_f10_big" does not exist, skipping
+psql:/sql/f10_stale_stats.sql:31: NOTICE:  table "qf_f10_lookup" does not exist, skipping
+DROP TABLE
+Time: 5.432 ms
+CREATE TABLE
+Time: 11.685 ms
+INSERT 0 200000
+Time: 771.926 ms
+ANALYZE
+Time: 78.608 ms
+CREATE TABLE
+Time: 5.975 ms
+INSERT 0 100000
+Time: 634.123 ms
+ANALYZE
+Time: 117.893 ms
+ALTER TABLE
+Time: 4.776 ms
+CREATE TABLE
+Time: 4.534 ms
+INSERT 0 300000
+Time: 1344.880 ms (00:01.345)
+CREATE FUNCTION
+Time: 5.614 ms
+ qf_f10_measure 
+----------------
+ 
+(1 row)
+
+Time: 1541.378 ms (00:01.541)
+ANALYZE
+Time: 75.614 ms
+ qf_f10_measure 
+----------------
+ 
+(1 row)
+
+Time: 637.912 ms
+psql:/sql/f10_stale_stats.sql:191: NOTICE:  --- ก่อน ANALYZE: ประมาณ 200 จริง 300000 (คลาด 1500.0x) · buffers 1202548 · Nested Loop · 766.5 ms
+psql:/sql/f10_stale_stats.sql:191: NOTICE:  --- หลัง ANALYZE: ประมาณ 299720 จริง 300000 (คลาด 1.0x) · buffers 3726 · Hash Join · 297.6 ms
+psql:/sql/f10_stale_stats.sql:191: NOTICE:  [1/3] OK ก่อน ANALYZE ประมาณคลาด 1500.0x (ต้อง >= 10x)
+psql:/sql/f10_stale_stats.sql:191: NOTICE:  [2/3] OK หลัง ANALYZE ประมาณคลาด 1.0x (ต้อง <= 2x)
+psql:/sql/f10_stale_stats.sql:191: NOTICE:  [3/3] OK buffers ลดลง 322.7x (ต้อง >= 5x)
+psql:/sql/f10_stale_stats.sql:191: NOTICE:  assertion ผ่านครบ 3 ข้อ
+DO
+Time: 11.902 ms
+
+=== หลักฐาน: query เดิมทุกตัวอักษร ต่างกันแค่ ANALYZE ===
+     phase      | planner คิดว่า | ของจริง | คลาดกี่เท่า | buffers | plan ที่เลือก  |  ms   | reltuples ที่ planner เห็น 
+----------------+--------------+--------+----------+---------+-------------+-------+-------------------------
+ before_analyze |          200 | 300000 |   1500.0 | 1202548 | Nested Loop | 766.5 |                  100000
+ after_analyze  |       299720 | 300000 |      1.0 |    3726 | Hash Join   | 297.6 |                  400000
+(2 rows)
+
+Time: 0.715 ms
+
+=== ANALYZE แล้วหาย = ยืนยันสาเหตุแบบเถียงไม่ได้ ===
+=== ทางแก้ผิดที่คนมักทำ: rewrite query / เพิ่ม index ที่ไม่จำเป็น ===
+
+=== ข้อสังเกตที่สำคัญกว่าตัวเลขความเร็ว ===
+| before_analyze | 1202548 | 766.5 | Nested Loop |
+| after_analyze  |    3726 | 297.6 | Hash Join   |
++----------------+---------+-------+-------------+
+
+
+=== นาฬิกาบอกว่าช้าลงไม่กี่เท่า แต่ buffers บอกว่าทำงานเพิ่มหลายร้อยเท่า ===
+=== เพราะข้อมูลชุดนี้อยู่ใน cache หมด — บนเครื่องที่ข้อมูลไม่พอใส่ RAM
+=== buffers ส่วนเกินทั้งหมดนั้นจะกลายเป็นการอ่านดิสก์จริง ===
+=== นี่คือเหตุผลของกฎเหล็กข้อ 7 ===
+
+--- เก็บกวาด ---
+   (KEEP_OBS=1 — เก็บ qf_f10_obs ไว้ให้ตัวนับคะแนน)
+injector exit code: 0
+---- scorer, observation table kept ----
+ F10      | DETECTED | ก่อน ANALYZE เดาคลาด 1500.0x (ต้อง >= 10) · หลัง 1.0x (ต้อง <= 2) · buffers ลด 322.7x (ต้อง >= 5)
+---- scorer after dropping evidence (must be CANNOT_CHECK) ----
+ F10      | CANNOT_CHECK | ไม่มีตาราง 'qf_f10_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+
+############################ RUN 2 ############################
+=== F10: bulk insert แล้วไม่ ANALYZE (300000 แถว) ===
+Timing is on.
+SET
+Time: 0.579 ms
+psql:/sql/f10_stale_stats.sql:31: NOTICE:  table "qf_f10_obs" does not exist, skipping
+psql:/sql/f10_stale_stats.sql:31: NOTICE:  table "qf_f10_big" does not exist, skipping
+psql:/sql/f10_stale_stats.sql:31: NOTICE:  table "qf_f10_lookup" does not exist, skipping
+DROP TABLE
+Time: 4.557 ms
+CREATE TABLE
+Time: 10.780 ms
+INSERT 0 200000
+Time: 732.386 ms
+ANALYZE
+Time: 94.237 ms
+CREATE TABLE
+Time: 7.230 ms
+INSERT 0 100000
+Time: 459.503 ms
+ANALYZE
+Time: 48.307 ms
+ALTER TABLE
+Time: 4.641 ms
+CREATE TABLE
+Time: 4.989 ms
+INSERT 0 300000
+Time: 1312.538 ms (00:01.313)
+CREATE FUNCTION
+Time: 5.440 ms
+ qf_f10_measure 
+----------------
+ 
+(1 row)
+
+Time: 1640.985 ms (00:01.641)
+ANALYZE
+Time: 95.909 ms
+ qf_f10_measure 
+----------------
+ 
+(1 row)
+
+Time: 825.536 ms
+psql:/sql/f10_stale_stats.sql:191: NOTICE:  --- ก่อน ANALYZE: ประมาณ 199 จริง 300000 (คลาด 1507.5x) · buffers 1202548 · Nested Loop · 861.5 ms
+psql:/sql/f10_stale_stats.sql:191: NOTICE:  --- หลัง ANALYZE: ประมาณ 298560 จริง 300000 (คลาด 1.0x) · buffers 3726 · Hash Join · 329.9 ms
+psql:/sql/f10_stale_stats.sql:191: NOTICE:  [1/3] OK ก่อน ANALYZE ประมาณคลาด 1507.5x (ต้อง >= 10x)
+psql:/sql/f10_stale_stats.sql:191: NOTICE:  [2/3] OK หลัง ANALYZE ประมาณคลาด 1.0x (ต้อง <= 2x)
+psql:/sql/f10_stale_stats.sql:191: NOTICE:  [3/3] OK buffers ลดลง 322.7x (ต้อง >= 5x)
+psql:/sql/f10_stale_stats.sql:191: NOTICE:  assertion ผ่านครบ 3 ข้อ
+DO
+Time: 11.131 ms
+
+=== หลักฐาน: query เดิมทุกตัวอักษร ต่างกันแค่ ANALYZE ===
+     phase      | planner คิดว่า | ของจริง | คลาดกี่เท่า | buffers | plan ที่เลือก  |  ms   | reltuples ที่ planner เห็น 
+----------------+--------------+--------+----------+---------+-------------+-------+-------------------------
+ before_analyze |          199 | 300000 |   1507.5 | 1202548 | Nested Loop | 861.5 |                  100000
+ after_analyze  |       298560 | 300000 |      1.0 |    3726 | Hash Join   | 329.9 |                  400000
+(2 rows)
+
+Time: 1.155 ms
+
+=== ANALYZE แล้วหาย = ยืนยันสาเหตุแบบเถียงไม่ได้ ===
+=== ทางแก้ผิดที่คนมักทำ: rewrite query / เพิ่ม index ที่ไม่จำเป็น ===
+
+=== ข้อสังเกตที่สำคัญกว่าตัวเลขความเร็ว ===
+| before_analyze | 1202548 | 861.5 | Nested Loop |
+| after_analyze  |    3726 | 329.9 | Hash Join   |
++----------------+---------+-------+-------------+
+
+
+=== นาฬิกาบอกว่าช้าลงไม่กี่เท่า แต่ buffers บอกว่าทำงานเพิ่มหลายร้อยเท่า ===
+=== เพราะข้อมูลชุดนี้อยู่ใน cache หมด — บนเครื่องที่ข้อมูลไม่พอใส่ RAM
+=== buffers ส่วนเกินทั้งหมดนั้นจะกลายเป็นการอ่านดิสก์จริง ===
+=== นี่คือเหตุผลของกฎเหล็กข้อ 7 ===
+
+--- เก็บกวาด ---
+   (KEEP_OBS=1 — เก็บ qf_f10_obs ไว้ให้ตัวนับคะแนน)
+injector exit code: 0
+---- scorer, observation table kept ----
+ F10      | DETECTED | ก่อน ANALYZE เดาคลาด 1507.5x (ต้อง >= 10) · หลัง 1.0x (ต้อง <= 2) · buffers ลด 322.7x (ต้อง >= 5)
+---- scorer after dropping evidence (must be CANNOT_CHECK) ----
+ F10      | CANNOT_CHECK | ไม่มีตาราง 'qf_f10_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+
+############################ RUN 3 ############################
+=== F10: bulk insert แล้วไม่ ANALYZE (300000 แถว) ===
+Timing is on.
+SET
+Time: 0.437 ms
+psql:/sql/f10_stale_stats.sql:31: NOTICE:  table "qf_f10_obs" does not exist, skipping
+psql:/sql/f10_stale_stats.sql:31: NOTICE:  table "qf_f10_big" does not exist, skipping
+psql:/sql/f10_stale_stats.sql:31: NOTICE:  table "qf_f10_lookup" does not exist, skipping
+DROP TABLE
+Time: 4.878 ms
+CREATE TABLE
+Time: 9.499 ms
+INSERT 0 200000
+Time: 665.355 ms
+ANALYZE
+Time: 74.980 ms
+CREATE TABLE
+Time: 5.225 ms
+INSERT 0 100000
+Time: 466.217 ms
+ANALYZE
+Time: 47.188 ms
+ALTER TABLE
+Time: 4.278 ms
+CREATE TABLE
+Time: 6.429 ms
+INSERT 0 300000
+Time: 1339.535 ms (00:01.340)
+CREATE FUNCTION
+Time: 4.940 ms
+ qf_f10_measure 
+----------------
+ 
+(1 row)
+
+Time: 1370.579 ms (00:01.371)
+ANALYZE
+Time: 75.646 ms
+ qf_f10_measure 
+----------------
+ 
+(1 row)
+
+Time: 639.934 ms
+psql:/sql/f10_stale_stats.sql:191: NOTICE:  --- ก่อน ANALYZE: ประมาณ 199 จริง 300000 (คลาด 1507.5x) · buffers 1202548 · Nested Loop · 679.3 ms
+psql:/sql/f10_stale_stats.sql:191: NOTICE:  --- หลัง ANALYZE: ประมาณ 300880 จริง 300000 (คลาด 1.0x) · buffers 3726 · Hash Join · 313.4 ms
+psql:/sql/f10_stale_stats.sql:191: NOTICE:  [1/3] OK ก่อน ANALYZE ประมาณคลาด 1507.5x (ต้อง >= 10x)
+psql:/sql/f10_stale_stats.sql:191: NOTICE:  [2/3] OK หลัง ANALYZE ประมาณคลาด 1.0x (ต้อง <= 2x)
+psql:/sql/f10_stale_stats.sql:191: NOTICE:  [3/3] OK buffers ลดลง 322.7x (ต้อง >= 5x)
+psql:/sql/f10_stale_stats.sql:191: NOTICE:  assertion ผ่านครบ 3 ข้อ
+DO
+Time: 12.062 ms
+
+=== หลักฐาน: query เดิมทุกตัวอักษร ต่างกันแค่ ANALYZE ===
+     phase      | planner คิดว่า | ของจริง | คลาดกี่เท่า | buffers | plan ที่เลือก  |  ms   | reltuples ที่ planner เห็น 
+----------------+--------------+--------+----------+---------+-------------+-------+-------------------------
+ before_analyze |          199 | 300000 |   1507.5 | 1202548 | Nested Loop | 679.3 |                  100000
+ after_analyze  |       300880 | 300000 |      1.0 |    3726 | Hash Join   | 313.4 |                  400000
+(2 rows)
+
+Time: 0.873 ms
+
+=== ANALYZE แล้วหาย = ยืนยันสาเหตุแบบเถียงไม่ได้ ===
+=== ทางแก้ผิดที่คนมักทำ: rewrite query / เพิ่ม index ที่ไม่จำเป็น ===
+
+=== ข้อสังเกตที่สำคัญกว่าตัวเลขความเร็ว ===
+| before_analyze | 1202548 | 679.3 | Nested Loop |
+| after_analyze  |    3726 | 313.4 | Hash Join   |
++----------------+---------+-------+-------------+
+
+
+=== นาฬิกาบอกว่าช้าลงไม่กี่เท่า แต่ buffers บอกว่าทำงานเพิ่มหลายร้อยเท่า ===
+=== เพราะข้อมูลชุดนี้อยู่ใน cache หมด — บนเครื่องที่ข้อมูลไม่พอใส่ RAM
+=== buffers ส่วนเกินทั้งหมดนั้นจะกลายเป็นการอ่านดิสก์จริง ===
+=== นี่คือเหตุผลของกฎเหล็กข้อ 7 ===
+
+--- เก็บกวาด ---
+   (KEEP_OBS=1 — เก็บ qf_f10_obs ไว้ให้ตัวนับคะแนน)
+injector exit code: 0
+---- scorer, observation table kept ----
+ F10      | DETECTED | ก่อน ANALYZE เดาคลาด 1507.5x (ต้อง >= 10) · หลัง 1.0x (ต้อง <= 2) · buffers ลด 322.7x (ต้อง >= 5)
+---- scorer after dropping evidence (must be CANNOT_CHECK) ----
+ F10      | CANNOT_CHECK | ไม่มีตาราง 'qf_f10_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+

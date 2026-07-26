@@ -53,6 +53,8 @@ DECLARE
     got_locks int;
     got_chain int;
     obs_tbl   text;
+    min_err_b numeric; max_err_a numeric; min_buf_r numeric;
+    err_b     numeric; err_a     numeric; buf_r     numeric;
     n_f03     int;
     n_f03b    int;
     blk_f03   boolean;
@@ -184,6 +186,47 @@ BEGIN
                 INSERT INTO score_result VALUES (fid, 'NOT_DETECTED',
                     format('แยกไม่ได้: F03 blocked=%s · F03b blocked=%s', blk_f03, blk_f03b),
                     NULL);
+            END IF;
+
+        -- ---- ตัวตรวจของ F10: planner เดาผิดเพราะสถิติเก่า ----
+        -- หลักฐานเป็นตารางเหมือน F03 ไม่ใช่สถานะสด
+        ELSIF fid = 'F10' THEN
+            obs_tbl   := exp ->> 'observation_table';
+            min_err_b := (exp ->> 'min_estimate_error_before')::numeric;
+            max_err_a := (exp ->> 'max_estimate_error_after')::numeric;
+            min_buf_r := (exp ->> 'min_buffer_reduction')::numeric;
+
+            IF to_regclass(obs_tbl) IS NULL THEN
+                INSERT INTO score_result VALUES (fid, 'CANNOT_CHECK',
+                    format('ไม่มีตาราง %L — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว', obs_tbl), NULL);
+                CONTINUE;
+            END IF;
+
+            EXECUTE format($f$
+                SELECT
+                  (SELECT actual_rows::numeric / greatest(est_rows,1)
+                     FROM %I WHERE phase = 'before_analyze'),
+                  (SELECT actual_rows::numeric / greatest(est_rows,1)
+                     FROM %I WHERE phase = 'after_analyze'),
+                  (SELECT b.buffers::numeric / greatest(a.buffers,1)
+                     FROM %I b, %I a
+                    WHERE b.phase='before_analyze' AND a.phase='after_analyze')
+            $f$, obs_tbl, obs_tbl, obs_tbl, obs_tbl)
+            INTO err_b, err_a, buf_r;
+
+            IF err_b IS NULL OR err_a IS NULL OR buf_r IS NULL THEN
+                INSERT INTO score_result VALUES (fid, 'CANNOT_CHECK',
+                    'ตารางหลักฐานมีไม่ครบทั้งสองเฟส — ห้ามสรุปอะไร', NULL);
+            ELSIF err_b >= min_err_b AND err_a <= max_err_a AND buf_r >= min_buf_r THEN
+                INSERT INTO score_result VALUES (fid, 'DETECTED',
+                    format('ก่อน ANALYZE เดาคลาด %sx (ต้อง >= %s) · หลัง %sx (ต้อง <= %s) · buffers ลด %sx (ต้อง >= %s)',
+                           round(err_b,1), min_err_b, round(err_a,1), max_err_a,
+                           round(buf_r,1), min_buf_r),
+                    doc ->> 'correct_diagnosis');
+            ELSE
+                INSERT INTO score_result VALUES (fid, 'NOT_DETECTED',
+                    format('ก่อน %sx · หลัง %sx · buffers ลด %sx — ไม่ครบเกณฑ์',
+                           round(err_b,1), round(err_a,1), round(buf_r,1)), NULL);
             END IF;
 
         ELSE

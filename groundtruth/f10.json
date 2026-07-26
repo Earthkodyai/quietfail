@@ -1,0 +1,55 @@
+{
+  "fault_id": "F10",
+  "group": "B_no_error_at_all",
+  "name": "stale_column_statistics_causes_bad_plan",
+
+  "true_cause": "stale_column_level_statistics",
+  "true_cause_th": "bulk insert ค่าใหม่เข้าไปแล้วไม่ ANALYZE — histogram และ MCV ไม่เคยเห็นค่านั้น planner จึงเดาว่าเจอน้อยมาก",
+
+  "surface_symptom": "query เดิม โค้ดเดิม ช้าลงหลายเท่า ไม่มี error ไม่มี warning",
+
+  "misleading_fixes": [
+    "rewrite query",
+    "เพิ่ม index ที่ไม่จำเป็น",
+    "เพิ่มสเปกเครื่อง",
+    "โทษว่า PostgreSQL ไม่เหมาะกับข้อมูลขนาดนี้"
+  ],
+
+  "correct_diagnosis": "เทียบ Plan Rows กับ Actual Rows ของ node ที่กรอง ถ้าคลาดกันหลายเท่าให้ดูว่า ANALYZE ล่าสุดเมื่อไหร่ (pg_stat_user_tables.last_analyze) แล้วสั่ง ANALYZE ดูว่าหายไหม",
+
+  "correct_fix_th": "ANALYZE หลัง bulk load ทุกครั้ง และอย่าปิด autovacuum โดยไม่มีแผนสำรอง",
+
+  "why_stale_row_count_alone_is_not_enough_th": "ความล้าสมัยของจำนวนแถวรวมอย่างเดียวหลอก planner ไม่ได้ เพราะ PostgreSQL ปรับสเกล reltuples ตามขนาดไฟล์จริงเสมอ — วัดแล้วได้คลาดแค่ 1.6 เท่า ตัวที่หลอกได้จริงคือสถิติระดับคอลัมน์ (MCV / histogram) กับค่าที่ไม่เคยปรากฏตอน ANALYZE ครั้งล่าสุด (ดู E22)",
+
+  "evidence_query": "SELECT phase, est_rows, actual_rows, buffers, node_type FROM qf_f10_obs ORDER BY phase DESC",
+
+  "evidence_expectation": {
+    "min_estimate_error_before": 10,
+    "max_estimate_error_after": 2,
+    "min_buffer_reduction": 5,
+    "observation_table": "qf_f10_obs"
+  },
+
+  "reproduce": "faults/f10_stale_statistics.sh",
+  "config_profile": "fragile",
+
+  "isolation_note_th": "ใช้ตาราง qf_f10_* ของตัวเอง ไม่แตะ orders เพราะ orders เป็นฐานของ EXP01/01b/01c ที่ตัวเลขถูกอ้างทั่วทั้ง repo — ฉีดใส่ orders = ทำลาย baseline ทุกครั้งที่รัน",
+
+  "measurement_note_th": "ต้องอ่าน Plan Rows / Actual Rows จาก node ของ join ไม่ใช่ node บนสุด เพราะ node บนสุดเป็น Aggregate ของ count(*) ซึ่งประมาณ 1 และได้จริง 1 เสมอ ไม่ว่าสถิติจะเพี้ยนแค่ไหน (ดู E22)",
+
+  "verified_on": {
+    "postgres_version": "17.10 (Debian 17.10-1.pgdg12+1)",
+    "pgvector_version": "0.8.5",
+    "image_tag": "pgvector/pgvector:0.8.5-pg17",
+    "config_profile": "fragile",
+    "date": "2026-07-27",
+    "rows_bulk_inserted": 300000,
+    "consecutive_successful_runs": 3,
+    "observed": {
+      "before_analyze": "est 200 · actual 300,000 · คลาด 1,500x · buffers 1,202,548 · Nested Loop · 702 ms",
+      "after_analyze":  "est 298,733 · actual 300,000 · คลาด 1.0x · buffers 3,726 · Hash Join · 306 ms",
+      "buffer_reduction": "323x"
+    },
+    "note": "เวลาต่างกันแค่ 2.3 เท่า แต่ buffers ต่างกัน 323 เท่า เพราะข้อมูลอยู่ใน cache หมด — บนเครื่องที่ข้อมูลไม่พอใส่ RAM ส่วนเกินนั้นจะกลายเป็นการอ่านดิสก์จริง เป็นตัวอย่างที่ชัดที่สุดของกฎเหล็กข้อ 7"
+  }
+}
