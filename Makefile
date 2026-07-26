@@ -1,5 +1,7 @@
 PSQL_ADMIN = PGPASSWORD=labpass psql -h localhost -p 5433 -U lab -d faultlab
-ROWS ?= 2000000
+# ค่าเริ่มต้นต้องเท่ากับขนาดที่ผลในรายงานใช้จริง ห้ามเปลี่ยนโดยไม่รันผลใหม่ทั้งชุด
+# (เคยตั้งเป็น 2000000 ซึ่งไม่ตรงกับผลที่บันทึกไว้ — ดู E09 ใน DECISIONS.md)
+ROWS ?= 200000
 
 .PHONY: up down reset seed seed-small psql logs version f01 check
 
