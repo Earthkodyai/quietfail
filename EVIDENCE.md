@@ -83,13 +83,25 @@ I01 I02 I03 I04 I05   Q01 Q02 Q03 Q04 Q06   V07 L02      = 12
 
 ## ข้อความ NOTICE จริงสำหรับ I05
 
+**รูปแบบข้อความตามเอกสาร** (ตัวเลขท้ายเปลี่ยนตามข้อมูลจริง):
 ```
-NOTICE:  hnsw graph no longer fits into maintenance_work_mem after 100000 tuples
+NOTICE:  hnsw graph no longer fits into maintenance_work_mem after <N> tuples
 DETAIL:  Building will take significantly more time.
 HINT:  Increase maintenance_work_mem to speed up builds.
 ```
 
-ใช้เป็น assertion ได้ตรงๆ แต่ **ต้องรันเองแล้วยืนยันว่าข้อความตรงกับ 0.8.5**
+**✅ ยืนยันแล้ว 2026-07-27** — ข้อความตรงทุกตัวอักษรบน pgvector 0.8.5
+เจอตอน build HNSW ใน Q01 (`results/q01_recall_collapse_100k.txt`):
+
+```
+NOTICE:  hnsw graph no longer fits into maintenance_work_mem after 28365 tuples
+```
+
+ได้ตัวเลขจริงมาด้วย: `maintenance_work_mem = 64MB` รับ HNSW graph ได้แค่
+**28,365 จาก 100,000 tuples = 28%** · build ใช้เวลา 89.4 วินาที
+เทียบกับ IVFFlat บนข้อมูลชุดเดียวกันที่ใช้ 2.2 วินาที = **ต่างกัน 40 เท่า**
+
+ใช้เป็น assertion ของ I05 ได้ตรงๆ
 
 ---
 
@@ -167,10 +179,12 @@ HINT:  Increase maintenance_work_mem to speed up builds.
 เอกสารบอกว่า "มีปัญหา" แต่ไม่ได้บอกว่า "รุนแรงแค่ไหน"
 ตัวเลขต่อไปนี้ไม่มีในเอกสาร ต้องวัดเอง — **และนั่นคือคุณค่าของโปรเจคนี้**
 
-- [ ] recall@10 ตกลงเท่าไหร่จริงที่ข้อมูล 2M แถว (Q01)
+- [x] ~~recall@10 ตกลงเท่าไหร่จริง (Q01)~~ → **วัดแล้วที่ 100k**
+      HNSW 0.8565 · IVFFlat 0.7870 · แย่สุดต่อ query = 0.0000
+      (ยังไม่ได้วัดที่ 2M — เกณฑ์ผ่านเฟส 2 ต้องการ 2 ขนาด กำลังรัน 500k)
 - [ ] `probes = 1` เทียบกับ `sqrt(lists)` ต่างกันกี่ % (Q04)
 - [ ] สร้าง IVFFlat index 5 รอบ ได้ recall ต่างกันไหม (I04)
-- [ ] ข้อความ NOTICE ของ 0.8.5 ตรงกับที่เอกสารเขียนไหม (I05)
+- [x] ~~ข้อความ NOTICE ของ 0.8.5 ตรงกับที่เอกสารเขียนไหม (I05)~~ → **ตรง** ยืนยัน 2026-07-27
 - [ ] เปิด iterative scan แล้ว recall ดีขึ้นเท่าไหร่ แลกกับความเร็วเท่าไหร่
 - [ ] `LIMIT` เกิน `ef_search` แล้วได้ผลไม่ครบจริงไหม ขาดไปกี่แถว (Q06)
 - [ ] NULL / zero vector หายจากผลค้นหาจริงไหม และ `CREATE INDEX` เตือนหรือเงียบ (V07)
