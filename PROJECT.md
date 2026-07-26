@@ -302,7 +302,8 @@ fingerprint : 607babfb6344eab74d3e76496b04fa9f
 | ตัวชี้วัด | ทำไม |
 |---|---|
 | **recall@10, recall@100** | ตัวหลัก วัดว่าคำตอบหายไปเท่าไหร่ |
-| **buffers (shared hit/read)** | นิ่งกว่าเวลา ใช้เป็นตัวชี้วัดหลักด้านต้นทุน |
+| **buffers (shared hit/read)** | นิ่งกว่าเวลา ใช้เป็นตัวชี้วัดหลักด้าน **I/O** |
+| **`Heap Blocks` lossy + `Rows Removed by Index Recheck`** | บังคับดูควบเมื่อ plan มี Bitmap Heap Scan — buffers มองไม่เห็นต้นทุนฝั่ง CPU (พิสูจน์ใน EXP01c) |
 | p50 / p95 latency | รอง เพราะแกว่งตามเครื่อง |
 | ขนาด index | สำหรับ L02 |
 

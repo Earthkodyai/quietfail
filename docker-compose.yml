@@ -15,6 +15,8 @@ services:
       - ./init:/docker-entrypoint-initdb.d:ro
       - ./sql:/sql:ro
       - ./faults:/faults:ro
+      # เฉลย — ตัวนับคะแนนอ่านจากตรงนี้ผ่าน pg_read_file()
+      - ./groundtruth:/groundtruth:ro
       # <<< ใหม่: เขียนได้ (ไม่มี :ro) — ใช้เก็บผลการทดลอง
       # psql เขียนไฟล์ตรงนี้เป็น UTF-8 อยู่แล้ว
       # เลี่ยงปัญหา encoding ของ PowerShell ได้ทั้งหมด

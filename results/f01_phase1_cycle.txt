@@ -1,0 +1,96 @@
+============================================================
+F01 - phase 1 cycle: inject -> diagnose -> score
+============================================================
+PostgreSQL 17.10 (Debian 17.10-1.pgdg12+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 12.2.0-14+deb12u1) 12.2.0, 64-bit
+2026-07-26 19:58:27.003871+07
+image_tag : pgvector/pgvector:0.8.5-pg17
+profile   : fragile (max_connections=20, superuser_reserved_connections=3)
+
+############################ RUN 1 ############################
+=== F01: ฉีด 17 session ที่ค้างสถานะ idle in transaction ===
+
+--- ลองต่อ connection ใหม่แบบผู้ใช้ธรรมดา (นี่คือสิ่งที่แอปจริงเจอ) ---
+psql: error: connection to server at "localhost" (::1), port 5432 failed: FATAL:  remaining connection slots are reserved for roles with the SUPERUSER attribute
+>> รูปแบบ A: โควตาผู้ใช้ธรรมดาเต็ม slot สำรองของ superuser ยังเหลือ
+
+=== หลักฐาน: ต้นเหตุจริงอยู่ตรงนี้ ไม่ใช่ที่ max_connections ===
+| idle in transaction |       17 | 00:00:03      |
++---------------------+----------+---------------+
+
+
+=== ค้าง fault ไว้ 20 วินาที ให้ตัวนับคะแนนมาตรวจ ===
+---- scorer while fault is live ----
+ F01      | DETECTED | idle in transaction 17 session (ต้อง >= 10) · ค้างนานสุด 9.0 วิ (ต้อง >= 2)
+ detected | not_detected | cannot_check | total 
+        1 |            0 |            0 |     1
+
+=== ถ้าเห็น idle in transaction เป็นก้อนใหญ่ = ยืนยันสาเหตุ ===
+=== วิธีแก้ที่ถูก: ไล่หา code path ที่ลืม commit/rollback ===
+=== แก้บรรเทาชั่วคราวได้ด้วย idle_in_transaction_session_timeout ===
+=== แต่นั่นคือการตัด session ทิ้ง ไม่ใช่การแก้ต้นเหตุ ===
+
+--- เก็บกวาด: ปิด session ที่ค้างไว้ ---
+injector exit code: 0
+---- scorer after cleanup (must flip to NOT_DETECTED) ----
+ F01      | NOT_DETECTED | idle in transaction 0 session (ต้อง >= 10) · ค้างนานสุด 0.0 วิ (ต้อง >= 2)
+
+############################ RUN 2 ############################
+=== F01: ฉีด 17 session ที่ค้างสถานะ idle in transaction ===
+
+--- ลองต่อ connection ใหม่แบบผู้ใช้ธรรมดา (นี่คือสิ่งที่แอปจริงเจอ) ---
+psql: error: connection to server at "localhost" (::1), port 5432 failed: FATAL:  remaining connection slots are reserved for roles with the SUPERUSER attribute
+>> รูปแบบ A: โควตาผู้ใช้ธรรมดาเต็ม slot สำรองของ superuser ยังเหลือ
+
+=== หลักฐาน: ต้นเหตุจริงอยู่ตรงนี้ ไม่ใช่ที่ max_connections ===
+| idle in transaction |       17 | 00:00:03      |
++---------------------+----------+---------------+
+
+
+=== ค้าง fault ไว้ 20 วินาที ให้ตัวนับคะแนนมาตรวจ ===
+---- scorer while fault is live ----
+ F01      | DETECTED | idle in transaction 17 session (ต้อง >= 10) · ค้างนานสุด 8.9 วิ (ต้อง >= 2)
+ detected | not_detected | cannot_check | total 
+        1 |            0 |            0 |     1
+
+=== ถ้าเห็น idle in transaction เป็นก้อนใหญ่ = ยืนยันสาเหตุ ===
+=== วิธีแก้ที่ถูก: ไล่หา code path ที่ลืม commit/rollback ===
+=== แก้บรรเทาชั่วคราวได้ด้วย idle_in_transaction_session_timeout ===
+=== แต่นั่นคือการตัด session ทิ้ง ไม่ใช่การแก้ต้นเหตุ ===
+
+--- เก็บกวาด: ปิด session ที่ค้างไว้ ---
+injector exit code: 0
+---- scorer after cleanup (must flip to NOT_DETECTED) ----
+ F01      | NOT_DETECTED | idle in transaction 0 session (ต้อง >= 10) · ค้างนานสุด 0.0 วิ (ต้อง >= 2)
+
+############################ RUN 3 ############################
+=== F01: ฉีด 17 session ที่ค้างสถานะ idle in transaction ===
+
+--- ลองต่อ connection ใหม่แบบผู้ใช้ธรรมดา (นี่คือสิ่งที่แอปจริงเจอ) ---
+psql: error: connection to server at "localhost" (::1), port 5432 failed: FATAL:  remaining connection slots are reserved for roles with the SUPERUSER attribute
+>> รูปแบบ A: โควตาผู้ใช้ธรรมดาเต็ม slot สำรองของ superuser ยังเหลือ
+
+=== หลักฐาน: ต้นเหตุจริงอยู่ตรงนี้ ไม่ใช่ที่ max_connections ===
+| idle in transaction |       17 | 00:00:03      |
++---------------------+----------+---------------+
+
+
+=== ค้าง fault ไว้ 20 วินาที ให้ตัวนับคะแนนมาตรวจ ===
+---- scorer while fault is live ----
+ F01      | DETECTED | idle in transaction 17 session (ต้อง >= 10) · ค้างนานสุด 9.0 วิ (ต้อง >= 2)
+ detected | not_detected | cannot_check | total 
+        1 |            0 |            0 |     1
+
+=== ถ้าเห็น idle in transaction เป็นก้อนใหญ่ = ยืนยันสาเหตุ ===
+=== วิธีแก้ที่ถูก: ไล่หา code path ที่ลืม commit/rollback ===
+=== แก้บรรเทาชั่วคราวได้ด้วย idle_in_transaction_session_timeout ===
+=== แต่นั่นคือการตัด session ทิ้ง ไม่ใช่การแก้ต้นเหตุ ===
+
+--- เก็บกวาด: ปิด session ที่ค้างไว้ ---
+injector exit code: 0
+---- scorer after cleanup (must flip to NOT_DETECTED) ----
+ F01      | NOT_DETECTED | idle in transaction 0 session (ต้อง >= 10) · ค้างนานสุด 0.0 วิ (ต้อง >= 2)
+
+============================================================
+phase 1 gate for F01: 3 consecutive runs, assertion held,
+scorer discriminates live fault from cleaned state
+============================================================
