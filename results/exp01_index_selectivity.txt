@@ -1,0 +1,204 @@
+============================================================
+EXP01 - index selectivity
+============================================================
+
+--- environment ---
+                                                           version                                                            
+------------------------------------------------------------------------------------------------------------------------------
+ PostgreSQL 17.10 (Debian 17.10-1.pgdg12+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 12.2.0-14+deb12u1) 12.2.0, 64-bit
+(1 row)
+
+        extension        
+-------------------------
+ btree_gin 1.3
+ pg_stat_statements 1.11
+ pg_trgm 1.6
+ plpgsql 1.0
+ vector 0.8.5
+(5 rows)
+
+            run_at             
+-------------------------------
+ 2026-07-26 14:10:29.968268+07
+(1 row)
+
+              name               | setting 
+---------------------------------+---------
+ max_connections                 | 20
+ max_parallel_workers_per_gather | 2
+ random_page_cost                | 4
+ shared_buffers                  | 16384
+ work_mem                        | 64
+(5 rows)
+
+
+--- dataset ---
+ total_orders 
+--------------
+       200000
+(1 row)
+
+ orders_size 
+-------------
+ 23 MB
+(1 row)
+
+ merchant_id | actual_rows 
+-------------+-------------
+        4999 |          18
+           1 |       23724
+(2 rows)
+
+
+--- indexes ที่มีอยู่ก่อนเริ่ม ---
+       indexname       
+-----------------------
+ orders_created_at_idx
+ orders_pkey
+(2 rows)
+
+
+============================================================
+PHASE A - ก่อนมี index บน merchant_id
+============================================================
+
+--- A1: merchant_id = 1 (แถวเยอะ) ---
+                                                              QUERY PLAN                                                              
+--------------------------------------------------------------------------------------------------------------------------------------
+ Finalize Aggregate  (cost=4785.96..4785.97 rows=1 width=8) (actual time=9.681..11.886 rows=1 loops=1)
+   Buffers: shared hit=2280
+   ->  Gather  (cost=4785.84..4785.95 rows=1 width=8) (actual time=9.512..11.880 rows=2 loops=1)
+         Workers Planned: 1
+         Workers Launched: 1
+         Buffers: shared hit=2280
+         ->  Partial Aggregate  (cost=3785.84..3785.85 rows=1 width=8) (actual time=7.301..7.302 rows=1 loops=2)
+               Buffers: shared hit=2280
+               ->  Parallel Seq Scan on orders  (cost=0.00..3750.59 rows=14102 width=0) (actual time=0.008..6.572 rows=11862 loops=2)
+                     Filter: (merchant_id = 1)
+                     Rows Removed by Filter: 88138
+                     Buffers: shared hit=2280
+ Planning Time: 0.071 ms
+ Execution Time: 11.926 ms
+(14 rows)
+
+
+--- A2: merchant_id = 4999 (แถวน้อย) ---
+                                                QUERY PLAN                                                 
+-----------------------------------------------------------------------------------------------------------
+ Aggregate  (cost=4780.07..4780.08 rows=1 width=8) (actual time=6.811..6.812 rows=1 loops=1)
+   Buffers: shared hit=2280
+   ->  Seq Scan on orders  (cost=0.00..4780.00 rows=27 width=0) (actual time=0.043..6.806 rows=18 loops=1)
+         Filter: (merchant_id = 4999)
+         Rows Removed by Filter: 199982
+         Buffers: shared hit=2280
+ Planning Time: 0.044 ms
+ Execution Time: 6.828 ms
+(8 rows)
+
+
+============================================================
+PHASE B - หลังสร้าง index
+============================================================
+CREATE INDEX
+ANALYZE
+
+--- ขนาด index ---
+ index_size 
+------------
+ 1472 kB
+(1 row)
+
+
+--- B1: merchant_id = 1 (แถวเยอะ) ---
+                                                                     QUERY PLAN                                                                     
+----------------------------------------------------------------------------------------------------------------------------------------------------
+ Aggregate  (cost=565.50..565.50 rows=1 width=8) (actual time=1.882..1.882 rows=1 loops=1)
+   Buffers: shared hit=4 read=21
+   I/O Timings: shared read=0.089
+   ->  Index Only Scan using orders_merchant_id_idx on orders  (cost=0.29..505.84 rows=23860 width=0) (actual time=0.022..1.117 rows=23724 loops=1)
+         Index Cond: (merchant_id = 1)
+         Heap Fetches: 0
+         Buffers: shared hit=4 read=21
+         I/O Timings: shared read=0.089
+ Planning:
+   Buffers: shared hit=5 read=1
+   I/O Timings: shared read=0.015
+ Planning Time: 0.076 ms
+ Execution Time: 1.895 ms
+(13 rows)
+
+
+--- B2: merchant_id = 4999 (แถวน้อย) ---
+                                                                 QUERY PLAN                                                                 
+--------------------------------------------------------------------------------------------------------------------------------------------
+ Aggregate  (cost=4.83..4.84 rows=1 width=8) (actual time=0.025..0.025 rows=1 loops=1)
+   Buffers: shared hit=2 read=1
+   I/O Timings: shared read=0.013
+   ->  Index Only Scan using orders_merchant_id_idx on orders  (cost=0.29..4.77 rows=27 width=0) (actual time=0.021..0.022 rows=18 loops=1)
+         Index Cond: (merchant_id = 4999)
+         Heap Fetches: 0
+         Buffers: shared hit=2 read=1
+         I/O Timings: shared read=0.013
+ Planning Time: 0.038 ms
+ Execution Time: 0.036 ms
+(10 rows)
+
+
+============================================================
+PHASE C - ปิด parallel worker เพื่อตัดตัวแปรกวน
+============================================================
+(รอบก่อนพบว่า plan หนึ่งใช้ worker อีก plan ไม่ใช้
+ทำให้เทียบ buffers ตรงๆ ยาก รอบนี้ปิดให้เท่ากันทั้งคู่)
+SET
+
+--- C1: merchant_id = 1 ---
+                                                                     QUERY PLAN                                                                     
+----------------------------------------------------------------------------------------------------------------------------------------------------
+ Aggregate  (cost=565.50..565.50 rows=1 width=8) (actual time=1.741..1.741 rows=1 loops=1)
+   Buffers: shared hit=22
+   ->  Index Only Scan using orders_merchant_id_idx on orders  (cost=0.29..505.84 rows=23860 width=0) (actual time=0.010..1.004 rows=23724 loops=1)
+         Index Cond: (merchant_id = 1)
+         Heap Fetches: 0
+         Buffers: shared hit=22
+ Planning Time: 0.034 ms
+ Execution Time: 1.752 ms
+(8 rows)
+
+
+--- C2: merchant_id = 4999 ---
+                                                                 QUERY PLAN                                                                 
+--------------------------------------------------------------------------------------------------------------------------------------------
+ Aggregate  (cost=4.83..4.84 rows=1 width=8) (actual time=0.013..0.014 rows=1 loops=1)
+   Buffers: shared hit=3
+   ->  Index Only Scan using orders_merchant_id_idx on orders  (cost=0.29..4.77 rows=27 width=0) (actual time=0.008..0.010 rows=18 loops=1)
+         Index Cond: (merchant_id = 4999)
+         Heap Fetches: 0
+         Buffers: shared hit=3
+ Planning Time: 0.041 ms
+ Execution Time: 0.028 ms
+(8 rows)
+
+RESET
+
+============================================================
+CLEANUP - คืน schema ให้กลับไปมีข้อบกพร่องตามเดิม
+============================================================
+DROP INDEX
+
+--- ยืนยันว่าลบแล้ว ---
+       indexname       
+-----------------------
+ orders_created_at_idx
+ orders_pkey
+(2 rows)
+
+
+============================================================
+จบการทดลอง
+
+สิ่งที่ต้องอ่านจากผลข้างบน:
+1. เทียบ Buffers ของ A2 กับ B2 -> index ช่วยกรณีแถวน้อยไหม
+2. เทียบ Buffers ของ A1 กับ B1 -> index ช่วยกรณีแถวเยอะไหม
+3. ดูว่า B1 ยังเป็น Seq Scan อยู่หรือเปล่า
+4. เทียบ rows= กับ actual rows= ทุก plan
+============================================================

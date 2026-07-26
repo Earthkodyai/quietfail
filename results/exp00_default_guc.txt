@@ -1,0 +1,22 @@
+                                                           version                                                            
+------------------------------------------------------------------------------------------------------------------------------
+ PostgreSQL 17.10 (Debian 17.10-1.pgdg12+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 12.2.0-14+deb12u1) 12.2.0, 64-bit
+(1 row)
+
+ extversion 
+------------
+ 0.8.5
+(1 row)
+
+LOAD
+           name           | setting | boot_val 
+--------------------------+---------+----------
+ hnsw.ef_search           | 40      | 40
+ hnsw.iterative_scan      | off     | off
+ hnsw.max_scan_tuples     | 20000   | 20000
+ hnsw.scan_mem_multiplier | 1       | 1
+ ivfflat.iterative_scan   | off     | off
+ ivfflat.max_probes       | 32768   | 32768
+ ivfflat.probes           | 1       | 1
+(7 rows)
+

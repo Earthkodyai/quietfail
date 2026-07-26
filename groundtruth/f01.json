@@ -1,0 +1,36 @@
+{
+  "fault_id": "F01",
+  "group": "A_misleading_error",
+  "name": "connection_exhaustion_from_idle_in_transaction",
+
+  "true_cause": "idle_in_transaction_leak",
+  "true_cause_th": "โค้ดเปิด transaction แล้วไม่ commit หรือ rollback",
+
+  "surface_error_contains": "too many clients already",
+  "surface_error_sqlstate": "53300",
+
+  "misleading_fixes": [
+    "เพิ่มค่า max_connections",
+    "ขยายเครื่อง / เพิ่ม RAM",
+    "โทษ connection pool ฝั่ง client โดยไม่ตรวจก่อน"
+  ],
+
+  "correct_diagnosis": "ตรวจ pg_stat_activity หา state = 'idle in transaction' ที่ค้างนาน แล้วไล่กลับไปหา code path ที่ลืมปิด transaction",
+
+  "evidence_query": "SELECT pid, usename, state, now() - state_change AS stuck_for, query FROM pg_stat_activity WHERE state = 'idle in transaction' ORDER BY state_change ASC",
+
+  "evidence_expectation": {
+    "min_idle_in_transaction_sessions": 10,
+    "min_stuck_seconds": 2
+  },
+
+  "reproduce": "faults/f01_idle_in_transaction.sh",
+  "config_profile": "fragile",
+
+  "verified_on": {
+    "postgres_version": null,
+    "image_tag": null,
+    "date": null,
+    "note": "ยังไม่ได้รันจริง — ต้องเติมสามช่องนี้หลังรันครั้งแรก และคัดลอกข้อความ error จริงมาใส่ surface_error_contains"
+  }
+}

@@ -1,0 +1,32 @@
+services:
+  db:
+    # ล็อก tag ให้ชัดเสมอ อย่าใช้ :latest เพราะข้อความ error ต่างกันตาม version
+    image: pgvector/pgvector:0.8.5-pg17
+    container_name: pgfault-db
+    environment:
+      POSTGRES_USER: lab
+      POSTGRES_PASSWORD: labpass
+      POSTGRES_DB: faultlab
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C.UTF-8"
+    ports:
+      - "5433:5432"
+    volumes:
+      - ./config/postgresql.fragile.conf:/etc/postgresql/postgresql.conf:ro
+      - ./init:/docker-entrypoint-initdb.d:ro
+      - ./sql:/sql:ro
+      - ./faults:/faults:ro
+      # <<< ใหม่: เขียนได้ (ไม่มี :ro) — ใช้เก็บผลการทดลอง
+      # psql เขียนไฟล์ตรงนี้เป็น UTF-8 อยู่แล้ว
+      # เลี่ยงปัญหา encoding ของ PowerShell ได้ทั้งหมด
+      - ./results:/results
+      - pgdata:/var/lib/postgresql/data
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
+    shm_size: 256mb
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lab -d faultlab"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  pgdata:

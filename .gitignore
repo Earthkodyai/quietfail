@@ -1,0 +1,26 @@
+# ผลการทดลองดิบ — เก็บเฉพาะที่จะอ้างอิงในรายงาน
+# ไม่ commit ทุกไฟล์ เพราะรันบ่อยแล้วจะรก
+# ใช้ git add -f results/ชื่อไฟล์ ถ้าจะเก็บอันไหนเป็นหลักฐาน
+results/*
+!results/.gitkeep
+!results/README.md
+
+# ไฟล์ compose สำรอง
+docker-compose.backup.yml
+docker-compose.windows.yml
+docker-compose.results.yml
+
+# Windows
+Thumbs.db
+desktop.ini
+*.lnk
+
+# editor
+.vscode/
+.idea/
+*.swp
+*~
+
+# ชั่วคราว
+*.tmp
+*.log

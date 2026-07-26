@@ -1,0 +1,186 @@
+============================================================
+EXP01b - index selectivity with heap access required
+============================================================
+
+                                                           version                                                            
+------------------------------------------------------------------------------------------------------------------------------
+ PostgreSQL 17.10 (Debian 17.10-1.pgdg12+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 12.2.0-14+deb12u1) 12.2.0, 64-bit
+(1 row)
+
+ extversion 
+------------
+ 0.8.5
+(1 row)
+
+            run_at             
+-------------------------------
+ 2026-07-26 14:25:55.337557+07
+(1 row)
+
+ orders_size | shared_buffers 
+-------------+----------------
+ 23 MB       | 128 MB
+(1 row)
+
+SET
+
+============================================================
+PHASE A - ไม่มี index บน merchant_id
+============================================================
+    sum     
+------------
+ 7080095664
+(1 row)
+
+   sum   
+---------
+ 5371848
+(1 row)
+
+
+--- A1: merchant_id = 1 (23,724 แถว) ---
+                                                   QUERY PLAN                                                    
+-----------------------------------------------------------------------------------------------------------------
+ Aggregate  (cost=4839.65..4839.66 rows=1 width=32) (actual time=8.452..8.453 rows=1 loops=1)
+   Buffers: shared hit=2280
+   ->  Seq Scan on orders  (cost=0.00..4780.00 rows=23860 width=8) (actual time=0.005..7.412 rows=23724 loops=1)
+         Filter: (merchant_id = 1)
+         Rows Removed by Filter: 176276
+         Buffers: shared hit=2280
+ Planning Time: 0.033 ms
+ Execution Time: 8.471 ms
+(8 rows)
+
+
+--- A2: merchant_id = 4999 (18 แถว) ---
+                                                QUERY PLAN                                                 
+-----------------------------------------------------------------------------------------------------------
+ Aggregate  (cost=4780.07..4780.08 rows=1 width=32) (actual time=6.728..6.729 rows=1 loops=1)
+   Buffers: shared hit=2280
+   ->  Seq Scan on orders  (cost=0.00..4780.00 rows=27 width=8) (actual time=0.044..6.720 rows=18 loops=1)
+         Filter: (merchant_id = 4999)
+         Rows Removed by Filter: 199982
+         Buffers: shared hit=2280
+ Planning Time: 0.035 ms
+ Execution Time: 6.746 ms
+(8 rows)
+
+
+============================================================
+PHASE B - มี index บน merchant_id
+============================================================
+CREATE INDEX
+ANALYZE
+ index_size 
+------------
+ 1472 kB
+(1 row)
+
+    sum     
+------------
+ 7080095664
+(1 row)
+
+   sum   
+---------
+ 5371848
+(1 row)
+
+
+--- B1: merchant_id = 1 (23,724 แถว) ---
+                                                                  QUERY PLAN                                                                   
+-----------------------------------------------------------------------------------------------------------------------------------------------
+ Aggregate  (cost=4623.57..4623.58 rows=1 width=32) (actual time=10.757..10.759 rows=1 loops=1)
+   Buffers: shared hit=2301
+   ->  Bitmap Heap Scan on orders  (cost=277.88..4563.70 rows=23947 width=8) (actual time=0.556..9.541 rows=23724 loops=1)
+         Recheck Cond: (merchant_id = 1)
+         Rows Removed by Index Recheck: 119688
+         Heap Blocks: exact=732 lossy=1548
+         Buffers: shared hit=2301
+         ->  Bitmap Index Scan on orders_merchant_id_idx  (cost=0.00..271.90 rows=23947 width=0) (actual time=0.493..0.494 rows=23724 loops=1)
+               Index Cond: (merchant_id = 1)
+               Buffers: shared hit=21
+ Planning Time: 0.099 ms
+ Execution Time: 10.790 ms
+(12 rows)
+
+
+--- B2: merchant_id = 4999 (18 แถว) ---
+                                                              QUERY PLAN                                                               
+---------------------------------------------------------------------------------------------------------------------------------------
+ Aggregate  (cost=104.10..104.11 rows=1 width=32) (actual time=0.031..0.032 rows=1 loops=1)
+   Buffers: shared hit=19
+   ->  Bitmap Heap Scan on orders  (cost=4.50..104.03 rows=27 width=8) (actual time=0.013..0.027 rows=18 loops=1)
+         Recheck Cond: (merchant_id = 4999)
+         Heap Blocks: exact=17
+         Buffers: shared hit=19
+         ->  Bitmap Index Scan on orders_merchant_id_idx  (cost=0.00..4.50 rows=27 width=0) (actual time=0.009..0.009 rows=18 loops=1)
+               Index Cond: (merchant_id = 4999)
+               Buffers: shared hit=2
+ Planning Time: 0.050 ms
+ Execution Time: 0.046 ms
+(11 rows)
+
+
+============================================================
+PHASE C - บังคับใช้ index กับกรณีแถวเยอะ
+============================================================
+(ถ้า B1 เลือก Seq Scan เอง ลองบังคับดูว่า planner ตัดสินใจถูกไหม
+ถ้าบังคับแล้วช้ากว่า = planner เลือกถูกแล้ว)
+SET
+
+--- C1: merchant_id = 1 บังคับใช้ index ---
+                                                                  QUERY PLAN                                                                   
+-----------------------------------------------------------------------------------------------------------------------------------------------
+ Aggregate  (cost=4623.57..4623.58 rows=1 width=32) (actual time=10.456..10.456 rows=1 loops=1)
+   Buffers: shared hit=2301
+   ->  Bitmap Heap Scan on orders  (cost=277.88..4563.70 rows=23947 width=8) (actual time=0.566..9.401 rows=23724 loops=1)
+         Recheck Cond: (merchant_id = 1)
+         Rows Removed by Index Recheck: 119688
+         Heap Blocks: exact=732 lossy=1548
+         Buffers: shared hit=2301
+         ->  Bitmap Index Scan on orders_merchant_id_idx  (cost=0.00..271.90 rows=23947 width=0) (actual time=0.503..0.503 rows=23724 loops=1)
+               Index Cond: (merchant_id = 1)
+               Buffers: shared hit=21
+ Planning Time: 0.039 ms
+ Execution Time: 10.474 ms
+(12 rows)
+
+RESET
+
+============================================================
+PHASE D - ความแม่นของสถิติ แยกตามความถี่ของค่า
+============================================================
+(EXP01 พบว่า planner เดาค่าที่พบบ่อยแม่นกว่าค่าที่พบน้อยมาก
+ตรวจว่าเป็นเพราะ most-common-values list หรือไม่)
+ n_mcv_tracked | n_distinct 
+---------------+------------
+           100 |       4677
+(1 row)
+
+ merchant_1_in_mcv | merchant_4999_in_mcv 
+-------------------+----------------------
+ t                 | f
+(1 row)
+
+
+============================================================
+CLEANUP
+============================================================
+DROP INDEX
+       indexname       
+-----------------------
+ orders_created_at_idx
+ orders_pkey
+(2 rows)
+
+RESET
+
+============================================================
+สิ่งที่ต้องอ่าน:
+1. B1 ใช้ plan แบบไหน (Seq / Bitmap Heap / Index Scan)
+2. B1 มี Heap Fetches หรือ Rows Removed by Filter เท่าไหร่
+3. เทียบ buffers A1 vs B1 vs C1
+4. ถ้า C1 แพงกว่า B1 = planner ตัดสินใจถูก
+5. merchant_1_in_mcv เป็น true หรือไม่
+============================================================
