@@ -65,7 +65,7 @@ RQ3 เป็นส่วนเสริม — ถ้าเวลาไม่�
 | ไม่ทำ | เหตุผล |
 |---|---|
 | วัด recall เต็มรูปแบบกับ **ทุก** vector engine | 5 container 5 API = โปรเจคไม่จบ (ดูโครงสร้าง 3 ชั้นในข้อ 5 แทน) |
-| Pinecone (ต้องเสียเงิน + ปิด source) | ตรวจ internal ไม่ได้ = ไม่มี ground truth ที่พิสูจน์ได้ |
+| Pinecone | fault ชั้นติดตั้ง (I01, I02, I04, I05) หายไปทั้งหมดเพราะเขาสร้าง index ให้ · ทำซ้ำไม่ได้เพราะเขาอัปเดตระบบเมื่อไหร่ก็ได้ · ต้องจ่ายเงิน คนอื่นทำซ้ำฟรีไม่ได้ (**ไม่ใช่**เพราะไม่มี ground truth — ดู D05/E03) |
 | เทียบ embedding model หลายตัว | คนละคำถามวิจัย |
 | เทรนหรือ fine-tune อะไร | ไม่เกี่ยวกับคำถาม |
 | ระบบแบบกระจาย / sharding | เกินกำลังและวัดยาก |
@@ -377,13 +377,21 @@ PostgreSQL version, pgvector version, image tag, วันที่, ฮาร�
 ## 13. บันทึกสภาพแวดล้อม
 
 ```
-PostgreSQL : 17.10 (Debian 17.10-1.pgdg12+1)
-image      : pgvector/pgvector:pg17
-pgvector   : (ยังไม่ได้บันทึก — รันคำสั่งข้างล่างแล้วเติม)
-platform   : Windows 11 + Docker Desktop (WSL2)
-วันที่ตั้งต้น : 2026-07-24
+PostgreSQL   : 17.10 (Debian 17.10-1.pgdg12+1)
+pgvector     : 0.8.5
+image        : pgvector/pgvector:0.8.5-pg17   ← ล็อกแล้ว ห้ามใช้ tag :pg17 เฉยๆ (ดู D14)
+platform     : Windows 11 + Docker Desktop (WSL2)
+dataset      : orders 200,000 แถว (23 MB)
+config       : fragile (work_mem=64kB, max_connections=20)
+วันที่ตั้งต้น   : 2026-07-24
+ยืนยันเวอร์ชัน : 2026-07-26
 ```
+
+คำสั่งที่ใช้ยืนยัน (รันซ้ำได้ทุกเมื่อ):
 
 ```powershell
 docker compose exec db psql -U lab -d faultlab -c "SELECT extname, extversion FROM pg_extension WHERE extname='vector'"
 ```
+
+> **ห้ามแก้ tag เป็น `:pg17`** — มันขยับตามเวอร์ชันใหม่โดยไม่มีอะไรเตือน
+> ผลการทดลองทุกชุดในโปรเจคผูกกับ image ข้างบนเท่านั้น
