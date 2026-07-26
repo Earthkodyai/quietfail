@@ -1,0 +1,69 @@
+============================================================
+Q01 - recall collapse @ 500,000 rows
+============================================================
+Sun Jul 26 06:23:12 PM UTC 2026
+>>> STEP 1/3 corpus 500k
+psql:/sql/qf12_seed_corpus.sql:181: NOTICE:  assertion ผ่าน: 500000 แถว · 50 กลุ่ม · กลุ่มเล็กสุด 10000 แถว · ตัวอย่าง 2000 แถวไม่ซ้ำกัน 2000
+ corpus_fingerprint_first5k | 5a32cba54ea2be4ed022fe8bfedae9b0
+ corpus_rows                | 500000
+Sun Jul 26 06:45:07 PM UTC 2026
+>>> STEP 2/3 exact ground truth
+psql:/sql/qf13_recall.sql:149: NOTICE:  เฉลยครบ: k=10 และ k=100 อย่างละ 200 query
+psql:/sql/qf13_recall.sql:172: NOTICE:  sanity check ผ่าน: ไม่มี index → recall@10 = 1.0 ตามนิยาม
+Sun Jul 26 06:56:11 PM UTC 2026
+>>> STEP 3/3 Q01
+Timing is on.
+psql:/sql/q01_recall_collapse.sql:72: NOTICE:  ด่านตรวจผ่าน: fingerprint ตรง · เฉลยครบ · ไม่มี index ค้าง · ในกลุ่ม 0.3820 ข้ามกลุ่ม 0.9997
+DO
+DROP TABLE
+CREATE TABLE
+CREATE FUNCTION
+=== 1) exact search (ไม่มี index) ===
+ qf_q01_measure 
+----------------
+(1 row)
+=== 2) HNSW (ค่าเริ่มต้นทั้งหมด) ===
+-------------------------------
+ 2026-07-27 02:02:08.804467+07
+(1 row)
+psql:/sql/q01_recall_collapse.sql:150: NOTICE:  hnsw graph no longer fits into maintenance_work_mem after 28360 tuples
+DETAIL:  Building will take significantly more time.
+HINT:  Increase maintenance_work_mem to speed up builds.
+CREATE INDEX
+ qf_q01_measure 
+----------------
+(1 row)
+DROP INDEX
+=== 3) IVFFlat (ค่าเริ่มต้น) ===
+-------------------------------
+ 2026-07-27 02:12:14.081428+07
+(1 row)
+CREATE INDEX
+RESET
+ qf_q01_measure 
+----------------
+(1 row)
+DROP INDEX
+psql:/sql/q01_recall_collapse.sql:229: NOTICE:  [1/3] OK exact search = 1.0000 ตามนิยาม สูตรวัดใช้ได้
+psql:/sql/q01_recall_collapse.sql:229: NOTICE:  [2/3] OK มี index ที่ทำให้ recall ตก (HNSW 0.5885 · IVFFlat 0.7820)
+psql:/sql/q01_recall_collapse.sql:229: NOTICE:  [3/3] OK index เร็วกว่า exact (exact 53280.9 ms · HNSW 455.0 ms · IVFFlat 1032.5 ms)
+psql:/sql/q01_recall_collapse.sql:229: NOTICE:  assertion ผ่านครบ 3 ข้อ
+DO
+=== Q01: index เปลี่ยนคำตอบ ไม่ใช่แค่ความเร็ว ===
+      label       | recall@10 | recall@100 | แย่สุด@10 | ครบ 10/10 กี่ query | 200 query (ms) | เร็วขึ้นกี่เท่า | ขนาด index 
+------------------+-----------+------------+---------+-------------------+----------------+-----------+------------
+ exact (no index) |    1.0000 |     1.0000 |  1.0000 |               200 |        53280.9 |       1.0 | -
+ HNSW default     |    0.5885 |     0.3871 |  0.0000 |                 2 |          455.0 |     117.1 | 977 MB
+ IVFFlat default  |    0.7820 |     0.7857 |  0.0000 |               108 |         1032.5 |      51.6 | 782 MB
+(3 rows)
+=== พารามิเตอร์ที่ใช้ (ไม่ได้จูนอะไรเลย) ===
+      label       |              index_params               | build (ms) | buffers (1 query) 
+------------------+-----------------------------------------+------------+-------------------
+ exact (no index) | -                                       |            |            100002
+ HNSW default     | ค่าเริ่มต้น (ไม่ได้ระบุอะไรเลย) · ef_search=40 |   603040.5 |              1220
+ IVFFlat default  | ค่าเริ่มต้น (lists=100) · probes=1          |     7088.7 |              2033
+(3 rows)
+=== ไม่มี error · ไม่มี warning · ผลลัพธ์ดูสมเหตุสมผลทุกแถว ===
+=== สิ่งเดียวที่บอกได้ว่าของหายคือการเทียบกับ exact search ===
+Sun Jul 26 07:12:29 PM UTC 2026
+>>> DONE

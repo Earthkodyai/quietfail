@@ -9,106 +9,35 @@
 
 ```
 อัปเดตล่าสุด : 2026-07-27
-เฟสที่อยู่    : 2 (ตัวชูโรง) — มีตัวเลขที่ 100k แล้ว
-กำลังทำ      : Q01 ที่ขนาดที่สอง (500k) เพื่อปิดเกณฑ์ผ่านเฟส 2
+เฟสที่อยู่    : 2 (ตัวชูโรง) — **ผ่านแล้ว** มี recall จริงครบ 2 ขนาด
+กำลังทำ      : พร้อมเข้าเฟส 2.5 (Q01 บน Qdrant)
 ติดอยู่ที่     : —
 ```
 
-## 🔵 เริ่มงานพรุ่งนี้ตรงนี้ (ค้างไว้ 2026-07-27 กลางคืน)
+> **เฟส 2 ผ่านตามเกณฑ์ `PROJECT.md` ข้อ 9** — "Q01 มีตัวเลข recall จริงที่ขนาดข้อมูล 2 ระดับ"
+> วัดที่ 100,000 และ 500,000 แถว · หลักฐานใน `results/q01_recall_collapse_*.txt`
 
-**สิ่งที่ค้าง:** Q01 ที่ 500,000 แถว — สั่งรันเป็นงานเบื้องหลังไว้เมื่อ 18:23 UTC
-ผลจะไปอยู่ที่ `results/q01_recall_collapse_500k.txt`
+## Q01 — ตัวเลขหลักของโปรเจค (2026-07-27)
 
-**ตรวจ 3 อย่างก่อนเชื่ออะไรทั้งสิ้น** (ตามลำดับ):
+384 มิติ · 200 query · cosine · **ไม่ได้จูนอะไรเลย** (`ef_search=40` · `probes=1`)
 
-```powershell
-# 1. มี session กำพร้าค้างไหม — บทเรียน E16/E23 ปิด Docker ระหว่างรันจะทิ้ง state ครึ่งๆ
-docker compose exec db psql -U lab -d faultlab -c "SELECT pid, state, round(extract(epoch FROM now()-query_start)) AS secs, left(query,50) FROM pg_stat_activity WHERE datname=current_database() AND state<>'idle'"
+| ขนาด | | recall@10 | recall@100 | แย่สุด@10 | ครบ 10/10 | เร็วขึ้น |
+|---|---|---|---|---|---|---|
+| 100k | exact | 1.0000 | 1.0000 | 1.0000 | 200/200 | 1.0× |
+| 100k | HNSW | 0.8565 | 0.3903 | **0.0000** | 52/200 | 32.6× |
+| 100k | IVFFlat | 0.7870 | 0.7793 | **0.0000** | 100/200 | 44.6× |
+| **500k** | exact | 1.0000 | 1.0000 | 1.0000 | 200/200 | 1.0× |
+| **500k** | **HNSW** | **0.5885** | 0.3871 | **0.0000** | **2/200** | **117.1×** |
+| **500k** | IVFFlat | 0.7820 | 0.7857 | **0.0000** | 108/200 | 51.6× |
 
-# 2. corpus กับเฉลยครบไหม
-docker compose exec db psql -U lab -d faultlab -c "SELECT (SELECT count(*) FROM qf_corpus) AS corpus, (SELECT count(*) FROM qf_truth WHERE k=10) AS truth10, (SELECT count(*) FROM qf_queries) AS queries"
+**ผลที่สำคัญที่สุด: index สองแบบเสื่อมตามขนาดข้อมูลคนละแบบ**
 
-# 3. ผลที่ได้ (ถ้ารันจบ)
-type results\q01_recall_collapse_500k.txt
-```
+- HNSW recall@10 ตกจาก 0.8565 → **0.5885** (ตกลง 31%) · ครบ 10/10 เหลือ **2 จาก 200 query**
+- IVFFlat แทบไม่ขยับ (0.7870 → 0.7820)
+- สาเหตุ: `ef_search=40` เป็น**ค่าสัมบูรณ์** ส่วน `probes=1` จาก `lists=100` เป็น**ค่าสัมพัทธ์**
+- **HNSW เร็วขึ้นพร้อมกับที่มันพังลง** (32.6× → 117.1×) ทีมที่ดูแต่ latency จะเห็นว่า "ดีขึ้น"
 
-**ถ้า pipeline ตายกลางคัน** (corpus ไม่ครบ 500,000 หรือ truth ไม่ครบ 200):
-ฆ่า orphan ก่อนเสมอ แล้วรันใหม่ทั้งชุด
-
-```powershell
-docker compose exec db psql -U lab -d faultlab -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname=current_database() AND pid<>pg_backend_pid() AND state<>'idle'"
-docker compose exec db psql -U lab -d faultlab -v rows=500000 -f /sql/qf12_seed_corpus.sql
-docker compose exec db psql -U lab -d faultlab -f /sql/qf13_recall.sql
-docker compose exec db psql -U lab -d faultlab -f /sql/q01_recall_collapse.sql
-```
-
-**อย่าเชื่อไฟล์ผลถ้าข้อ 2 ไม่ครบ** — assertion ของ `qf12` เคยกัน recall
-จาก corpus ว่างเปล่าไว้ได้ครั้งหนึ่งแล้ว (E23)
-
-**หลังได้ผล 500k แล้วต้องทำ:** เติมตารางใน `FAULTS.md` หัวข้อ "Q01 — ผลที่วัดได้จริง"
-· อัปเดต `README.md` · เพิ่มแถวใน `results/README.md` · เปลี่ยนสถานะเฟส 2 เป็นผ่าน
-
-## Q01 — ตัวเลขหลักของโปรเจค (100k แถว, 2026-07-27)
-
-| | recall@10 | recall@100 | แย่สุด@10 | ครบ 10/10 | เร็วขึ้น |
-|---|---|---|---|---|---|
-| exact | 1.0000 | 1.0000 | 1.0000 | 200/200 | 1.0× |
-| HNSW ค่าเริ่มต้น | **0.8565** | **0.3903** | **0.0000** | 52/200 | 32.6× |
-| IVFFlat ค่าเริ่มต้น | **0.7870** | **0.7793** | **0.0000** | 100/200 | 44.6× |
-
-**ไม่ได้จูนอะไรเลย** — `ef_search=40` · `probes=1` ตามค่าเริ่มต้น
-`แย่สุด@10 = 0.0000` = มี query ที่คำตอบหายเกลี้ยงทั้ง 10 อันดับ
-HNSW recall@100 แย่กว่า @10 เพราะ `ef_search=40 < LIMIT 100` → กลไกของ Q06
-
-**เกณฑ์ผ่านเฟส 2 ต้องมี 2 ขนาด** — 100k ✅ · 500k กำลังรัน
-
-**เฟส 1 ครบแล้ว 2026-07-27** — core ทั้ง 4 ข้อฉีดซ้ำได้ 3 ครั้งติด มีเฉลย มีตัวนับคะแนน
-
-| fault | อาการ | ตัวแยกสาเหตุ | หลักฐาน |
-|---|---|---|---|
-| F01 | connection หมด | `pg_stat_activity` state = idle in transaction | `results/f01_phase1_cycle.txt` |
-| F03+F03b | timeout ข้อความเดียวกัน สองสาเหตุ | `pg_blocking_pids()` ว่าง/ไม่ว่าง | `results/f03_phase1_cycle.txt` |
-| F05 | SELECT ค้างเพราะ DDL รอคิว | `pg_locks` granted=false + ห่วงโซ่ | `results/f05_phase1_cycle.txt` |
-| F10 | ช้าลงโดยไม่มี error | Plan Rows vs Actual Rows + buffers | `results/f10_phase1_cycle.txt` |
-
-`sql/score.sql` รายงาน 3 สถานะ: `DETECTED` / `NOT_DETECTED` / `CANNOT_CHECK`
-
-> **เคยประกาศผิดว่าเฟส 0 จบแล้ว** — ตรวจพบ 2026-07-26 ว่ายังไม่ครบ
-> เกณฑ์ผ่านใน `PROJECT.md` ข้อ 9 คือ "เอกสาร + **ชุด query** + เกณฑ์วัดผล commit แล้ว"
-> และ D09 สั่งว่าชุด query ต้องอยู่ใน repo **ก่อน**รันวัดครั้งแรก
-> เลือกสร้างชุด query ให้ครบ ไม่ใช่แก้เกณฑ์ — เพราะการแก้กฎให้ตรงกับสิ่งที่ทำไปแล้ว
-> คือรูปแบบเดียวกับที่ D09 มีไว้ป้องกัน
-
-**เฟส 0 — ทำแล้ว**
-
-- [x] บันทึกเวอร์ชัน pgvector → 0.8.5
-- [x] อ่าน CHANGELOG + README ทางการ → ดู `EVIDENCE.md`
-- [x] ล็อก image tag → `0.8.5-pg17` (D14)
-- [x] สร้าง `results/` และ mount ให้ container เขียนได้
-- [x] EXP01 index selectivity
-- [x] EXP01b heap access → เจอ fault ใหม่ ดู E08
-- [x] `git init` + commit แรก (a0fc1d9, 23 ไฟล์)
-- [x] ตรวจความสอดคล้องเอกสารทั้ง repo → เจอ E09
-- [x] **ล็อกชุด fault 12 ข้อ (D15)** — ปิดหนี้กฎเหล็กข้อ 4
-
-- [x] ชุด query 200 ข้อ + seed คงที่ commit ลง repo (`sql/qf11_query_set.sql`)
-- [x] สูตร recall@k เป็นสคริปต์ที่รันได้ (`sql/qf13_recall.sql`)
-- [x] รันยืนยันทั้งชุดจริง → `results/qf00_phase0_gate.txt`
-
-**เกณฑ์ผ่านเฟส 0 ครบแล้วตาม `PROJECT.md` ข้อ 9**
-
-- [x] EXP01c ตอบคำถามที่ E08 ค้างไว้ → เป็น "ปัญหาที่ config กลบไว้"
-
-**งานถัดไป**
-
-1. **เฟส 2: Q01 recall collapse (ตัวชูโรง)** — ฐานวัดพร้อมแล้ว ดูหัวข้อข้างล่าง
-2. เฟส 2.5: Q01 บน Qdrant
-
-**หนี้ E17 ปิดแล้ว** — รัน EXP01/EXP01b/EXP01c ใหม่บน seed ที่แก้แล้ว 2026-07-26
-ตัวเลขในไฟล์นี้ทั้งหมดมาจากชุดใหม่ · ข้อสรุปเชิงกลไกไม่เปลี่ยนสักข้อ
-
-**ไม่มีอะไรค้างตัดสินใจ** — F13 ปิดแล้ว 2026-07-27 ไปอยู่ทะเบียนบั๊กนอกแผนถาวร
-ไม่พิจารณาเป็น fault หลักอีก (ชุด 16 ข้อไม่เปลี่ยน)
+**ต้นทุน build:** HNSW 89 วิ (100k) → **603 วิ (500k)** · IVFFlat 2.2 → 7.1 วิ = ต่างกัน 85 เท่า
 
 ---
 
