@@ -19,7 +19,14 @@
 --   docker compose exec db psql -U lab -d faultlab -f /sql/exp01b_heap_access.sql
 -- ============================================================
 
-\o /results/exp01b_heap_access.txt
+-- ชื่อไฟล์ผลลัพธ์เปลี่ยนได้ เพื่อรันเทียบสองโปรไฟล์โดยไม่ทับหลักฐานเดิม
+--   -v out=/results/exp01b_realistic.txt
+\if :{?out}
+\else
+\set out /results/exp01b_heap_access.txt
+\endif
+
+\o :out
 
 \qecho ============================================================
 \qecho EXP01b - index selectivity with heap access required

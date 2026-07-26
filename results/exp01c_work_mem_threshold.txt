@@ -1,0 +1,172 @@
+============================================================
+EXP01c - work_mem threshold for lossy bitmap
+============================================================
+
+                                                           version                                                            
+------------------------------------------------------------------------------------------------------------------------------
+ PostgreSQL 17.10 (Debian 17.10-1.pgdg12+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 12.2.0-14+deb12u1) 12.2.0, 64-bit
+(1 row)
+
+            run_at             
+-------------------------------
+ 2026-07-26 19:44:07.939219+07
+(1 row)
+
+              name               | setting | unit 
+---------------------------------+---------+------
+ max_parallel_workers_per_gather | 2       | 
+ shared_buffers                  | 32768   | 8kB
+ work_mem                        | 4096    | kB
+(3 rows)
+
+ orders_rows 
+-------------
+      200000
+(1 row)
+
+SET
+CREATE INDEX
+ANALYZE
+    sum     
+------------
+ 7080095664
+(1 row)
+
+    sum     
+------------
+ 7080095664
+(1 row)
+
+
+------------------------------------------------------------
+ตัวชี้วัดที่ต้องอ่านคือบรรทัด "Heap Blocks"
+lossy = N -> จำแค่ว่าหน้านี้มีของ ต้องอ่านทั้งหน้าแล้วคัดใหม่
+ไม่มี lossy -> bitmap เก็บระดับแถวได้ครบ
+------------------------------------------------------------
+
+--- work_mem = 64kB (โปรไฟล์ fragile) ---
+SET
+                                                                  QUERY PLAN                                                                   
+-----------------------------------------------------------------------------------------------------------------------------------------------
+ Aggregate  (cost=4618.86..4618.87 rows=1 width=32) (actual time=11.749..11.751 rows=1 loops=1)
+   Buffers: shared hit=2301
+   ->  Bitmap Heap Scan on orders  (cost=273.47..4559.13 rows=23893 width=8) (actual time=0.652..10.594 rows=23724 loops=1)
+         Recheck Cond: (merchant_id = 1)
+         Rows Removed by Index Recheck: 119688
+         Heap Blocks: exact=732 lossy=1548
+         Buffers: shared hit=2301
+         ->  Bitmap Index Scan on orders_merchant_id_idx  (cost=0.00..267.49 rows=23893 width=0) (actual time=0.580..0.581 rows=23724 loops=1)
+               Index Cond: (merchant_id = 1)
+               Buffers: shared hit=21
+ Planning Time: 0.056 ms
+ Execution Time: 11.775 ms
+(12 rows)
+
+
+--- work_mem = 96kB ---
+SET
+                                                                  QUERY PLAN                                                                   
+-----------------------------------------------------------------------------------------------------------------------------------------------
+ Aggregate  (cost=4371.70..4371.71 rows=1 width=32) (actual time=9.872..9.873 rows=1 loops=1)
+   Buffers: shared hit=2301
+   ->  Bitmap Heap Scan on orders  (cost=273.47..4311.97 rows=23893 width=8) (actual time=0.802..8.565 rows=23724 loops=1)
+         Recheck Cond: (merchant_id = 1)
+         Rows Removed by Index Recheck: 59978
+         Heap Blocks: exact=1505 lossy=775
+         Buffers: shared hit=2301
+         ->  Bitmap Index Scan on orders_merchant_id_idx  (cost=0.00..267.49 rows=23893 width=0) (actual time=0.634..0.635 rows=23724 loops=1)
+               Index Cond: (merchant_id = 1)
+               Buffers: shared hit=21
+ Planning Time: 0.057 ms
+ Execution Time: 9.904 ms
+(12 rows)
+
+
+--- work_mem = 128kB ---
+SET
+                                                                  QUERY PLAN                                                                   
+-----------------------------------------------------------------------------------------------------------------------------------------------
+ Aggregate  (cost=4124.53..4124.54 rows=1 width=32) (actual time=13.348..13.350 rows=1 loops=1)
+   Buffers: shared hit=2301
+   ->  Bitmap Heap Scan on orders  (cost=273.47..4064.79 rows=23893 width=8) (actual time=0.964..11.741 rows=23724 loops=1)
+         Recheck Cond: (merchant_id = 1)
+         Rows Removed by Index Recheck: 79956
+         Heap Blocks: exact=1247 lossy=1033
+         Buffers: shared hit=2301
+         ->  Bitmap Index Scan on orders_merchant_id_idx  (cost=0.00..267.49 rows=23893 width=0) (actual time=0.807..0.808 rows=23724 loops=1)
+               Index Cond: (merchant_id = 1)
+               Buffers: shared hit=21
+ Planning Time: 0.105 ms
+ Execution Time: 13.401 ms
+(12 rows)
+
+
+--- work_mem = 160kB ---
+SET
+                                                                  QUERY PLAN                                                                   
+-----------------------------------------------------------------------------------------------------------------------------------------------
+ Aggregate  (cost=2911.86..2911.87 rows=1 width=32) (actual time=7.228..7.229 rows=1 loops=1)
+   Buffers: shared hit=2301
+   ->  Bitmap Heap Scan on orders  (cost=273.47..2852.13 rows=23893 width=8) (actual time=0.952..5.701 rows=23724 loops=1)
+         Recheck Cond: (merchant_id = 1)
+         Heap Blocks: exact=2280
+         Buffers: shared hit=2301
+         ->  Bitmap Index Scan on orders_merchant_id_idx  (cost=0.00..267.49 rows=23893 width=0) (actual time=0.670..0.670 rows=23724 loops=1)
+               Index Cond: (merchant_id = 1)
+               Buffers: shared hit=21
+ Planning Time: 0.061 ms
+ Execution Time: 7.260 ms
+(11 rows)
+
+
+--- work_mem = 256kB ---
+SET
+                                                                  QUERY PLAN                                                                   
+-----------------------------------------------------------------------------------------------------------------------------------------------
+ Aggregate  (cost=2911.86..2911.87 rows=1 width=32) (actual time=5.960..5.961 rows=1 loops=1)
+   Buffers: shared hit=2301
+   ->  Bitmap Heap Scan on orders  (cost=273.47..2852.13 rows=23893 width=8) (actual time=0.728..4.535 rows=23724 loops=1)
+         Recheck Cond: (merchant_id = 1)
+         Heap Blocks: exact=2280
+         Buffers: shared hit=2301
+         ->  Bitmap Index Scan on orders_merchant_id_idx  (cost=0.00..267.49 rows=23893 width=0) (actual time=0.508..0.508 rows=23724 loops=1)
+               Index Cond: (merchant_id = 1)
+               Buffers: shared hit=21
+ Planning Time: 0.055 ms
+ Execution Time: 5.986 ms
+(11 rows)
+
+
+--- work_mem = 4MB (โปรไฟล์ realistic) ---
+SET
+                                                                  QUERY PLAN                                                                   
+-----------------------------------------------------------------------------------------------------------------------------------------------
+ Aggregate  (cost=2911.86..2911.87 rows=1 width=32) (actual time=7.581..7.583 rows=1 loops=1)
+   Buffers: shared hit=2301
+   ->  Bitmap Heap Scan on orders  (cost=273.47..2852.13 rows=23893 width=8) (actual time=0.919..5.977 rows=23724 loops=1)
+         Recheck Cond: (merchant_id = 1)
+         Heap Blocks: exact=2280
+         Buffers: shared hit=2301
+         ->  Bitmap Index Scan on orders_merchant_id_idx  (cost=0.00..267.49 rows=23893 width=0) (actual time=0.646..0.646 rows=23724 loops=1)
+               Index Cond: (merchant_id = 1)
+               Buffers: shared hit=21
+ Planning Time: 0.060 ms
+ Execution Time: 7.614 ms
+(11 rows)
+
+
+============================================================
+CLEANUP
+============================================================
+DROP INDEX
+RESET
+RESET
+
+============================================================
+สิ่งที่ต้องอ่าน:
+1. lossy หายไปที่ work_mem เท่าไหร่
+2. buffers เปลี่ยนไหมระหว่างค่าที่ lossy กับไม่ lossy
+-- ถ้าไม่เปลี่ยน แปลว่าตัวชี้วัดหลักของโปรเจค (กฎข้อ 7)
+มองไม่เห็น fault ชนิดนี้เลย
+3. เวลาแกว่งแค่ไหนระหว่างรอบที่โครงสร้าง plan เหมือนกัน
+============================================================

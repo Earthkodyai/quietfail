@@ -1,0 +1,22 @@
+# =============================================================
+# โปรไฟล์ "realistic" — กลุ่มควบคุม
+#
+# ใช้คู่กับ docker-compose.yml เสมอ ไม่ใช้เดี่ยว:
+#   docker compose -f docker-compose.yml -f docker-compose.realistic.yml up -d --force-recreate
+#
+# กลับไป fragile:
+#   docker compose up -d --force-recreate
+#
+# ทำไมต้อง mount ไว้คนละ path แล้ว override command
+# แทนที่จะ mount ทับที่เดิม:
+#   compose รวมรายการ volumes แบบ "ต่อท้าย" ไม่ใช่ "แทนที่"
+#   ถ้า mount สองไฟล์ไปที่ path เดียวกันจะชนกัน
+#   ส่วน command เป็นค่าเดี่ยว override ได้ตรงๆ
+#
+# ข้อมูลใน volume ไม่หายเมื่อสลับโปรไฟล์ — เปลี่ยนแค่ค่า config
+# =============================================================
+services:
+  db:
+    volumes:
+      - ./config/postgresql.realistic.conf:/etc/postgresql/realistic.conf:ro
+    command: postgres -c config_file=/etc/postgresql/realistic.conf
