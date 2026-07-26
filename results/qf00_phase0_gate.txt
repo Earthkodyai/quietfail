@@ -1,0 +1,48 @@
+================================================================
+QuietFail - Phase 0 gate verification
+================================================================
+            item            |                                                            value                                                             
+----------------------------+------------------------------------------------------------------------------------------------------------------------------
+ clusters                   | 50
+ config_profile             | fragile
+ corpus_fingerprint_first5k | 5a32cba54ea2be4ed022fe8bfedae9b0
+ corpus_rows                | 100000
+ date                       | 2026-07-26 19:31:50.29903+07
+ dim                        | 384
+ image_tag                  | pgvector/pgvector:0.8.5-pg17
+ metric                     | cosine (<=>) · recall@k = |truth_k ∩ approx_k| / k · เฉลี่ย 200 query
+ pg_version                 | 17.10 (Debian 17.10-1.pgdg12+1)
+ pgvector_version           | 0.8.5
+ postgres                   | PostgreSQL 17.10 (Debian 17.10-1.pgdg12+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 12.2.0-14+deb12u1) 12.2.0, 64-bit
+ queries                    | 200
+ query_set_fingerprint      | 607babfb6344eab74d3e76496b04fa9f
+ query_set_salt             | quietfail-v1
+ schema_created             | 2026-07-26 18:43:25.798099+07
+(15 rows)
+
+
+--- cluster structure (400-row sample) ---
+ within_cluster | across_cluster 
+----------------+----------------
+         0.3820 |         0.9997
+(1 row)
+
+
+--- sanity check: no vector index exists, so recall must be exactly 1.0 ---
+ k  | n_queries | mean_recall | min_recall | n_perfect 
+----+-----------+-------------+------------+-----------
+ 10 |       200 |      1.0000 |     1.0000 |       200
+(1 row)
+
+  k  | n_queries | mean_recall | min_recall | n_perfect 
+-----+-----------+-------------+------------+-----------
+ 100 |       200 |      1.0000 |     1.0000 |       200
+(1 row)
+
+
+--- confirm no vector index is present ---
+ vector_indexes 
+----------------
+              0
+(1 row)
+

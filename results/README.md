@@ -20,6 +20,7 @@ git add -f results/ชื่อไฟล์.txt
 | `exp00_default_guc.txt` | ค่า default ของ pgvector 0.8.5 | 2026-07-26 |
 | `exp01_index_selectivity.txt` | index selectivity, count(*) | 2026-07-26 |
 | `exp01b_heap_access.txt` | index selectivity, บังคับอ่าน heap | 2026-07-26 |
+| `qf00_phase0_gate.txt` | หลักฐานปิดเฟส 0: ชุด query + corpus + recall = 1.0 ตอนไม่มี index | 2026-07-26 |
 
 ## การตั้งชื่อ
 
