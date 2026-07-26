@@ -367,6 +367,31 @@ merchant_4999_in_mcv = false  → เดาคลาด 50%
 
 ---
 
+## E10 — เดาว่ามี `l2_norm(vector)` ทั้งที่ไม่มี (2026-07-26)
+
+เขียน assertion ตรวจ zero vector ด้วย `l2_norm(embedding)` เพราะคิดว่าเป็นชื่อมาตรฐาน
+
+**ของจริงใน pgvector 0.8.5:** `l2_norm` มีเฉพาะ `halfvec` และ `sparsevec`
+ตัวที่รับ `vector` ชื่อ **`vector_norm`**
+
+**จุดที่น่าสนใจ — ข้อความ error ชี้ผิดทาง:**
+```
+ERROR:  function l2_norm(vector) is not unique
+HINT:   Could not choose a best candidate function.
+```
+อ่านแล้วเข้าใจว่า "มีหลายตัวเกินไป" ต้องไปใส่ cast
+**ต้นเหตุจริงคือไม่มีตัวที่รับ `vector` เลยสักตัว** แล้ว PostgreSQL
+ไปลอง cast ไป halfvec กับ sparsevec ได้ทั้งคู่ จึงกำกวม
+
+ถ้าหลงทำตาม HINT จะไปใส่ `::halfvec` ซึ่ง**ลดความละเอียดของข้อมูลเงียบๆ**
+เพื่อแก้ error ที่ไม่ได้เกิดจากเรื่องนั้น
+
+**ตรงกับ E06 และวิทยานิพนธ์ของโปรเจค:** error บอกอย่าง ต้นเหตุอีกอย่าง
+วิธีที่ถูกคือ `SELECT oid::regprocedure FROM pg_proc WHERE proname ~ 'norm'`
+ให้ catalog ตอบ ไม่ใช่ให้ผู้ช่วยเดา (กฎเหล็กข้อ 1)
+
+---
+
 ## D15 — ล็อกชุด fault 12 ข้อ ปิดหนี้กฎเหล็กข้อ 4 (2026-07-26)
 
 **ปัญหาที่ต้องปิด:** `PROJECT.md` กับ `EVIDENCE.md` นับได้ 12 ข้อเท่ากัน
