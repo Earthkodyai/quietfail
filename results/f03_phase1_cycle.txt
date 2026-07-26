@@ -1,0 +1,215 @@
+============================================================
+F03 + F03b - phase 1 cycle: same error text, two causes
+============================================================
+PostgreSQL 17.10 (Debian 17.10-1.pgdg12+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 12.2.0-14+deb12u1) 12.2.0, 64-bit
+2026-07-26 22:18:07.518049+07
+image_tag : pgvector/pgvector:0.8.5-pg17
+profile   : fragile · statement_timeout = 100ms (same for both cases)
+
+############################ RUN 1 ############################
+=== F03 / F03b: ข้อความ error เดียวกัน สองสาเหตุ ===
+    statement_timeout = 100ms (เท่ากันทั้งสองเคส)
+
+-- pre-flight: วัดว่า query ของ F03b ช้าจริงเท่าไหร่ (ยังไม่ตั้ง timeout)
+   query ของ F03b ใช้เวลา 487ms · ต้องการอย่างน้อย 200ms (2x ของ timeout)
+NOTICE:  table "qf_f03_obs" does not exist, skipping
+
+=== F03: victim รอ row lock ===
+-- A: BEGIN แล้ว UPDATE แถว id=1 ค้างไว้ (ถือ row lock)
+-- B: ตั้ง statement_timeout แล้ว UPDATE แถวเดียวกัน
+   ได้: ERROR:  canceling statement due to statement timeout
+CONTEXT:  while updating tuple (0,1) in relation "orders"
+
+=== F03b: victim ช้าเอง ไม่มีใครบล็อก ===
+-- session เดียว ไม่มี transaction อื่นเลย
+   ได้: ERROR:  canceling statement due to statement timeout
+
+[1/4] ✅ บรรทัด ERROR เหมือนกันทุกตัวอักษร
+        "ERROR:  canceling statement due to statement timeout"
+        (มีบรรทัดเสริมต่างกัน — ดูหัวข้อ CONTEXT ข้างล่าง)
+[2/4] ✅ ตัวเฝ้าดูเก็บตัวอย่างได้ (F03 18 ครั้ง · F03b 18 ครั้ง)
+[3/4] ✅ F03: pg_blocking_pids() ไม่ว่าง (18 ตัวอย่าง) = ถูกบล็อกจริง
+[4/4] ✅ F03b: pg_blocking_pids() ว่างทุกตัวอย่าง (18 ตัวอย่าง) = ช้าเอง ไม่มีใครบล็อก
+
+=== หลักฐาน: ข้อความเดียวกัน แต่ pg_blocking_pids() แยกออกได้ ===
+| F03  |      18 |            1 | t           |
+| F03b |      18 |            0 | f           |
++------+---------+--------------+-------------+
+
+
+=== CONTEXT: บรรทัดเสริมที่ PostgreSQL แถมมา ===
+--- F03 เต็มๆ ---
+    ERROR:  canceling statement due to statement timeout
+    CONTEXT:  while updating tuple (0,1) in relation "orders"
+--- F03b เต็มๆ ---
+    ERROR:  canceling statement due to statement timeout
+
+    CONTEXT บอกว่าคำสั่งกำลัง update tuple = คุณสมบัติของ 'ชนิดคำสั่ง'
+    ไม่ใช่ของ 'สาเหตุ' — UPDATE ที่ช้าเองก็ได้ CONTEXT แบบเดียวกัน
+    จึงยังแยกไม่ได้ว่ารอ lock หรือช้าเอง และไม่บอกว่าต้องแก้ตรงไหน
+
+=== ตัวอย่างดิบ ===
+| F03 | 6696 | {6689}   |
+| F03 | 6696 | {6689}   |
+| F03 | 6696 | {6689}   |
+| F03 | 6696 | {6689}   |
+| F03 | 6696 | {6689}   |
+| F03 | 6696 | {6689}   |
+| F03 | 6696 | {6689}   |
+| F03 | 6696 | {6689}   |
++-----+------+----------+
+
+
+=== ข้อความ error บอกอะไรไม่ได้เลยว่าต้องแก้ตรงไหน ===
+=== F03  แก้ถูก = ไล่หา transaction ที่ถือ lock ===
+=== F03b แก้ถูก = สร้าง index ===
+=== ทั้งคู่ 'แก้' ด้วยการเพิ่ม timeout ได้ และทั้งคู่ผิดทั้งคู่ ===
+
+--- เก็บกวาด ---
+   (KEEP_OBS=1 — เก็บตาราง qf_f03_obs ไว้ให้ตัวนับคะแนน)
+injector exit code: 0
+---- scorer, observation table kept ----
+ F03      | DETECTED | แยกได้: F03 ถูกบล็อก (18 ตัวอย่าง) · F03b ไม่ถูกบล็อกเลย (18 ตัวอย่าง)
+ detected | not_detected | cannot_check | total 
+        1 |            0 |            0 |     1
+---- scorer after dropping evidence (must be CANNOT_CHECK) ----
+ F03      | CANNOT_CHECK | ไม่มีตาราง 'qf_f03_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+
+############################ RUN 2 ############################
+=== F03 / F03b: ข้อความ error เดียวกัน สองสาเหตุ ===
+    statement_timeout = 100ms (เท่ากันทั้งสองเคส)
+
+-- pre-flight: วัดว่า query ของ F03b ช้าจริงเท่าไหร่ (ยังไม่ตั้ง timeout)
+   query ของ F03b ใช้เวลา 286ms · ต้องการอย่างน้อย 200ms (2x ของ timeout)
+NOTICE:  table "qf_f03_obs" does not exist, skipping
+
+=== F03: victim รอ row lock ===
+-- A: BEGIN แล้ว UPDATE แถว id=1 ค้างไว้ (ถือ row lock)
+-- B: ตั้ง statement_timeout แล้ว UPDATE แถวเดียวกัน
+   ได้: ERROR:  canceling statement due to statement timeout
+CONTEXT:  while updating tuple (0,1) in relation "orders"
+
+=== F03b: victim ช้าเอง ไม่มีใครบล็อก ===
+-- session เดียว ไม่มี transaction อื่นเลย
+   ได้: ERROR:  canceling statement due to statement timeout
+
+[1/4] ✅ บรรทัด ERROR เหมือนกันทุกตัวอักษร
+        "ERROR:  canceling statement due to statement timeout"
+        (มีบรรทัดเสริมต่างกัน — ดูหัวข้อ CONTEXT ข้างล่าง)
+[2/4] ✅ ตัวเฝ้าดูเก็บตัวอย่างได้ (F03 18 ครั้ง · F03b 19 ครั้ง)
+[3/4] ✅ F03: pg_blocking_pids() ไม่ว่าง (18 ตัวอย่าง) = ถูกบล็อกจริง
+[4/4] ✅ F03b: pg_blocking_pids() ว่างทุกตัวอย่าง (19 ตัวอย่าง) = ช้าเอง ไม่มีใครบล็อก
+
+=== หลักฐาน: ข้อความเดียวกัน แต่ pg_blocking_pids() แยกออกได้ ===
+| F03  |      18 |            1 | t           |
+| F03b |      19 |            0 | f           |
++------+---------+--------------+-------------+
+
+
+=== CONTEXT: บรรทัดเสริมที่ PostgreSQL แถมมา ===
+--- F03 เต็มๆ ---
+    ERROR:  canceling statement due to statement timeout
+    CONTEXT:  while updating tuple (0,1) in relation "orders"
+--- F03b เต็มๆ ---
+    ERROR:  canceling statement due to statement timeout
+
+    CONTEXT บอกว่าคำสั่งกำลัง update tuple = คุณสมบัติของ 'ชนิดคำสั่ง'
+    ไม่ใช่ของ 'สาเหตุ' — UPDATE ที่ช้าเองก็ได้ CONTEXT แบบเดียวกัน
+    จึงยังแยกไม่ได้ว่ารอ lock หรือช้าเอง และไม่บอกว่าต้องแก้ตรงไหน
+
+=== ตัวอย่างดิบ ===
+| F03 | 6866 | {6851}   |
+| F03 | 6866 | {6851}   |
+| F03 | 6866 | {6851}   |
+| F03 | 6866 | {6851}   |
+| F03 | 6866 | {6851}   |
+| F03 | 6866 | {6851}   |
+| F03 | 6866 | {6851}   |
+| F03 | 6866 | {6851}   |
++-----+------+----------+
+
+
+=== ข้อความ error บอกอะไรไม่ได้เลยว่าต้องแก้ตรงไหน ===
+=== F03  แก้ถูก = ไล่หา transaction ที่ถือ lock ===
+=== F03b แก้ถูก = สร้าง index ===
+=== ทั้งคู่ 'แก้' ด้วยการเพิ่ม timeout ได้ และทั้งคู่ผิดทั้งคู่ ===
+
+--- เก็บกวาด ---
+   (KEEP_OBS=1 — เก็บตาราง qf_f03_obs ไว้ให้ตัวนับคะแนน)
+injector exit code: 0
+---- scorer, observation table kept ----
+ F03      | DETECTED | แยกได้: F03 ถูกบล็อก (18 ตัวอย่าง) · F03b ไม่ถูกบล็อกเลย (19 ตัวอย่าง)
+ detected | not_detected | cannot_check | total 
+        1 |            0 |            0 |     1
+---- scorer after dropping evidence (must be CANNOT_CHECK) ----
+ F03      | CANNOT_CHECK | ไม่มีตาราง 'qf_f03_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+
+############################ RUN 3 ############################
+=== F03 / F03b: ข้อความ error เดียวกัน สองสาเหตุ ===
+    statement_timeout = 100ms (เท่ากันทั้งสองเคส)
+
+-- pre-flight: วัดว่า query ของ F03b ช้าจริงเท่าไหร่ (ยังไม่ตั้ง timeout)
+   query ของ F03b ใช้เวลา 219ms · ต้องการอย่างน้อย 200ms (2x ของ timeout)
+NOTICE:  table "qf_f03_obs" does not exist, skipping
+
+=== F03: victim รอ row lock ===
+-- A: BEGIN แล้ว UPDATE แถว id=1 ค้างไว้ (ถือ row lock)
+-- B: ตั้ง statement_timeout แล้ว UPDATE แถวเดียวกัน
+   ได้: ERROR:  canceling statement due to statement timeout
+CONTEXT:  while updating tuple (0,1) in relation "orders"
+
+=== F03b: victim ช้าเอง ไม่มีใครบล็อก ===
+-- session เดียว ไม่มี transaction อื่นเลย
+   ได้: ERROR:  canceling statement due to statement timeout
+
+[1/4] ✅ บรรทัด ERROR เหมือนกันทุกตัวอักษร
+        "ERROR:  canceling statement due to statement timeout"
+        (มีบรรทัดเสริมต่างกัน — ดูหัวข้อ CONTEXT ข้างล่าง)
+[2/4] ✅ ตัวเฝ้าดูเก็บตัวอย่างได้ (F03 18 ครั้ง · F03b 19 ครั้ง)
+[3/4] ✅ F03: pg_blocking_pids() ไม่ว่าง (18 ตัวอย่าง) = ถูกบล็อกจริง
+[4/4] ✅ F03b: pg_blocking_pids() ว่างทุกตัวอย่าง (19 ตัวอย่าง) = ช้าเอง ไม่มีใครบล็อก
+
+=== หลักฐาน: ข้อความเดียวกัน แต่ pg_blocking_pids() แยกออกได้ ===
+| F03  |      18 |            1 | t           |
+| F03b |      19 |            0 | f           |
++------+---------+--------------+-------------+
+
+
+=== CONTEXT: บรรทัดเสริมที่ PostgreSQL แถมมา ===
+--- F03 เต็มๆ ---
+    ERROR:  canceling statement due to statement timeout
+    CONTEXT:  while updating tuple (0,1) in relation "orders"
+--- F03b เต็มๆ ---
+    ERROR:  canceling statement due to statement timeout
+
+    CONTEXT บอกว่าคำสั่งกำลัง update tuple = คุณสมบัติของ 'ชนิดคำสั่ง'
+    ไม่ใช่ของ 'สาเหตุ' — UPDATE ที่ช้าเองก็ได้ CONTEXT แบบเดียวกัน
+    จึงยังแยกไม่ได้ว่ารอ lock หรือช้าเอง และไม่บอกว่าต้องแก้ตรงไหน
+
+=== ตัวอย่างดิบ ===
+| F03 | 7025 | {7019}   |
+| F03 | 7025 | {7019}   |
+| F03 | 7025 | {7019}   |
+| F03 | 7025 | {7019}   |
+| F03 | 7025 | {7019}   |
+| F03 | 7025 | {7019}   |
+| F03 | 7025 | {7019}   |
+| F03 | 7025 | {7019}   |
++-----+------+----------+
+
+
+=== ข้อความ error บอกอะไรไม่ได้เลยว่าต้องแก้ตรงไหน ===
+=== F03  แก้ถูก = ไล่หา transaction ที่ถือ lock ===
+=== F03b แก้ถูก = สร้าง index ===
+=== ทั้งคู่ 'แก้' ด้วยการเพิ่ม timeout ได้ และทั้งคู่ผิดทั้งคู่ ===
+
+--- เก็บกวาด ---
+   (KEEP_OBS=1 — เก็บตาราง qf_f03_obs ไว้ให้ตัวนับคะแนน)
+injector exit code: 0
+---- scorer, observation table kept ----
+ F03      | DETECTED | แยกได้: F03 ถูกบล็อก (18 ตัวอย่าง) · F03b ไม่ถูกบล็อกเลย (19 ตัวอย่าง)
+ detected | not_detected | cannot_check | total 
+        1 |            0 |            0 |     1
+---- scorer after dropping evidence (must be CANNOT_CHECK) ----
+ F03      | CANNOT_CHECK | ไม่มีตาราง 'qf_f03_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+

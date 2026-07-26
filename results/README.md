@@ -25,6 +25,7 @@ git add -f results/ชื่อไฟล์.txt
 | `exp01c_work_mem_threshold.txt` | หา work_mem ที่ lossy เริ่มเกิด + buffers มองไม่เห็น fault นี้ | 2026-07-26 |
 | `f01_phase1_cycle.txt` | F01 ครบวงจร ฉีด→วินิจฉัย→นับคะแนน 3 รอบติด | 2026-07-26 |
 | `f05_phase1_cycle.txt` | F05 ครบวงจร + ห่วงโซ่ lock 3 รอบติด | 2026-07-26 |
+| `f03_phase1_cycle.txt` | F03+F03b ข้อความ error เดียวกัน สองสาเหตุ 3 รอบติด | 2026-07-26 |
 
 ## การตั้งชื่อ
 

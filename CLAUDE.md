@@ -42,8 +42,9 @@
 
 **งานถัดไป เรียงตามลำดับ**
 
-1. เฟส 1: **F01 ✅ · F05 ✅** — เหลือ **F03+F03b** แล้ว **F10**
-2. เฟส 2: Q01 recall collapse (ตัวชูโรง)
+1. เฟส 1: **F01 ✅ · F03+F03b ✅ · F05 ✅** — เหลือ **F10** ข้อเดียว
+2. 🔴 **ค้าง: รัน EXP01/EXP01b/EXP01c ใหม่** — ตัวเลขเดิมผูกกับ seed ก่อนแก้ E17
+3. เฟส 2: Q01 recall collapse (ตัวชูโรง)
 
 **ค้างการตัดสินใจ:** กฎเหล็กข้อ 7 — EXP01c พบว่า buffers มองไม่เห็น lossy bitmap
 (เท่ากันเป๊ะ 2301 ทั้ง 6 ค่าของ work_mem) มีข้อเสนอส่วนขยายอยู่ใน `DECISIONS.md`
@@ -195,7 +196,7 @@ extensions : vector, pg_trgm, btree_gin, pg_stat_statements, plpgsql
 roles      : lab (superuser), app, observer
 config     : fragile — max_connections=20, work_mem=64kB,
              deadlock_timeout=200ms, lc_messages=C, shared_buffers=128MB
-dataset    : orders 200,000 แถว (23 MB)
+dataset    : orders 200,000 แถว (23 MB) — seed แก้แล้ว 2026-07-26 ดู E17
 ```
 
 ## ค่า default ของ pgvector 0.8.5 (ทุกค่า setting == boot_val)

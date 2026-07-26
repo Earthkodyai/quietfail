@@ -62,10 +62,20 @@ SELECT
     r.ts,
     r.ts AT TIME ZONE 'Asia/Bangkok'          -- F09: ทิ้ง timezone ตรงนี้
 FROM generate_series(1, :rows) AS g,
+-- ⚠️ ต้องมี g อยู่ใน subquery นี้ ห้ามเอาออก
+--
+-- LATERAL ที่ไม่อ้างถึงคอลัมน์ของ g เลย ไม่ถือว่า correlated
+-- planner จึงยกไปคำนวณครั้งเดียวแล้วใช้ค่าเดิมซ้ำทุกแถว
+-- ผลคือ created_at และ total_satang มีค่าเดียวทั้ง 200,000 แถว
+-- โดยไม่มี error และจำนวนแถวถูกต้องทุกประการ (ดู E17)
+--
+-- ต้องเก็บ amt ไว้ใน subquery เดียว เพราะ total_satang กับ total_float
+-- ต้องมาจาก **ค่าเดียวกัน** ไม่งั้น F08 (float drift) วัดไม่ได้
 LATERAL (
     SELECT
         (5000 + floor(random() * 400000))::bigint AS amt,
-        now() - (random() * interval '540 days') AS ts
+        now() - (random() * interval '540 days') AS ts,
+        g AS _force_correlated
 ) AS r;
 
 -- ---------- payments: ประมาณ 5% ของ orders ----------
@@ -77,6 +87,50 @@ WHERE o.id % 20 = 0 AND o.status = 'paid';
 -- ANALYZE ตรงนี้เพื่อให้จุดเริ่มต้นสะอาด
 -- F10 (statistics เก่า) จะไปทำ bulk insert ของตัวเองแล้วจงใจไม่ ANALYZE
 ANALYZE;
+
+-- =============================================================
+-- assertion — เพิ่มหลังโดนบั๊กจริง (E17)
+--
+-- บั๊กเดิมทำให้ created_at และ total_satang มีค่าเดียวทั้งตาราง
+-- โดยที่ **จำนวนแถวถูกต้อง ชนิดถูกต้อง ไม่มี error**
+-- ตรวจแค่ count(*) จึงจับไม่ได้ ต้องตรวจว่าค่ามันหลากหลายจริง
+-- =============================================================
+DO $$
+DECLARE
+    n_ts   bigint;
+    n_amt  bigint;
+    n_mer  bigint;
+    n_rows bigint;
+BEGIN
+    SELECT count(*),
+           count(DISTINCT created_at),
+           count(DISTINCT total_satang),
+           count(DISTINCT merchant_id)
+      INTO n_rows, n_ts, n_amt, n_mer
+    FROM orders;
+
+    -- เกณฑ์หลวมๆ พอที่จะจับ "ค่าเดียวทั้งตาราง" ได้แน่นอน
+    -- แต่ไม่ผูกกับตัวเลขที่ยังไม่ได้วัด (กฎเหล็กข้อ 2)
+    IF n_ts < greatest(1000, n_rows / 100) THEN
+        RAISE EXCEPTION
+            'created_at มีค่าไม่ซ้ำแค่ % จาก % แถว — LATERAL ถูกยกไปคำนวณครั้งเดียวหรือเปล่า (ดู E17)',
+            n_ts, n_rows;
+    END IF;
+
+    IF n_amt < 1000 THEN
+        RAISE EXCEPTION
+            'total_satang มีค่าไม่ซ้ำแค่ % จาก % แถว — ดู E17', n_amt, n_rows;
+    END IF;
+
+    IF n_mer < 100 THEN
+        RAISE EXCEPTION
+            'merchant_id มีค่าไม่ซ้ำแค่ % — ความเบ้ที่ F10 ต้องใช้หายไป', n_mer;
+    END IF;
+
+    RAISE NOTICE
+        'assertion ผ่าน: % แถว · created_at ไม่ซ้ำ % · total_satang ไม่ซ้ำ % · merchant_id ไม่ซ้ำ %',
+        n_rows, n_ts, n_amt, n_mer;
+END $$;
 
 -- ---------- สรุปให้ดูว่าได้อะไรมา ----------
 SELECT 'merchants' AS t, count(*) FROM merchants

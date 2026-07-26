@@ -52,6 +52,11 @@ DECLARE
     rel       text;
     got_locks int;
     got_chain int;
+    obs_tbl   text;
+    n_f03     int;
+    n_f03b    int;
+    blk_f03   boolean;
+    blk_f03b  boolean;
 BEGIN
     FOR f IN
         SELECT name FROM pg_ls_dir('/groundtruth') AS name
@@ -141,6 +146,43 @@ BEGIN
                 INSERT INTO score_result VALUES (fid, 'NOT_DETECTED',
                     format('lock ที่ granted=false %s แถว (ต้อง >= %s) · session ที่ถูกบล็อก %s (ต้อง >= %s)',
                            got_locks, min_locks, got_chain, min_chain),
+                    NULL);
+            END IF;
+
+        -- ---- ตัวตรวจของ F03/F03b: ข้อความเดียวกัน แต่ blocker ต่างกัน ----
+        --
+        -- ต่างจาก F01/F05 ตรงที่ fault นี้เป็น "คู่เปรียบเทียบ"
+        -- ตัวตรวจจึงอ่านจากตารางสังเกตการณ์ที่ตัวฉีดเก็บไว้ ไม่ใช่สถานะสดของ DB
+        ELSIF fid = 'F03' THEN
+            obs_tbl := exp ->> 'observation_table';
+
+            IF to_regclass(obs_tbl) IS NULL THEN
+                INSERT INTO score_result VALUES (fid, 'CANNOT_CHECK',
+                    format('ไม่มีตาราง %L — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว', obs_tbl), NULL);
+                CONTINUE;
+            END IF;
+
+            EXECUTE format($f$
+                SELECT count(*) FILTER (WHERE tag = 'F03'),
+                       count(*) FILTER (WHERE tag = 'F03b'),
+                       coalesce(bool_or(cardinality(blockers) > 0) FILTER (WHERE tag = 'F03'),  false),
+                       coalesce(bool_or(cardinality(blockers) > 0) FILTER (WHERE tag = 'F03b'), false)
+                FROM %I $f$, obs_tbl)
+            INTO n_f03, n_f03b, blk_f03, blk_f03b;
+
+            -- กฎเหล็กข้อ 10: ไม่มีตัวอย่าง = ตรวจไม่ได้ ห้ามสรุปว่าไม่มี blocker
+            IF n_f03 = 0 OR n_f03b = 0 THEN
+                INSERT INTO score_result VALUES (fid, 'CANNOT_CHECK',
+                    format('ตัวอย่างไม่ครบทั้งสองเคส (F03=%s F03b=%s) — ห้ามสรุปอะไร',
+                           n_f03, n_f03b), NULL);
+            ELSIF blk_f03 AND NOT blk_f03b THEN
+                INSERT INTO score_result VALUES (fid, 'DETECTED',
+                    format('แยกได้: F03 ถูกบล็อก (%s ตัวอย่าง) · F03b ไม่ถูกบล็อกเลย (%s ตัวอย่าง)',
+                           n_f03, n_f03b),
+                    doc ->> 'correct_diagnosis');
+            ELSE
+                INSERT INTO score_result VALUES (fid, 'NOT_DETECTED',
+                    format('แยกไม่ได้: F03 blocked=%s · F03b blocked=%s', blk_f03, blk_f03b),
                     NULL);
             END IF;
 
