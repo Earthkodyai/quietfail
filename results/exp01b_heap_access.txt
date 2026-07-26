@@ -14,12 +14,12 @@ EXP01b - index selectivity with heap access required
 
             run_at             
 -------------------------------
- 2026-07-26 14:25:55.337557+07
+ 2026-07-26 23:54:31.090132+07
 (1 row)
 
  orders_size | shared_buffers 
 -------------+----------------
- 23 MB       | 128 MB
+ 29 MB       | 128 MB
 (1 row)
 
 SET
@@ -29,40 +29,40 @@ PHASE A - ไม่มี index บน merchant_id
 ============================================================
     sum     
 ------------
- 7080095664
+ 4889082777
 (1 row)
 
    sum   
 ---------
- 5371848
+ 1177165
 (1 row)
 
 
 --- A1: merchant_id = 1 (23,724 แถว) ---
-                                                   QUERY PLAN                                                    
------------------------------------------------------------------------------------------------------------------
- Aggregate  (cost=4839.65..4839.66 rows=1 width=32) (actual time=8.452..8.453 rows=1 loops=1)
-   Buffers: shared hit=2280
-   ->  Seq Scan on orders  (cost=0.00..4780.00 rows=23860 width=8) (actual time=0.005..7.412 rows=23724 loops=1)
+                                                    QUERY PLAN                                                    
+------------------------------------------------------------------------------------------------------------------
+ Aggregate  (cost=5038.97..5038.98 rows=1 width=32) (actual time=20.499..20.500 rows=1 loops=1)
+   Buffers: shared hit=2479
+   ->  Seq Scan on orders  (cost=0.00..4979.00 rows=23987 width=8) (actual time=0.014..18.679 rows=23983 loops=1)
          Filter: (merchant_id = 1)
-         Rows Removed by Filter: 176276
-         Buffers: shared hit=2280
- Planning Time: 0.033 ms
- Execution Time: 8.471 ms
+         Rows Removed by Filter: 176017
+         Buffers: shared hit=2479
+ Planning Time: 0.066 ms
+ Execution Time: 20.534 ms
 (8 rows)
 
 
 --- A2: merchant_id = 4999 (18 แถว) ---
                                                 QUERY PLAN                                                 
 -----------------------------------------------------------------------------------------------------------
- Aggregate  (cost=4780.07..4780.08 rows=1 width=32) (actual time=6.728..6.729 rows=1 loops=1)
-   Buffers: shared hit=2280
-   ->  Seq Scan on orders  (cost=0.00..4780.00 rows=27 width=8) (actual time=0.044..6.720 rows=18 loops=1)
+ Aggregate  (cost=4979.07..4979.08 rows=1 width=32) (actual time=18.777..18.780 rows=1 loops=1)
+   Buffers: shared hit=2479
+   ->  Seq Scan on orders  (cost=0.00..4979.00 rows=27 width=8) (actual time=1.383..18.741 rows=6 loops=1)
          Filter: (merchant_id = 4999)
-         Rows Removed by Filter: 199982
-         Buffers: shared hit=2280
- Planning Time: 0.035 ms
- Execution Time: 6.746 ms
+         Rows Removed by Filter: 199994
+         Buffers: shared hit=2479
+ Planning Time: 0.063 ms
+ Execution Time: 18.822 ms
 (8 rows)
 
 
@@ -78,47 +78,47 @@ ANALYZE
 
     sum     
 ------------
- 7080095664
+ 4889082777
 (1 row)
 
    sum   
 ---------
- 5371848
+ 1177165
 (1 row)
 
 
 --- B1: merchant_id = 1 (23,724 แถว) ---
                                                                   QUERY PLAN                                                                   
 -----------------------------------------------------------------------------------------------------------------------------------------------
- Aggregate  (cost=4623.57..4623.58 rows=1 width=32) (actual time=10.757..10.759 rows=1 loops=1)
-   Buffers: shared hit=2301
-   ->  Bitmap Heap Scan on orders  (cost=277.88..4563.70 rows=23947 width=8) (actual time=0.556..9.541 rows=23724 loops=1)
+ Aggregate  (cost=4863.43..4863.44 rows=1 width=32) (actual time=44.628..44.631 rows=1 loops=1)
+   Buffers: shared hit=2501
+   ->  Bitmap Heap Scan on orders  (cost=278.60..4803.33 rows=24040 width=8) (actual time=4.200..41.230 rows=23983 loops=1)
          Recheck Cond: (merchant_id = 1)
-         Rows Removed by Index Recheck: 119688
-         Heap Blocks: exact=732 lossy=1548
-         Buffers: shared hit=2301
-         ->  Bitmap Index Scan on orders_merchant_id_idx  (cost=0.00..271.90 rows=23947 width=0) (actual time=0.493..0.494 rows=23724 loops=1)
+         Rows Removed by Index Recheck: 110062
+         Heap Blocks: exact=931 lossy=1548
+         Buffers: shared hit=2501
+         ->  Bitmap Index Scan on orders_merchant_id_idx  (cost=0.00..272.59 rows=24040 width=0) (actual time=3.768..3.769 rows=23983 loops=1)
                Index Cond: (merchant_id = 1)
-               Buffers: shared hit=21
- Planning Time: 0.099 ms
- Execution Time: 10.790 ms
+               Buffers: shared hit=22
+ Planning Time: 0.646 ms
+ Execution Time: 44.771 ms
 (12 rows)
 
 
 --- B2: merchant_id = 4999 (18 แถว) ---
-                                                              QUERY PLAN                                                               
----------------------------------------------------------------------------------------------------------------------------------------
- Aggregate  (cost=104.10..104.11 rows=1 width=32) (actual time=0.031..0.032 rows=1 loops=1)
-   Buffers: shared hit=19
-   ->  Bitmap Heap Scan on orders  (cost=4.50..104.03 rows=27 width=8) (actual time=0.013..0.027 rows=18 loops=1)
+                                                              QUERY PLAN                                                              
+--------------------------------------------------------------------------------------------------------------------------------------
+ Aggregate  (cost=104.46..104.47 rows=1 width=32) (actual time=0.131..0.132 rows=1 loops=1)
+   Buffers: shared hit=8
+   ->  Bitmap Heap Scan on orders  (cost=4.50..104.39 rows=27 width=8) (actual time=0.042..0.118 rows=6 loops=1)
          Recheck Cond: (merchant_id = 4999)
-         Heap Blocks: exact=17
-         Buffers: shared hit=19
-         ->  Bitmap Index Scan on orders_merchant_id_idx  (cost=0.00..4.50 rows=27 width=0) (actual time=0.009..0.009 rows=18 loops=1)
+         Heap Blocks: exact=6
+         Buffers: shared hit=8
+         ->  Bitmap Index Scan on orders_merchant_id_idx  (cost=0.00..4.50 rows=27 width=0) (actual time=0.025..0.025 rows=6 loops=1)
                Index Cond: (merchant_id = 4999)
                Buffers: shared hit=2
- Planning Time: 0.050 ms
- Execution Time: 0.046 ms
+ Planning Time: 0.138 ms
+ Execution Time: 0.327 ms
 (11 rows)
 
 
@@ -132,18 +132,18 @@ SET
 --- C1: merchant_id = 1 บังคับใช้ index ---
                                                                   QUERY PLAN                                                                   
 -----------------------------------------------------------------------------------------------------------------------------------------------
- Aggregate  (cost=4623.57..4623.58 rows=1 width=32) (actual time=10.456..10.456 rows=1 loops=1)
-   Buffers: shared hit=2301
-   ->  Bitmap Heap Scan on orders  (cost=277.88..4563.70 rows=23947 width=8) (actual time=0.566..9.401 rows=23724 loops=1)
+ Aggregate  (cost=4863.43..4863.44 rows=1 width=32) (actual time=57.477..57.480 rows=1 loops=1)
+   Buffers: shared hit=2501
+   ->  Bitmap Heap Scan on orders  (cost=278.60..4803.33 rows=24040 width=8) (actual time=1.510..54.013 rows=23983 loops=1)
          Recheck Cond: (merchant_id = 1)
-         Rows Removed by Index Recheck: 119688
-         Heap Blocks: exact=732 lossy=1548
-         Buffers: shared hit=2301
-         ->  Bitmap Index Scan on orders_merchant_id_idx  (cost=0.00..271.90 rows=23947 width=0) (actual time=0.503..0.503 rows=23724 loops=1)
+         Rows Removed by Index Recheck: 110062
+         Heap Blocks: exact=931 lossy=1548
+         Buffers: shared hit=2501
+         ->  Bitmap Index Scan on orders_merchant_id_idx  (cost=0.00..272.59 rows=24040 width=0) (actual time=1.313..1.314 rows=23983 loops=1)
                Index Cond: (merchant_id = 1)
-               Buffers: shared hit=21
- Planning Time: 0.039 ms
- Execution Time: 10.474 ms
+               Buffers: shared hit=22
+ Planning Time: 0.116 ms
+ Execution Time: 57.531 ms
 (12 rows)
 
 RESET
@@ -155,7 +155,7 @@ PHASE D - ความแม่นของสถิติ แยกตามค
 ตรวจว่าเป็นเพราะ most-common-values list หรือไม่)
  n_mcv_tracked | n_distinct 
 ---------------+------------
-           100 |       4677
+           100 |       4695
 (1 row)
 
  merchant_1_in_mcv | merchant_4999_in_mcv 

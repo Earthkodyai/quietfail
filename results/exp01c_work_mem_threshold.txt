@@ -9,14 +9,14 @@ EXP01c - work_mem threshold for lossy bitmap
 
             run_at             
 -------------------------------
- 2026-07-26 19:44:07.939219+07
+ 2026-07-26 23:54:32.988754+07
 (1 row)
 
               name               | setting | unit 
 ---------------------------------+---------+------
  max_parallel_workers_per_gather | 2       | 
- shared_buffers                  | 32768   | 8kB
- work_mem                        | 4096    | kB
+ shared_buffers                  | 16384   | 8kB
+ work_mem                        | 64      | kB
 (3 rows)
 
  orders_rows 
@@ -29,12 +29,12 @@ CREATE INDEX
 ANALYZE
     sum     
 ------------
- 7080095664
+ 4889082777
 (1 row)
 
     sum     
 ------------
- 7080095664
+ 4889082777
 (1 row)
 
 
@@ -48,18 +48,18 @@ lossy = N -> จำแค่ว่าหน้านี้มีของ ต้
 SET
                                                                   QUERY PLAN                                                                   
 -----------------------------------------------------------------------------------------------------------------------------------------------
- Aggregate  (cost=4618.86..4618.87 rows=1 width=32) (actual time=11.749..11.751 rows=1 loops=1)
-   Buffers: shared hit=2301
-   ->  Bitmap Heap Scan on orders  (cost=273.47..4559.13 rows=23893 width=8) (actual time=0.652..10.594 rows=23724 loops=1)
+ Aggregate  (cost=4853.70..4853.71 rows=1 width=32) (actual time=23.099..23.101 rows=1 loops=1)
+   Buffers: shared hit=2501
+   ->  Bitmap Heap Scan on orders  (cost=271.14..4794.72 rows=23593 width=8) (actual time=1.462..21.336 rows=23983 loops=1)
          Recheck Cond: (merchant_id = 1)
-         Rows Removed by Index Recheck: 119688
-         Heap Blocks: exact=732 lossy=1548
-         Buffers: shared hit=2301
-         ->  Bitmap Index Scan on orders_merchant_id_idx  (cost=0.00..267.49 rows=23893 width=0) (actual time=0.580..0.581 rows=23724 loops=1)
+         Rows Removed by Index Recheck: 110062
+         Heap Blocks: exact=931 lossy=1548
+         Buffers: shared hit=2501
+         ->  Bitmap Index Scan on orders_merchant_id_idx  (cost=0.00..265.24 rows=23593 width=0) (actual time=1.149..1.150 rows=23983 loops=1)
                Index Cond: (merchant_id = 1)
-               Buffers: shared hit=21
- Planning Time: 0.056 ms
- Execution Time: 11.775 ms
+               Buffers: shared hit=22
+ Planning Time: 0.097 ms
+ Execution Time: 23.142 ms
 (12 rows)
 
 
@@ -67,18 +67,18 @@ SET
 SET
                                                                   QUERY PLAN                                                                   
 -----------------------------------------------------------------------------------------------------------------------------------------------
- Aggregate  (cost=4371.70..4371.71 rows=1 width=32) (actual time=9.872..9.873 rows=1 loops=1)
-   Buffers: shared hit=2301
-   ->  Bitmap Heap Scan on orders  (cost=273.47..4311.97 rows=23893 width=8) (actual time=0.802..8.565 rows=23724 loops=1)
+ Aggregate  (cost=4625.99..4626.00 rows=1 width=32) (actual time=23.062..23.064 rows=1 loops=1)
+   Buffers: shared hit=2501
+   ->  Bitmap Heap Scan on orders  (cost=271.14..4567.00 rows=23593 width=8) (actual time=1.061..21.254 rows=23983 loops=1)
          Recheck Cond: (merchant_id = 1)
-         Rows Removed by Index Recheck: 59978
-         Heap Blocks: exact=1505 lossy=775
-         Buffers: shared hit=2301
-         ->  Bitmap Index Scan on orders_merchant_id_idx  (cost=0.00..267.49 rows=23893 width=0) (actual time=0.634..0.635 rows=23724 loops=1)
+         Rows Removed by Index Recheck: 109966
+         Heap Blocks: exact=932 lossy=1547
+         Buffers: shared hit=2501
+         ->  Bitmap Index Scan on orders_merchant_id_idx  (cost=0.00..265.24 rows=23593 width=0) (actual time=0.915..0.915 rows=23983 loops=1)
                Index Cond: (merchant_id = 1)
-               Buffers: shared hit=21
- Planning Time: 0.057 ms
- Execution Time: 9.904 ms
+               Buffers: shared hit=22
+ Planning Time: 0.081 ms
+ Execution Time: 23.107 ms
 (12 rows)
 
 
@@ -86,18 +86,18 @@ SET
 SET
                                                                   QUERY PLAN                                                                   
 -----------------------------------------------------------------------------------------------------------------------------------------------
- Aggregate  (cost=4124.53..4124.54 rows=1 width=32) (actual time=13.348..13.350 rows=1 loops=1)
-   Buffers: shared hit=2301
-   ->  Bitmap Heap Scan on orders  (cost=273.47..4064.79 rows=23893 width=8) (actual time=0.964..11.741 rows=23724 loops=1)
+ Aggregate  (cost=4398.28..4398.29 rows=1 width=32) (actual time=22.892..22.894 rows=1 loops=1)
+   Buffers: shared hit=2501
+   ->  Bitmap Heap Scan on orders  (cost=271.14..4339.29 rows=23593 width=8) (actual time=1.539..20.812 rows=23983 loops=1)
          Recheck Cond: (merchant_id = 1)
-         Rows Removed by Index Recheck: 79956
-         Heap Blocks: exact=1247 lossy=1033
-         Buffers: shared hit=2301
-         ->  Bitmap Index Scan on orders_merchant_id_idx  (cost=0.00..267.49 rows=23893 width=0) (actual time=0.807..0.808 rows=23724 loops=1)
+         Rows Removed by Index Recheck: 73470
+         Heap Blocks: exact=1446 lossy=1033
+         Buffers: shared hit=2501
+         ->  Bitmap Index Scan on orders_merchant_id_idx  (cost=0.00..265.24 rows=23593 width=0) (actual time=1.257..1.258 rows=23983 loops=1)
                Index Cond: (merchant_id = 1)
-               Buffers: shared hit=21
- Planning Time: 0.105 ms
- Execution Time: 13.401 ms
+               Buffers: shared hit=22
+ Planning Time: 0.295 ms
+ Execution Time: 22.942 ms
 (12 rows)
 
 
@@ -105,17 +105,17 @@ SET
 SET
                                                                   QUERY PLAN                                                                   
 -----------------------------------------------------------------------------------------------------------------------------------------------
- Aggregate  (cost=2911.86..2911.87 rows=1 width=32) (actual time=7.228..7.229 rows=1 loops=1)
-   Buffers: shared hit=2301
-   ->  Bitmap Heap Scan on orders  (cost=273.47..2852.13 rows=23893 width=8) (actual time=0.952..5.701 rows=23724 loops=1)
+ Aggregate  (cost=3104.04..3104.05 rows=1 width=32) (actual time=10.984..10.986 rows=1 loops=1)
+   Buffers: shared hit=2501
+   ->  Bitmap Heap Scan on orders  (cost=271.14..3045.05 rows=23593 width=8) (actual time=1.753..9.422 rows=23983 loops=1)
          Recheck Cond: (merchant_id = 1)
-         Heap Blocks: exact=2280
-         Buffers: shared hit=2301
-         ->  Bitmap Index Scan on orders_merchant_id_idx  (cost=0.00..267.49 rows=23893 width=0) (actual time=0.670..0.670 rows=23724 loops=1)
+         Heap Blocks: exact=2479
+         Buffers: shared hit=2501
+         ->  Bitmap Index Scan on orders_merchant_id_idx  (cost=0.00..265.24 rows=23593 width=0) (actual time=1.353..1.353 rows=23983 loops=1)
                Index Cond: (merchant_id = 1)
-               Buffers: shared hit=21
- Planning Time: 0.061 ms
- Execution Time: 7.260 ms
+               Buffers: shared hit=22
+ Planning Time: 0.244 ms
+ Execution Time: 11.055 ms
 (11 rows)
 
 
@@ -123,17 +123,17 @@ SET
 SET
                                                                   QUERY PLAN                                                                   
 -----------------------------------------------------------------------------------------------------------------------------------------------
- Aggregate  (cost=2911.86..2911.87 rows=1 width=32) (actual time=5.960..5.961 rows=1 loops=1)
-   Buffers: shared hit=2301
-   ->  Bitmap Heap Scan on orders  (cost=273.47..2852.13 rows=23893 width=8) (actual time=0.728..4.535 rows=23724 loops=1)
+ Aggregate  (cost=3104.04..3104.05 rows=1 width=32) (actual time=13.571..13.574 rows=1 loops=1)
+   Buffers: shared hit=2501
+   ->  Bitmap Heap Scan on orders  (cost=271.14..3045.05 rows=23593 width=8) (actual time=1.401..11.435 rows=23983 loops=1)
          Recheck Cond: (merchant_id = 1)
-         Heap Blocks: exact=2280
-         Buffers: shared hit=2301
-         ->  Bitmap Index Scan on orders_merchant_id_idx  (cost=0.00..267.49 rows=23893 width=0) (actual time=0.508..0.508 rows=23724 loops=1)
+         Heap Blocks: exact=2479
+         Buffers: shared hit=2501
+         ->  Bitmap Index Scan on orders_merchant_id_idx  (cost=0.00..265.24 rows=23593 width=0) (actual time=0.960..0.961 rows=23983 loops=1)
                Index Cond: (merchant_id = 1)
-               Buffers: shared hit=21
- Planning Time: 0.055 ms
- Execution Time: 5.986 ms
+               Buffers: shared hit=22
+ Planning Time: 0.095 ms
+ Execution Time: 13.621 ms
 (11 rows)
 
 
@@ -141,17 +141,17 @@ SET
 SET
                                                                   QUERY PLAN                                                                   
 -----------------------------------------------------------------------------------------------------------------------------------------------
- Aggregate  (cost=2911.86..2911.87 rows=1 width=32) (actual time=7.581..7.583 rows=1 loops=1)
-   Buffers: shared hit=2301
-   ->  Bitmap Heap Scan on orders  (cost=273.47..2852.13 rows=23893 width=8) (actual time=0.919..5.977 rows=23724 loops=1)
+ Aggregate  (cost=3104.04..3104.05 rows=1 width=32) (actual time=11.664..11.666 rows=1 loops=1)
+   Buffers: shared hit=2501
+   ->  Bitmap Heap Scan on orders  (cost=271.14..3045.05 rows=23593 width=8) (actual time=1.302..9.756 rows=23983 loops=1)
          Recheck Cond: (merchant_id = 1)
-         Heap Blocks: exact=2280
-         Buffers: shared hit=2301
-         ->  Bitmap Index Scan on orders_merchant_id_idx  (cost=0.00..267.49 rows=23893 width=0) (actual time=0.646..0.646 rows=23724 loops=1)
+         Heap Blocks: exact=2479
+         Buffers: shared hit=2501
+         ->  Bitmap Index Scan on orders_merchant_id_idx  (cost=0.00..265.24 rows=23593 width=0) (actual time=0.892..0.893 rows=23983 loops=1)
                Index Cond: (merchant_id = 1)
-               Buffers: shared hit=21
- Planning Time: 0.060 ms
- Execution Time: 7.614 ms
+               Buffers: shared hit=22
+ Planning Time: 0.072 ms
+ Execution Time: 11.708 ms
 (11 rows)
 
 

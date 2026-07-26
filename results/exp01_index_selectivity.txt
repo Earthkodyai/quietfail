@@ -19,7 +19,7 @@ EXP01 - index selectivity
 
             run_at             
 -------------------------------
- 2026-07-26 14:10:29.968268+07
+ 2026-07-26 23:54:29.537009+07
 (1 row)
 
               name               | setting 
@@ -40,13 +40,13 @@ EXP01 - index selectivity
 
  orders_size 
 -------------
- 23 MB
+ 29 MB
 (1 row)
 
  merchant_id | actual_rows 
 -------------+-------------
-        4999 |          18
-           1 |       23724
+        4999 |           6
+           1 |       23983
 (2 rows)
 
 
@@ -63,36 +63,36 @@ PHASE A - ก่อนมี index บน merchant_id
 ============================================================
 
 --- A1: merchant_id = 1 (แถวเยอะ) ---
-                                                              QUERY PLAN                                                              
---------------------------------------------------------------------------------------------------------------------------------------
- Finalize Aggregate  (cost=4785.96..4785.97 rows=1 width=8) (actual time=9.681..11.886 rows=1 loops=1)
-   Buffers: shared hit=2280
-   ->  Gather  (cost=4785.84..4785.95 rows=1 width=8) (actual time=9.512..11.880 rows=2 loops=1)
+                                                              QUERY PLAN                                                               
+---------------------------------------------------------------------------------------------------------------------------------------
+ Finalize Aggregate  (cost=4985.22..4985.23 rows=1 width=8) (actual time=19.428..24.459 rows=1 loops=1)
+   Buffers: shared hit=2479
+   ->  Gather  (cost=4985.11..4985.22 rows=1 width=8) (actual time=19.108..24.446 rows=2 loops=1)
          Workers Planned: 1
          Workers Launched: 1
-         Buffers: shared hit=2280
-         ->  Partial Aggregate  (cost=3785.84..3785.85 rows=1 width=8) (actual time=7.301..7.302 rows=1 loops=2)
-               Buffers: shared hit=2280
-               ->  Parallel Seq Scan on orders  (cost=0.00..3750.59 rows=14102 width=0) (actual time=0.008..6.572 rows=11862 loops=2)
+         Buffers: shared hit=2479
+         ->  Partial Aggregate  (cost=3985.11..3985.12 rows=1 width=8) (actual time=15.079..15.081 rows=1 loops=2)
+               Buffers: shared hit=2479
+               ->  Parallel Seq Scan on orders  (cost=0.00..3949.59 rows=14208 width=0) (actual time=0.018..14.048 rows=11992 loops=2)
                      Filter: (merchant_id = 1)
-                     Rows Removed by Filter: 88138
-                     Buffers: shared hit=2280
- Planning Time: 0.071 ms
- Execution Time: 11.926 ms
+                     Rows Removed by Filter: 88008
+                     Buffers: shared hit=2479
+ Planning Time: 0.111 ms
+ Execution Time: 24.509 ms
 (14 rows)
 
 
 --- A2: merchant_id = 4999 (แถวน้อย) ---
                                                 QUERY PLAN                                                 
 -----------------------------------------------------------------------------------------------------------
- Aggregate  (cost=4780.07..4780.08 rows=1 width=8) (actual time=6.811..6.812 rows=1 loops=1)
-   Buffers: shared hit=2280
-   ->  Seq Scan on orders  (cost=0.00..4780.00 rows=27 width=0) (actual time=0.043..6.806 rows=18 loops=1)
+ Aggregate  (cost=4979.07..4979.08 rows=1 width=8) (actual time=22.029..22.032 rows=1 loops=1)
+   Buffers: shared hit=2479
+   ->  Seq Scan on orders  (cost=0.00..4979.00 rows=27 width=0) (actual time=2.562..21.999 rows=6 loops=1)
          Filter: (merchant_id = 4999)
-         Rows Removed by Filter: 199982
-         Buffers: shared hit=2280
- Planning Time: 0.044 ms
- Execution Time: 6.828 ms
+         Rows Removed by Filter: 199994
+         Buffers: shared hit=2479
+ Planning Time: 0.098 ms
+ Execution Time: 22.091 ms
 (8 rows)
 
 
@@ -112,35 +112,35 @@ ANALYZE
 --- B1: merchant_id = 1 (แถวเยอะ) ---
                                                                      QUERY PLAN                                                                     
 ----------------------------------------------------------------------------------------------------------------------------------------------------
- Aggregate  (cost=565.50..565.50 rows=1 width=8) (actual time=1.882..1.882 rows=1 loops=1)
-   Buffers: shared hit=4 read=21
-   I/O Timings: shared read=0.089
-   ->  Index Only Scan using orders_merchant_id_idx on orders  (cost=0.29..505.84 rows=23860 width=0) (actual time=0.022..1.117 rows=23724 loops=1)
+ Aggregate  (cost=584.03..584.04 rows=1 width=8) (actual time=4.061..4.063 rows=1 loops=1)
+   Buffers: shared hit=6 read=22
+   I/O Timings: shared read=0.350
+   ->  Index Only Scan using orders_merchant_id_idx on orders  (cost=0.29..524.07 rows=23987 width=0) (actual time=0.048..2.630 rows=23983 loops=1)
          Index Cond: (merchant_id = 1)
-         Heap Fetches: 0
-         Buffers: shared hit=4 read=21
-         I/O Timings: shared read=0.089
+         Heap Fetches: 16
+         Buffers: shared hit=6 read=22
+         I/O Timings: shared read=0.350
  Planning:
    Buffers: shared hit=5 read=1
-   I/O Timings: shared read=0.015
- Planning Time: 0.076 ms
- Execution Time: 1.895 ms
+   I/O Timings: shared read=0.046
+ Planning Time: 0.229 ms
+ Execution Time: 4.098 ms
 (13 rows)
 
 
 --- B2: merchant_id = 4999 (แถวน้อย) ---
-                                                                 QUERY PLAN                                                                 
---------------------------------------------------------------------------------------------------------------------------------------------
- Aggregate  (cost=4.83..4.84 rows=1 width=8) (actual time=0.025..0.025 rows=1 loops=1)
+                                                                QUERY PLAN                                                                 
+-------------------------------------------------------------------------------------------------------------------------------------------
+ Aggregate  (cost=8.84..8.85 rows=1 width=8) (actual time=0.053..0.054 rows=1 loops=1)
    Buffers: shared hit=2 read=1
-   I/O Timings: shared read=0.013
-   ->  Index Only Scan using orders_merchant_id_idx on orders  (cost=0.29..4.77 rows=27 width=0) (actual time=0.021..0.022 rows=18 loops=1)
+   I/O Timings: shared read=0.029
+   ->  Index Only Scan using orders_merchant_id_idx on orders  (cost=0.29..8.77 rows=27 width=0) (actual time=0.047..0.048 rows=6 loops=1)
          Index Cond: (merchant_id = 4999)
          Heap Fetches: 0
          Buffers: shared hit=2 read=1
-         I/O Timings: shared read=0.013
- Planning Time: 0.038 ms
- Execution Time: 0.036 ms
+         I/O Timings: shared read=0.029
+ Planning Time: 0.077 ms
+ Execution Time: 0.078 ms
 (10 rows)
 
 
@@ -154,28 +154,28 @@ SET
 --- C1: merchant_id = 1 ---
                                                                      QUERY PLAN                                                                     
 ----------------------------------------------------------------------------------------------------------------------------------------------------
- Aggregate  (cost=565.50..565.50 rows=1 width=8) (actual time=1.741..1.741 rows=1 loops=1)
-   Buffers: shared hit=22
-   ->  Index Only Scan using orders_merchant_id_idx on orders  (cost=0.29..505.84 rows=23860 width=0) (actual time=0.010..1.004 rows=23724 loops=1)
+ Aggregate  (cost=584.03..584.04 rows=1 width=8) (actual time=3.795..3.797 rows=1 loops=1)
+   Buffers: shared hit=25
+   ->  Index Only Scan using orders_merchant_id_idx on orders  (cost=0.29..524.07 rows=23987 width=0) (actual time=0.020..2.226 rows=23983 loops=1)
          Index Cond: (merchant_id = 1)
-         Heap Fetches: 0
-         Buffers: shared hit=22
- Planning Time: 0.034 ms
- Execution Time: 1.752 ms
+         Heap Fetches: 16
+         Buffers: shared hit=25
+ Planning Time: 0.068 ms
+ Execution Time: 3.836 ms
 (8 rows)
 
 
 --- C2: merchant_id = 4999 ---
-                                                                 QUERY PLAN                                                                 
---------------------------------------------------------------------------------------------------------------------------------------------
- Aggregate  (cost=4.83..4.84 rows=1 width=8) (actual time=0.013..0.014 rows=1 loops=1)
+                                                                QUERY PLAN                                                                 
+-------------------------------------------------------------------------------------------------------------------------------------------
+ Aggregate  (cost=8.84..8.85 rows=1 width=8) (actual time=0.020..0.021 rows=1 loops=1)
    Buffers: shared hit=3
-   ->  Index Only Scan using orders_merchant_id_idx on orders  (cost=0.29..4.77 rows=27 width=0) (actual time=0.008..0.010 rows=18 loops=1)
+   ->  Index Only Scan using orders_merchant_id_idx on orders  (cost=0.29..8.77 rows=27 width=0) (actual time=0.014..0.016 rows=6 loops=1)
          Index Cond: (merchant_id = 4999)
          Heap Fetches: 0
          Buffers: shared hit=3
- Planning Time: 0.041 ms
- Execution Time: 0.028 ms
+ Planning Time: 0.075 ms
+ Execution Time: 0.043 ms
 (8 rows)
 
 RESET
