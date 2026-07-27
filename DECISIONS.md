@@ -555,6 +555,58 @@ F03b : ERROR:  canceling statement due to statement timeout
 
 ---
 
+## E28 — ทางแก้ของ I05 มี failure mode ของตัวเอง และ error ชี้ผิดที่ (2026-07-27)
+
+ตอนทำ I05 ตั้งใจไล่ `maintenance_work_mem` ถึง 1GB เพื่อเป็นกลุ่มควบคุม
+build ล้มเหลวด้วย:
+
+```
+ERROR:  could not resize shared memory segment "/PostgreSQL.2192554940"
+        to 1070633728 bytes: No space left on device
+```
+
+**อ่านแล้วเข้าใจว่าดิสก์เต็ม** — ของจริงคือ `/dev/shm` ของคอนเทนเนอร์เต็ม
+`docker-compose.yml` ตั้ง `shm_size: 256mb` ส่วน HNSW build แบบขนาน
+จอง dynamic shared memory ตามขนาด `maintenance_work_mem`
+ที่ 1GB จึงขอ DSM ~1GB บน shm ที่มี 256MB
+
+**ยืนยันกลไกด้วยการทดลอง ไม่ใช่เดา:**
+```sql
+SET maintenance_work_mem = '1GB';
+SET max_parallel_maintenance_workers = 0;   -- ปิด parallel build
+CREATE INDEX ... USING hnsw ...;            -- ผ่านทันที
+```
+ปิด parallel แล้วผ่าน → ตัวแปรคือ DSM ของ parallel build จริง
+(`max_parallel_workers_per_gather = 0` ที่ตั้งไว้แล้วไม่ช่วย เพราะคุมคนละอย่าง —
+มันคุม parallel ของ **query** ส่วน build ใช้ `max_parallel_maintenance_workers`)
+
+### ทำไมข้อนี้มีค่าเกินกว่าจะเป็นแค่บั๊กของ harness
+
+**ทางแก้ที่เอกสารแนะนำสำหรับ I05 คือ "เพิ่ม `maintenance_work_mem`"**
+แต่เพิ่มมากไปในคอนเทนเนอร์ที่ `shm` เล็ก จะทำให้ `CREATE INDEX` **ล้มเหลวไปเลย**
+จากเดิมที่แค่ช้า
+
+| ค่า | ผลลัพธ์ |
+|---|---|
+| ต่ำเกิน | build ช้า + NOTICE เตือน (คือ I05) |
+| พอดี | build เร็ว ไม่มี NOTICE |
+| **สูงเกิน shm** | **build ล้มเหลวทั้งหมด · error ชี้ไปที่ดิสก์** |
+
+**และข้อความ error ชี้ผิดที่** — พูดถึง "No space left on device"
+ทั้งที่ดิสก์ว่าง คนที่เจอจะไปไล่ดู disk usage ก่อนเสมอ
+เป็นตระกูลเดียวกับ **F03** (error เดียวกัน คนละสาเหตุ) และ **E10**
+(`l2_norm ... is not unique` ที่ต้นเหตุคือไม่มี overload เลย)
+
+**บทเรียนสำหรับรายงาน:** ความล้มเหลวเงียบไม่ได้แก้ด้วยการหมุนพารามิเตอร์ขึ้น
+พารามิเตอร์ทุกตัวมีเพดานที่มาจากที่อื่นในระบบ และเพดานนั้นมักไม่อยู่ในเอกสารของ pgvector
+เพราะมันเป็นข้อจำกัดของคอนเทนเนอร์ ไม่ใช่ของ pgvector
+
+**ผลต่อการออกแบบ I05:** ใช้ `64MB / 128MB / 256MB` แทน
+256MB ไม่มี NOTICE แล้ว จึงเป็นกลุ่มควบคุมที่ใช้ได้ และอยู่ในเพดาน shm
+พร้อมให้สคริปต์แยก **"ชนข้อจำกัดสภาพแวดล้อม"** ออกจาก **"fault ไม่เกิด"** ให้ชัด
+
+---
+
 ## E26 — `2>/dev/null` กลบความล้มเหลวเป็นครั้งที่สามในวันเดียว (2026-07-27)
 
 harness ของ I01 รัน 4 รอบ assertion ผ่าน 4/4 ทุกรอบ
