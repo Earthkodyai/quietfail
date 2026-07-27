@@ -1,0 +1,169 @@
+============================================================
+V07 - NULL and zero vectors are never indexed, rows vanish
+============================================================
+PostgreSQL 17.10 (Debian 17.10-1.pgdg12+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 12.2.0-14+deb12u1) 12.2.0, 64-bit
+2026-07-27 14:11:25.423725+07
+image_tag : pgvector/pgvector:0.8.5-pg17 · profile: fragile
+
+############################ RUN 1 ############################
+=== ตารางทดลอง: 500 แถวปกติ + 5 NULL + 5 zero = 510 แถว ===
+   kind   | rows 
+----------+------
+ good     |  500
+ null_vec |    5
+ zero_vec |    5
+(3 rows)
+--- ตรวจว่าข้อมูลเสียจริง: cosine distance ของแต่ละชนิด ---
+   kind   | rows | is_null | norm_zero 
+----------+------+---------+-----------
+ good     |  500 |       0 |         0
+ null_vec |    5 |       5 |         0
+ zero_vec |    5 |       0 |         5
+(3 rows)
+=== A) ไม่มี index (exact search) · ขอ 510 แถว ===
+=== B) มี HNSW (vector_cosine_ops) · ขอ 510 แถว ===
+=== ผล: แถวชนิดไหนโผล่บ้าง ===
+      phase       | path  | ขอ  | ได้  | ปกติ | NULL | zero 
+------------------+-------+-----+-----+-----+------+------
+ A no index       | exact | 510 | 510 | 500 |    5 |    5
+ B exact fallback | exact | 510 | 510 | 500 |    5 |    5
+ B with index     | index | 510 | 500 | 500 |    0 |    0
+(3 rows)
+psql:/sql/v07_null_zero_vectors.sql:196: NOTICE:  [1/4] OK exact search เห็นครบ 510 แถว (ปกติ 500 · NULL 5 · zero 5)
+psql:/sql/v07_null_zero_vectors.sql:196: NOTICE:  [2/4] OK index ไม่คืนแถว NULL และ zero เลยสักแถว
+psql:/sql/v07_null_zero_vectors.sql:196: NOTICE:  [3/4] OK index คืนแถวปกติครบ 500 แถว → หายเฉพาะแถวเสียจริง
+psql:/sql/v07_null_zero_vectors.sql:196: NOTICE:  [4/4] OK หายไป 10 แถว = จำนวนแถวเสียพอดี (NULL 5 + zero 5)
+psql:/sql/v07_null_zero_vectors.sql:196: NOTICE:  assertion ผ่านครบ 4 ข้อ
+=== แถวเสียหายไปจากผลค้นหาอย่างถาวร โดยไม่มี error ===
+=== zero vector: cosine distance = NaN · NULL vector: distance = NULL ===
+=== ทั้งคู่ไม่เข้า index → ไม่มีวันโผล่ในผลที่ใช้ index ===
+=== และไม่มีพารามิเตอร์ตัวไหนแก้ได้ เพราะเป็นปัญหาคุณภาพข้อมูล ===
+exit: 0
+---- ตัวตรวจ static: มีแถวเสีย (ต้อง DETECTED) ----
+ V07      | DETECTED | ตาราง qf_v07 มี 510 แถว · NULL vector 5 แถว · zero vector 5 แถว → 10 แถวนี้จะไม่โผล่ในผลค้นหาที่ใช้ index เลย
+---- ตัวตรวจ static: ลบแถวเสียออก (ต้องพลิกเป็น NOT_DETECTED) ----
+ V07      | DETECTED | ตาราง qf_v07 มี 510 แถว · NULL vector 5 แถว · zero vector 5 แถว → 10 แถวนี้จะไม่โผล่ในผลค้นหาที่ใช้ index เลย
+
+############################ RUN 2 ############################
+=== ตารางทดลอง: 500 แถวปกติ + 5 NULL + 5 zero = 510 แถว ===
+   kind   | rows 
+----------+------
+ good     |  500
+ null_vec |    5
+ zero_vec |    5
+(3 rows)
+--- ตรวจว่าข้อมูลเสียจริง: cosine distance ของแต่ละชนิด ---
+   kind   | rows | is_null | norm_zero 
+----------+------+---------+-----------
+ good     |  500 |       0 |         0
+ null_vec |    5 |       5 |         0
+ zero_vec |    5 |       0 |         5
+(3 rows)
+=== A) ไม่มี index (exact search) · ขอ 510 แถว ===
+=== B) มี HNSW (vector_cosine_ops) · ขอ 510 แถว ===
+=== ผล: แถวชนิดไหนโผล่บ้าง ===
+      phase       | path  | ขอ  | ได้  | ปกติ | NULL | zero 
+------------------+-------+-----+-----+-----+------+------
+ A no index       | exact | 510 | 510 | 500 |    5 |    5
+ B exact fallback | exact | 510 | 510 | 500 |    5 |    5
+ B with index     | index | 510 | 500 | 500 |    0 |    0
+(3 rows)
+psql:/sql/v07_null_zero_vectors.sql:196: NOTICE:  [1/4] OK exact search เห็นครบ 510 แถว (ปกติ 500 · NULL 5 · zero 5)
+psql:/sql/v07_null_zero_vectors.sql:196: NOTICE:  [2/4] OK index ไม่คืนแถว NULL และ zero เลยสักแถว
+psql:/sql/v07_null_zero_vectors.sql:196: NOTICE:  [3/4] OK index คืนแถวปกติครบ 500 แถว → หายเฉพาะแถวเสียจริง
+psql:/sql/v07_null_zero_vectors.sql:196: NOTICE:  [4/4] OK หายไป 10 แถว = จำนวนแถวเสียพอดี (NULL 5 + zero 5)
+psql:/sql/v07_null_zero_vectors.sql:196: NOTICE:  assertion ผ่านครบ 4 ข้อ
+=== แถวเสียหายไปจากผลค้นหาอย่างถาวร โดยไม่มี error ===
+=== zero vector: cosine distance = NaN · NULL vector: distance = NULL ===
+=== ทั้งคู่ไม่เข้า index → ไม่มีวันโผล่ในผลที่ใช้ index ===
+=== และไม่มีพารามิเตอร์ตัวไหนแก้ได้ เพราะเป็นปัญหาคุณภาพข้อมูล ===
+exit: 0
+---- ตัวตรวจ static: มีแถวเสีย (ต้อง DETECTED) ----
+ V07      | DETECTED | ตาราง qf_v07 มี 510 แถว · NULL vector 5 แถว · zero vector 5 แถว → 10 แถวนี้จะไม่โผล่ในผลค้นหาที่ใช้ index เลย
+---- ตัวตรวจ static: ลบแถวเสียออก (ต้องพลิกเป็น NOT_DETECTED) ----
+ V07      | DETECTED | ตาราง qf_v07 มี 510 แถว · NULL vector 5 แถว · zero vector 5 แถว → 10 แถวนี้จะไม่โผล่ในผลค้นหาที่ใช้ index เลย
+
+############################ RUN 3 ############################
+=== ตารางทดลอง: 500 แถวปกติ + 5 NULL + 5 zero = 510 แถว ===
+   kind   | rows 
+----------+------
+ good     |  500
+ null_vec |    5
+ zero_vec |    5
+(3 rows)
+--- ตรวจว่าข้อมูลเสียจริง: cosine distance ของแต่ละชนิด ---
+   kind   | rows | is_null | norm_zero 
+----------+------+---------+-----------
+ good     |  500 |       0 |         0
+ null_vec |    5 |       5 |         0
+ zero_vec |    5 |       0 |         5
+(3 rows)
+=== A) ไม่มี index (exact search) · ขอ 510 แถว ===
+=== B) มี HNSW (vector_cosine_ops) · ขอ 510 แถว ===
+=== ผล: แถวชนิดไหนโผล่บ้าง ===
+      phase       | path  | ขอ  | ได้  | ปกติ | NULL | zero 
+------------------+-------+-----+-----+-----+------+------
+ A no index       | exact | 510 | 510 | 500 |    5 |    5
+ B exact fallback | exact | 510 | 510 | 500 |    5 |    5
+ B with index     | index | 510 | 500 | 500 |    0 |    0
+(3 rows)
+psql:/sql/v07_null_zero_vectors.sql:196: NOTICE:  [1/4] OK exact search เห็นครบ 510 แถว (ปกติ 500 · NULL 5 · zero 5)
+psql:/sql/v07_null_zero_vectors.sql:196: NOTICE:  [2/4] OK index ไม่คืนแถว NULL และ zero เลยสักแถว
+psql:/sql/v07_null_zero_vectors.sql:196: NOTICE:  [3/4] OK index คืนแถวปกติครบ 500 แถว → หายเฉพาะแถวเสียจริง
+psql:/sql/v07_null_zero_vectors.sql:196: NOTICE:  [4/4] OK หายไป 10 แถว = จำนวนแถวเสียพอดี (NULL 5 + zero 5)
+psql:/sql/v07_null_zero_vectors.sql:196: NOTICE:  assertion ผ่านครบ 4 ข้อ
+=== แถวเสียหายไปจากผลค้นหาอย่างถาวร โดยไม่มี error ===
+=== zero vector: cosine distance = NaN · NULL vector: distance = NULL ===
+=== ทั้งคู่ไม่เข้า index → ไม่มีวันโผล่ในผลที่ใช้ index ===
+=== และไม่มีพารามิเตอร์ตัวไหนแก้ได้ เพราะเป็นปัญหาคุณภาพข้อมูล ===
+exit: 0
+---- ตัวตรวจ static: มีแถวเสีย (ต้อง DETECTED) ----
+ V07      | DETECTED | ตาราง qf_v07 มี 510 แถว · NULL vector 5 แถว · zero vector 5 แถว → 10 แถวนี้จะไม่โผล่ในผลค้นหาที่ใช้ index เลย
+---- ตัวตรวจ static: ลบแถวเสียออก (ต้องพลิกเป็น NOT_DETECTED) ----
+ V07      | DETECTED | ตาราง qf_v07 มี 510 แถว · NULL vector 5 แถว · zero vector 5 แถว → 10 แถวนี้จะไม่โผล่ในผลค้นหาที่ใช้ index เลย
+
+---- corpus ที่ล็อกไว้ต้องไม่ถูกแตะ ----
+ERROR:  syntax error at or near "\"
+LINE 1: SELECT E\047qf_corpus=\047 || count(*) FROM qf_corpus
+                ^
+ERROR:  syntax error at or near "\"
+LINE 1: SELECT value FROM qf_manifest WHERE item = E\047corpus_finge...
+                                                    ^
+>>> DONE
+
+############################ ตัวตรวจ static 3 สถานะ — 3 รอบติด ############################
+(รอบใน RUN 1-3 พลิกไม่ได้เพราะ DELETE ที่มี quote ใน bash -c ไม่ทำงาน — กฎข้อ 2 อีกครั้ง)
+---- CHECKER RUN 1 ----
+--- สถานะ 1: มีแถวเสีย -> ต้องได้ DETECTED ---
+ V07      | DETECTED | ตาราง qf_v07 มี 510 แถว · NULL vector 5 แถว · zero vector 5 แถว → 10 แถวนี้จะไม่โผล่ในผลค้นหาที่ใช้ index เลย
+--- สถานะ 2: ลบแถวเสียออก -> ต้องพลิกเป็น NOT_DETECTED ---
+ V07      | NOT_DETECTED | ตาราง qf_v07 มี 500 แถว · ไม่มี NULL หรือ zero vector เลย
+--- สถานะ 3: ไม่มีตารางเลย -> ต้องได้ CANNOT_CHECK ---
+ V07      | CANNOT_CHECK | หาตาราง 'qf_v07' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+ qf_corpus_rows 
+         100000
+        corpus_fingerprint        
+ 5a32cba54ea2be4ed022fe8bfedae9b0
+---- CHECKER RUN 2 ----
+--- สถานะ 1: มีแถวเสีย -> ต้องได้ DETECTED ---
+ V07      | DETECTED | ตาราง qf_v07 มี 510 แถว · NULL vector 5 แถว · zero vector 5 แถว → 10 แถวนี้จะไม่โผล่ในผลค้นหาที่ใช้ index เลย
+--- สถานะ 2: ลบแถวเสียออก -> ต้องพลิกเป็น NOT_DETECTED ---
+ V07      | NOT_DETECTED | ตาราง qf_v07 มี 500 แถว · ไม่มี NULL หรือ zero vector เลย
+--- สถานะ 3: ไม่มีตารางเลย -> ต้องได้ CANNOT_CHECK ---
+ V07      | CANNOT_CHECK | หาตาราง 'qf_v07' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+ qf_corpus_rows 
+         100000
+        corpus_fingerprint        
+ 5a32cba54ea2be4ed022fe8bfedae9b0
+---- CHECKER RUN 3 ----
+--- สถานะ 1: มีแถวเสีย -> ต้องได้ DETECTED ---
+ V07      | DETECTED | ตาราง qf_v07 มี 510 แถว · NULL vector 5 แถว · zero vector 5 แถว → 10 แถวนี้จะไม่โผล่ในผลค้นหาที่ใช้ index เลย
+--- สถานะ 2: ลบแถวเสียออก -> ต้องพลิกเป็น NOT_DETECTED ---
+ V07      | NOT_DETECTED | ตาราง qf_v07 มี 500 แถว · ไม่มี NULL หรือ zero vector เลย
+--- สถานะ 3: ไม่มีตารางเลย -> ต้องได้ CANNOT_CHECK ---
+ V07      | CANNOT_CHECK | หาตาราง 'qf_v07' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+ qf_corpus_rows 
+         100000
+        corpus_fingerprint        
+ 5a32cba54ea2be4ed022fe8bfedae9b0
+>>> CHECKER DONE

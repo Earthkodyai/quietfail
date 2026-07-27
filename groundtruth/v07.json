@@ -1,0 +1,70 @@
+{
+  "fault_id": "V07",
+  "group": "E_data_quality",
+  "name": "null_or_zero_vectors_never_indexed",
+
+  "true_cause": "null_and_zero_vectors_excluded_from_index",
+  "true_cause_th": "NULL vector ไม่ถูก index · zero vector ไม่ถูก index เมื่อใช้ cosine เพราะ distance เป็น NaN",
+
+  "surface_symptom": "บางแถวไม่เคยโผล่ในผลค้นหาเลยตลอดกาล โดยไม่มี error",
+
+  "why_tuning_cannot_find_it_th": "ข้อนี้เป็นปัญหา **คุณภาพข้อมูล** ไม่ใช่การตั้งค่า — ไม่มีพารามิเตอร์ตัวไหน (ef_search, probes, m, ef_construction) เกี่ยวข้องเลย ทีมที่จูน index เก่งแค่ไหนก็ไม่มีทางเจอ",
+
+  "measured_behaviour": {
+    "zero_cosine_normal": "NaN",
+    "null_cosine_normal": "NULL",
+    "vector_norm_zero": 0,
+    "note_th": "ทั้ง NaN และ NULL เรียงไปท้ายสุดใน ORDER BY ASC → exact search ยังเห็น แต่ index ไม่เคยเก็บไว้ตั้งแต่แรก"
+  },
+
+  "misleading_fixes": [
+    "จูน ef_search / probes / m",
+    "rebuild index",
+    "เปลี่ยน embedding model",
+    "เพิ่ม LIMIT"
+  ],
+
+  "correct_diagnosis": "นับแถวที่ embedding IS NULL หรือ vector_norm(embedding) = 0 — ตรวจได้แบบ static ล้วน ไม่ต้องรัน query ค้นหา ไม่ต้องมี index",
+
+  "correct_fix_th": "แก้ที่ pipeline: อย่าใส่ศูนย์แทนเมื่อ embedding ล้มเหลว ให้โยน error หรือกันแถวนั้นออก · และเพิ่ม constraint กันไม่ให้ zero vector เข้าตารางตั้งแต่แรก",
+
+  "evidence_query": "SELECT count(*) FILTER (WHERE embedding IS NULL) AS null_rows, count(*) FILTER (WHERE embedding IS NOT NULL AND vector_norm(embedding) = 0) AS zero_rows FROM qf_v07",
+
+  "evidence_expectation": {
+    "target_table": "qf_v07",
+    "vector_column": "embedding",
+    "detect_when": "มีแถวที่ embedding IS NULL หรือ vector_norm = 0 อย่างน้อย 1 แถว"
+  },
+
+  "static_check_note_th": "ตรวจง่ายที่สุดในบรรดา fault ทั้ง 16 ข้อ — ไม่ต้องรัน query ค้นหา ไม่ต้องมี index ไม่ต้องมีเฉลย แค่ SELECT count(*) บนตารางที่มีคอลัมน์ vector · ต้อง LOAD 'vector' ก่อนเพราะใช้ vector_norm()",
+
+  "measured_2026_07_27": {
+    "table_rows": 510,
+    "good_rows": 500,
+    "null_rows": 5,
+    "zero_rows": 5,
+    "exact_no_index": {"asked": 510, "got": 510, "good": 500, "null": 5, "zero": 5},
+    "exact_with_index_present": {"asked": 510, "got": 510, "good": 500, "null": 5, "zero": 5},
+    "index_path": {"asked": 510, "got": 500, "good": 500, "null": 0, "zero": 0},
+    "control_note_th": "แถวกลางคือกลุ่มควบคุมที่สำคัญที่สุด — index มีอยู่แต่ปิด index scan แล้วแถวกลับมาครบ 510 → พิสูจน์ว่าแถวยังอยู่ในตาราง เส้นทางที่ใช้ index ต่างหากที่ทำหาย",
+    "ef_search_used": 1000,
+    "ef_search_note_th": "ตั้งสูงเพื่อแยก V07 ออกจาก Q06 — ถ้าปล่อยที่ 40 จะแยกไม่ออกว่าแถวหายเพราะไม่ถูก index หรือเพราะ candidate list เล็ก"
+  },
+
+  "reproduce": "sql/v07_null_zero_vectors.sql",
+  "config_profile": "fragile",
+
+  "safety_note_th": "ใช้ตารางแยก qf_v07 ห้ามแตะ qf_corpus ที่ล็อกไว้ เพราะ fingerprint และจำนวนแถวเป็นฐานของเฉลยทั้งโปรเจค",
+
+  "verified_on": {
+    "postgres_version": "17.10 (Debian 17.10-1.pgdg12+1)",
+    "pgvector_version": "0.8.5",
+    "image_tag": "pgvector/pgvector:0.8.5-pg17",
+    "config_profile": "fragile",
+    "date": "2026-07-27",
+    "consecutive_successful_runs": 3,
+    "checker_states_verified": "DETECTED (มีแถวเสีย) / NOT_DETECTED (ลบออก) / CANNOT_CHECK (ไม่มีตาราง) — 3 รอบติด",
+    "qf_corpus_untouched": "100000 แถว · fingerprint 5a32cba54ea2be4ed022fe8bfedae9b0 ยืนยันหลังรันครบ",
+    "note": "assertion ผ่าน 4/4 ทุกรอบ · หายไป 10 แถวพอดีทุกรอบ ไม่มากไม่น้อย"
+  }
+}

@@ -77,6 +77,8 @@ DECLARE
     max_limit int;
     ef_now    int;
     n_guc     int;
+    n_null_vec int;
+    n_zero_vec int;
 BEGIN
     FOR f IN
         SELECT name FROM pg_ls_dir('/groundtruth') AS name
@@ -398,6 +400,38 @@ BEGIN
                 INSERT INTO score_result VALUES (fid, 'NOT_DETECTED',
                     format('%s = %s ครอบคลุม LIMIT สูงสุดที่ประกาศไว้ (%s)',
                            guc_name, ef_now, max_limit), NULL);
+            END IF;
+
+        -- ---- ตัวตรวจของ V07: นับแถวที่ vector เป็น NULL หรือ norm = 0 ----
+        --
+        -- ตรวจง่ายที่สุดในบรรดา fault ทั้ง 16 ข้อ
+        -- ไม่ต้องรัน query ค้นหา ไม่ต้องมี index ไม่ต้องมีเฉลย
+        ELSIF fid = 'V07' THEN
+            rel := exp ->> 'target_table';
+
+            IF to_regclass(rel) IS NULL THEN
+                INSERT INTO score_result VALUES (fid, 'CANNOT_CHECK',
+                    format('หาตาราง %L ไม่เจอ — ตัวฉีดยังไม่ได้รัน', rel), NULL);
+                CONTINUE;
+            END IF;
+
+            EXECUTE format(
+                'SELECT count(*) FILTER (WHERE %1$I IS NULL), '
+                '       count(*) FILTER (WHERE %1$I IS NOT NULL AND vector_norm(%1$I) = 0), '
+                '       count(*) FROM %2$I',
+                exp ->> 'vector_column', rel)
+            INTO n_null_vec, n_zero_vec, n_rows;
+
+            IF n_null_vec + n_zero_vec > 0 THEN
+                INSERT INTO score_result VALUES (fid, 'DETECTED',
+                    format('ตาราง %s มี %s แถว · NULL vector %s แถว · zero vector %s แถว '
+                           '→ %s แถวนี้จะไม่โผล่ในผลค้นหาที่ใช้ index เลย',
+                           rel, n_rows, n_null_vec, n_zero_vec, n_null_vec + n_zero_vec),
+                    doc ->> 'correct_diagnosis');
+            ELSE
+                INSERT INTO score_result VALUES (fid, 'NOT_DETECTED',
+                    format('ตาราง %s มี %s แถว · ไม่มี NULL หรือ zero vector เลย', rel, n_rows),
+                    NULL);
             END IF;
 
         ELSE
