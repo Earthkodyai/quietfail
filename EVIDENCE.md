@@ -174,6 +174,95 @@ NOTICE:  hnsw graph no longer fits into maintenance_work_mem after 28365 tuples
 
 ---
 
+## ชั้น 3 — ตารางจับคู่เอกสาร 6 เครื่องมือ (เฟส 2.5)
+
+> **ชั้นนี้คือการทบทวนเอกสาร ไม่ใช่ผลการทดลอง** (`PROJECT.md` ข้อ 5)
+> ทุกค่าในตารางนี้มาจากเอกสารทางการหรือซอร์สโค้ด อ่านเมื่อ 2026-07-27
+> **ยกเว้นแถว pgvector และ Qdrant ซึ่งเรารันวัดเอง**
+>
+> ช่องไหนหาไม่เจอ เขียนว่า "ยังไม่ยืนยัน" — ห้ามเติมด้วยความจำ (กฎเหล็กข้อ 1 และ 10)
+
+### ตาราง A — พารามิเตอร์ความพยายามค้นหา (แกนของ Q01 · Q04 · Q06)
+
+| engine | พารามิเตอร์ HNSW | ค่าเริ่มต้น | พารามิเตอร์ IVF | ค่าเริ่มต้น |
+|---|---|---|---|---|
+| **pgvector 0.8.5** | `hnsw.ef_search` | **40** (คงที่) | `ivfflat.probes` | **1** |
+| **Qdrant 1.12.4** | `hnsw_ef` | ไม่ใช่ค่าคงที่ต่ำ (วัดได้ recall@100 = 0.99 ที่ ef=40) | — | — |
+| **Milvus** | `ef` | **= limit (TopK)** | `nprobe` | ยังไม่ยืนยัน |
+| **Weaviate** | `ef` | **-1** = ปรับอัตโนมัติ (`dynamicEfMin` 100 · `dynamicEfMax` 500 · `dynamicEfFactor` 8) | — | — |
+| **OpenSearch** | `ef_search` | **100** · engine `lucene` **ไม่สนใจค่านี้ แล้วตั้ง = k เอง** | `nprobes` | **1** |
+| **FAISS** | `efSearch` | ยังไม่ยืนยัน | `nprobe` | **1** (`size_t nprobe = 1;` ในซอร์ส) |
+| **Pinecone** | ไม่เปิดให้ตั้ง | — | ไม่เปิดให้ตั้ง | — |
+
+**พารามิเตอร์ตอน build** (รองลงมา แต่บันทึกไว้)
+
+| engine | `m` / maxConnections | `ef_construction` |
+|---|---|---|
+| pgvector 0.8.5 | 16 | 64 |
+| Qdrant 1.12.4 | 16 | 100 |
+| Milvus | **30** | **360** |
+| Weaviate | 32 (`maxConnections`) | 128 |
+| OpenSearch | 16 | 100 |
+
+### 🔴 สิ่งที่ตารางนี้เปิดโปง — และมันสนับสนุน D16 โดยตรง
+
+**`ef_search = 40` แบบคงที่ของ pgvector เป็นค่าที่แปลกแยกในกลุ่มนี้**
+
+เครื่องมืออื่นที่ตรวจได้ **ไม่ปล่อยให้ ef ต่ำกว่าจำนวนผลที่ขอ**:
+- **Milvus** — `ef` เริ่มต้น**เท่ากับ limit** โดยนิยาม
+- **Weaviate** — `ef = -1` แล้วปรับอัตโนมัติในช่วง 100–500
+- **OpenSearch** — เริ่มต้น 100 และ engine `lucene` **บังคับ `ef = k`**
+- **Qdrant** — ตั้ง `hnsw_ef=40` กับ `limit=100` แล้ว recall ยัง 0.9895 (เราวัดเอง)
+
+→ **recall@100 = 0.3903 ของ pgvector ไม่ใช่ธรรมชาติของ HNSW**
+แต่เป็นผลของการที่ pgvector ปล่อยให้ candidate list เล็กกว่า `LIMIT` ได้เงียบๆ
+**นี่คือ Q06 และเป็นเรื่องเฉพาะของ pgvector ในกลุ่มที่ตรวจ**
+
+**แต่ `probes = 1` ไม่ใช่เรื่องเฉพาะตัว**
+FAISS ตั้ง `nprobe = 1` ในซอร์ส และ OpenSearch ตั้ง `nprobes` เริ่มต้น 1 เหมือนกัน
+→ **Q04 (ค่า default ต่ำเกินไปโดยไม่มีใครวัด) เป็นปัญหาร่วมของวงการ ไม่ใช่ของ pgvector**
+
+**Pinecone ไม่เปิดให้ตั้งอะไรเลย** — ยืนยัน D05 อีกชั้น
+ผู้ใช้ปรับไม่ได้ **และวัด recall ของตัวเองจากข้างในไม่ได้ด้วย**
+ความล้มเหลวเงียบไม่ได้หายไปเพราะจ่ายเงิน แต่ตรวจจับยากขึ้น
+
+### ตาราง B — fault ข้อไหนใช้ได้กับเครื่องมือไหน
+
+> ⚠️ **คอลัมน์นี้เป็นการให้เหตุผลเชิงโครงสร้าง ไม่ใช่ค่าที่คัดจากเอกสาร**
+> เกณฑ์: fault ข้อนั้นต้องมี "กลไกที่ทำให้เกิด" อยู่ในสถาปัตยกรรมของเครื่องมือนั้น
+
+| fault | pgvector | Qdrant | Milvus | Weaviate | OpenSearch | FAISS | Pinecone |
+|---|---|---|---|---|---|---|---|
+| **Q01** recall collapse | ✅ วัดแล้ว | ✅ **วัดแล้ว** | ✅ | ✅ | ✅ | ✅ | ✅ แต่วัดเองไม่ได้ |
+| **Q04** default ต่ำเกิน | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ ไม่มีให้ตั้ง |
+| **Q06** `LIMIT` > ef | ✅ **เฉพาะตัว** | ❌ | ❌ `ef`=limit | ❌ dynamic | ❌ lucene บังคับ =k | ⚠️ ยังไม่ยืนยัน | ❌ |
+| **Q02** เขียน WHERE แทน ORDER BY | ✅ SQL เท่านั้น | ❌ | ❌ | ❌ | ⚠️ DSL คนละแบบ | ❌ | ❌ |
+| **Q03** filter แล้วได้ไม่ครบ | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️ ต้องทำเอง | ✅ |
+| **I01** opclass ไม่ตรง operator | ✅ **เฉพาะ SQL** | ❌ ตั้ง distance ตอนสร้าง collection | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **I02** สร้าง index ตอนข้อมูลน้อย | ✅ IVF | ⚠️ Qdrant สร้างเองตาม threshold | ✅ IVF | ❌ HNSW ล้วน | ✅ IVF | ✅ IVF | ❌ |
+| **I03** `CREATE INDEX` ล็อกตาราง | ✅ **เฉพาะ SQL DDL** | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **I04** k-means สุ่ม | ✅ IVF | ❌ ไม่มี IVF | ✅ IVF | ❌ | ✅ IVF | ✅ IVF | ⚠️ ไม่รู้ข้างใน |
+| **I05** หน่วยความจำ build ต่ำ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
+| **V07** NULL / zero vector | ✅ | ⚠️ ยังไม่ยืนยัน | ⚠️ | ⚠️ | ⚠️ | ⚠️ | ⚠️ |
+| **L02** dead tuple | ✅ **เฉพาะ MVCC** | ❌ คนละกลไก | ❌ | ❌ | ❌ | ❌ | ❌ |
+
+**สิ่งที่ตาราง B บอก:**
+- **Q01 · Q04 · I05 ใช้ได้แทบทุกตัว** → เป็นปัญหาของ ANN ไม่ใช่ของยี่ห้อ
+- **I01 · I03 · L02 · Q02 เป็นของ pgvector โดยเฉพาะ** เพราะผูกกับ SQL/MVCC
+  → ยืนยันว่าการเลือก pgvector เป็นชั้น 1 ได้ fault มากกว่าที่เครื่องมืออื่นให้ได้
+- **Q06 กลับกัน** — เป็นของ pgvector เฉพาะตัวเพราะเครื่องมืออื่น**ป้องกันไว้ให้แล้ว**
+
+### แหล่งอ้างอิง (อ่าน 2026-07-27)
+
+- Milvus HNSW — `milvus.io/docs/hnsw.md`
+- Weaviate vector index — `docs.weaviate.io/weaviate/config-refs/schema/vector-index`
+- OpenSearch k-NN index — `docs.opensearch.org/2.12/search-plugins/knn/knn-index/`
+- FAISS `IndexIVF` — `faiss.ai/cpp_api/struct/structfaiss_1_1IndexIVF.html`
+- FAISS indexes wiki — `github.com/facebookresearch/faiss/wiki/Faiss-indexes`
+- Pinecone indexing overview — `docs.pinecone.io/guides/index-data/indexing-overview`
+
+---
+
 ## สิ่งที่ยังต้องรันเองเพื่อยืนยัน
 
 เอกสารบอกว่า "มีปัญหา" แต่ไม่ได้บอกว่า "รุนแรงแค่ไหน"
