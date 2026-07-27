@@ -96,6 +96,10 @@ DECLARE
     n_sample   int;
     min_rec    numeric;
     got_recall numeric;
+    flt_col    text;
+    flt_val    text;
+    ask_k      int;
+    got_rows   bigint;
 BEGIN
     FOR f IN
         SELECT name FROM pg_ls_dir('/groundtruth') AS name
@@ -721,6 +725,80 @@ BEGIN
                 INSERT INTO score_result VALUES (fid, 'NOT_DETECTED',
                     format('recall@10 ที่วัดสดจาก %s query = %s (เกณฑ์ %s)',
                            n_sample, got_recall, min_rec), NULL);
+            END IF;
+
+        -- ---- ตัวตรวจของ Q03: ถาม k แถว แล้วนับว่าได้กี่แถวจริง ----
+        --
+        -- ข้อนี้ตรวจง่ายที่สุดในบรรดาข้อที่ต้องวัดสด เพราะ **ไม่ต้องรู้เฉลย**
+        -- แค่ถามว่า "มีแถวเข้าเงื่อนไขเกิน k อยู่แล้ว แต่ query คืนมาไม่ถึง k หรือเปล่า"
+        -- ถ้าใช่ = ผลหายไปแน่นอน โดยไม่ต้องเทียบกับ exact search เลย
+        --
+        -- ต่างจาก Q06 ที่เพดานคือ ef_search — Q03 เพดานคือจำนวน candidate
+        -- ที่ **รอดจาก filter** ตัวตรวจจึงบังคับให้ LIMIT อยู่ต่ำกว่า ef_search
+        -- ไม่งั้นจะแยกไม่ออกว่าแถวหายเพราะข้อไหน
+        ELSIF fid = 'Q03' THEN
+            rel      := exp ->> 'target_table';
+            vec_col  := exp ->> 'vector_column';
+            flt_col  := exp ->> 'filter_column';
+            flt_val  := exp ->> 'filter_predicate';
+            ask_k    := coalesce((exp ->> 'limit_k')::int, 10);
+
+            IF to_regclass(rel) IS NULL THEN
+                INSERT INTO score_result VALUES (fid, 'CANNOT_CHECK',
+                    format('หาตาราง %L ไม่เจอ — ตัวฉีดยังไม่ได้รัน', rel), NULL);
+                CONTINUE;
+            END IF;
+
+            SELECT count(*) INTO n_idx_total
+            FROM pg_index i
+            JOIN pg_class c ON c.oid = i.indexrelid
+            JOIN pg_class t ON t.oid = i.indrelid
+            JOIN pg_am am   ON am.oid = c.relam
+            WHERE t.relname = rel AND am.amname = 'hnsw';
+
+            IF n_idx_total = 0 THEN
+                INSERT INTO score_result VALUES (fid, 'CANNOT_CHECK',
+                    format('ไม่มี hnsw index บน %s — เส้นทางที่ทำให้แถวหายไม่มีอยู่', rel), NULL);
+                CONTINUE;
+            END IF;
+
+            -- กฎเหล็กข้อ 9 — ต้อง LOAD 'vector' ก่อนอ่าน GUC (โหลดไว้ที่หัวไฟล์แล้ว)
+            ef_now := current_setting('hnsw.ef_search')::int;
+            IF ask_k >= ef_now THEN
+                INSERT INTO score_result VALUES (fid, 'CANNOT_CHECK',
+                    format('limit_k = %s ไม่ต่ำกว่า hnsw.ef_search = %s '
+                           '— แยกไม่ออกว่าแถวหายเพราะ Q03 หรือเพดานของ Q06', ask_k, ef_now),
+                    NULL);
+                CONTINUE;
+            END IF;
+
+            -- ต้องมีแถวเข้าเงื่อนไขมากกว่าที่ขอ ไม่งั้น "ได้ไม่ครบ" ไม่ได้แปลว่าผิด
+            EXECUTE format('SELECT count(*) FROM %I WHERE %s', rel, flt_val) INTO n_rows;
+            IF n_rows <= ask_k THEN
+                INSERT INTO score_result VALUES (fid, 'CANNOT_CHECK',
+                    format('มีแถวเข้าเงื่อนไขแค่ %s แถว ซึ่งไม่เกิน %s ที่ขอ '
+                           '— ได้ไม่ครบก็ไม่ได้แปลว่าผิด', n_rows, ask_k), NULL);
+                CONTINUE;
+            END IF;
+
+            EXECUTE format(
+                'SELECT count(*) FROM (SELECT id FROM %I WHERE %s '
+                'ORDER BY %I <=> (SELECT %I FROM %I ORDER BY id LIMIT 1) LIMIT %s) s',
+                rel, flt_val, vec_col, vec_col, rel, ask_k)
+            INTO got_rows;
+
+            IF got_rows < ask_k THEN
+                INSERT INTO score_result VALUES (fid, 'DETECTED',
+                    format('ขอ %s แถว ได้ %s (ขาด %s) ทั้งที่มีแถวเข้าเงื่อนไข %s แถว '
+                           '· hnsw.ef_search = %s · iterative_scan = %s',
+                           ask_k, got_rows, ask_k - got_rows, n_rows, ef_now,
+                           current_setting('hnsw.iterative_scan')),
+                    doc ->> 'correct_diagnosis');
+            ELSE
+                INSERT INTO score_result VALUES (fid, 'NOT_DETECTED',
+                    format('ขอ %s แถว ได้ครบ %s (มีแถวเข้าเงื่อนไข %s แถว · iterative_scan = %s)',
+                           ask_k, got_rows, n_rows, current_setting('hnsw.iterative_scan')),
+                    NULL);
             END IF;
 
         ELSE

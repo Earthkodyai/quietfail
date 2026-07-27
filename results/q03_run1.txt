@@ -1,0 +1,217 @@
+Timing is off.
+LOAD
+DROP INDEX
+psql:/sql/q03_filter_after_scan.sql:22: NOTICE:  index "qf_q03_idx" does not exist, skipping
+DROP TABLE
+DROP TABLE
+psql:/sql/q03_filter_after_scan.sql:23: NOTICE:  table "qf_q03" does not exist, skipping
+psql:/sql/q03_filter_after_scan.sql:24: NOTICE:  table "qf_q03_sweep" does not exist, skipping
+DROP TABLE
+psql:/sql/q03_filter_after_scan.sql:25: NOTICE:  table "qf_q03_fix" does not exist, skipping
+psql:/sql/q03_filter_after_scan.sql:26: NOTICE:  table "qf_q03_guard" does not exist, skipping
+DROP TABLE
+SELECT 1
+SET
+CREATE TABLE
+INSERT 0 100000
+ANALYZE
+psql:/sql/q03_filter_after_scan.sql:38: NOTICE:  hnsw graph no longer fits into maintenance_work_mem after 28359 tuples
+DETAIL:  Building will take significantly more time.
+HINT:  Increase maintenance_work_mem to speed up builds.
+CREATE INDEX
+CREATE TABLE
+CREATE TABLE
+=== ค่าที่ใช้ ===
+ ef_search | iterative_scan | max_scan_tuples | scan_mem_multiplier | work_mem 
+-----------+----------------+-----------------+---------------------+----------
+ 40        | off            | 20000           | 1                   | 64kB
+(1 row)
+
+ count 
+-------
+    10
+(1 row)
+
+CREATE FUNCTION
+
+=== ส่วนที่ 1: ไล่ selectivity · LIMIT 10 · ef_search=40 (ค่าเริ่มต้น) ===
+    ทุกระดับมีแถวเข้าเงื่อนไขเกิน 10 แถว เฉลยจึงต้องเป็น 10 ทุกแถว
+ qf_q03_probe 
+--------------
+ 
+(1 row)
+
+ qf_q03_probe 
+--------------
+ 
+(1 row)
+
+ qf_q03_probe 
+--------------
+ 
+(1 row)
+
+ qf_q03_probe 
+--------------
+ 
+(1 row)
+
+ qf_q03_probe 
+--------------
+ 
+(1 row)
+
+ qf_q03_probe 
+--------------
+ 
+(1 row)
+
+ qf_q03_probe 
+--------------
+ 
+(1 row)
+
+ qf_q03_probe 
+--------------
+ 
+(1 row)
+
+ qf_q03_probe 
+--------------
+ 
+(1 row)
+
+ qf_q03_probe 
+--------------
+ 
+(1 row)
+
+ filter ตรง % | แถวที่เข้าเงื่อนไข | ขอ | ได้จาก index | เฉลย | ใช้ index | buffers 
+--------------+---------------+----+-------------+------+----------+---------
+       100.00 |        100000 | 10 |          10 |   10 | t        |     947
+        50.00 |         50000 | 10 |          10 |   10 | t        |     954
+        20.00 |         20000 | 10 |          10 |   10 | t        |     966
+        10.00 |         10000 | 10 |           2 |   10 | t        |     977
+         5.00 |          5000 | 10 |           1 |   10 | t        |     977
+         2.00 |          2000 | 10 |           0 |   10 | t        |     977
+         1.00 |          1000 | 10 |           0 |   10 | t        |     977
+         0.50 |           500 | 10 |           0 |   10 | t        |     977
+         0.20 |           200 | 10 |           0 |   10 | t        |     977
+         0.10 |           100 | 10 |           0 |   10 | t        |     977
+(10 rows)
+
+
+=== ส่วนที่ 2: ทางแก้ที่เอกสารบอก และเพดานของมัน ===
+    ที่ filter ตรง 1% · ขอ 40 แถว
+CREATE FUNCTION
+ qf_q03_fixstep 
+----------------
+ 
+(1 row)
+
+SET
+ qf_q03_fixstep 
+----------------
+ 
+(1 row)
+
+SET
+ qf_q03_fixstep 
+----------------
+ 
+(1 row)
+
+RESET
+SET
+ qf_q03_fixstep 
+----------------
+ 
+(1 row)
+
+RESET
+SET
+ qf_q03_fixstep 
+----------------
+ 
+(1 row)
+
+SET
+ qf_q03_fixstep 
+----------------
+ 
+(1 row)
+
+RESET
+RESET
+ ขั้น |                เปลี่ยนอะไร                | ขอ | ได้ | buffers 
+----+-----------------------------------------+----+----+---------
+ 1  | ค่าเริ่มต้นทั้งหมด (iterative_scan = off)     | 40 |  0 |     977
+ 2  | เปิด iterative_scan = relaxed_order      | 40 |  0 |    1743
+ 3  | + max_scan_tuples 20000 -> 200000       | 40 |  0 |    1743
+ 4  | + scan_mem_multiplier 1 -> 8            | 40 |  0 |    3035
+ 5  | + work_mem 64kB -> 4MB  <- ตัวที่ปลดล็อกจริง | 40 | 40 |   27145
+ 6  | strict_order + work_mem 4MB             | 40 | 40 |   28212
+(6 rows)
+
+
+=== ส่วนที่ 3: ข้อ 4 ของ EVIDENCE.md — บน PG17+ ต้องเติม + 0 ===
+    ยืนยันจาก **โครงสร้าง plan** ไม่ใช่จากการอ่านเอกสาร (กฎเหล็กข้อ 6)
+SET
+
+--- ไม่มี + 0 : ORDER BY ชั้นนอกถูกตัดทิ้ง ไม่มี Sort node เลย ---
+                           QUERY PLAN                           
+----------------------------------------------------------------
+ Limit
+   CTE nearest
+     ->  Limit
+           InitPlan 1
+             ->  Index Scan using qf_queries_pkey on qf_queries
+                   Index Cond: (id = 1)
+           ->  Index Scan using qf_q03_idx on qf_q03
+                 Order By: (embedding <=> (InitPlan 1).col1)
+                 Filter: (grp < 100)
+   ->  CTE Scan on nearest
+(10 rows)
+
+
+--- มี + 0 : Sort node โผล่ ลำดับถูกจัดใหม่จริง ---
+                           QUERY PLAN                           
+----------------------------------------------------------------
+ Limit
+   CTE nearest
+     ->  Limit
+           InitPlan 1
+             ->  Index Scan using qf_queries_pkey on qf_queries
+                   Index Cond: (id = 1)
+           ->  Index Scan using qf_q03_idx on qf_q03
+                 Order By: (embedding <=> (InitPlan 1).col1)
+                 Filter: (grp < 100)
+   ->  Sort
+         Sort Key: ((nearest.d + '0'::double precision))
+         ->  CTE Scan on nearest
+(12 rows)
+
+RESET
+
+=== assertion ===
+psql:/sql/q03_filter_after_scan.sql:250: NOTICE:  [1/6] OK เฉลยได้ครบ 10 แถวทุกระดับ selectivity
+psql:/sql/q03_filter_after_scan.sql:250: NOTICE:  [2/6] OK มี 7 ระดับที่ index คืนไม่ครบ · แย่สุดที่ filter ตรง %0.10 ได้ 0 จาก 10
+psql:/sql/q03_filter_after_scan.sql:250: NOTICE:  [3/6] OK ไม่มี error สักกรณี — เป็นความล้มเหลวเงียบจริง
+psql:/sql/q03_filter_after_scan.sql:250: NOTICE:  [4/6] OK ไล่ตัวจำกัดได้: off=0 iterative=0 +max_scan_tuples=0 +scan_mem_mult=0 +work_mem=40
+psql:/sql/q03_filter_after_scan.sql:250: NOTICE:  [5/6] OK ยืนยัน + 0 จากโครงสร้าง plan ข้างบน — ไม่มี + 0 ไม่มี Sort node
+psql:/sql/q03_filter_after_scan.sql:250: NOTICE:  [6/6] OK qf_corpus ไม่ถูกแตะ
+psql:/sql/q03_filter_after_scan.sql:250: NOTICE:  
+psql:/sql/q03_filter_after_scan.sql:250: NOTICE:  ⭐ ตัวที่ปลดล็อกทางแก้คือ work_mem ซึ่งเป็นค่าทั่วไปของ PostgreSQL
+psql:/sql/q03_filter_after_scan.sql:250: NOTICE:     ไม่ใช่พารามิเตอร์ของ pgvector — และไม่มีในรายการข้อจำกัด 4 ข้อของ EVIDENCE.md
+DO
+
+=== เก็บกวาด: ทิ้ง index กับตารางข้อมูล เก็บตารางผลไว้ให้ตัวตรวจอ่าน ===
+DROP INDEX
+DROP TABLE
+DROP FUNCTION
+DROP FUNCTION
+ vector_index_ค้าง 
+------------------
+                0
+(1 row)
+

@@ -1,0 +1,1180 @@
+════════════════════════════════════════════════════════════
+Q03 — เฟส 3 · รัน 3 รอบติด
+เริ่ม: 2026-07-27 23:08:56
+════════════════════════════════════════════════════════════
+
+############ รอบที่ 1 — การทดลอง ############
+Timing is off.
+LOAD
+DROP INDEX
+psql:/sql/q03_filter_after_scan.sql:22: NOTICE:  index "qf_q03_idx" does not exist, skipping
+DROP TABLE
+psql:/sql/q03_filter_after_scan.sql:23: NOTICE:  table "qf_q03" does not exist, skipping
+DROP TABLE
+DROP TABLE
+DROP TABLE
+psql:/sql/q03_filter_after_scan.sql:26: NOTICE:  table "qf_q03_guard" does not exist, skipping
+SELECT 1
+SET
+CREATE TABLE
+INSERT 0 100000
+ANALYZE
+psql:/sql/q03_filter_after_scan.sql:38: NOTICE:  hnsw graph no longer fits into maintenance_work_mem after 28373 tuples
+DETAIL:  Building will take significantly more time.
+HINT:  Increase maintenance_work_mem to speed up builds.
+CREATE INDEX
+CREATE TABLE
+CREATE TABLE
+=== ค่าที่ใช้ ===
+ ef_search | iterative_scan | max_scan_tuples | scan_mem_multiplier | work_mem 
+-----------+----------------+-----------------+---------------------+----------
+ 40        | off            | 20000           | 1                   | 64kB
+(1 row)
+
+ count 
+-------
+    10
+(1 row)
+
+CREATE FUNCTION
+
+=== ส่วนที่ 1: ไล่ selectivity · LIMIT 10 · ef_search=40 (ค่าเริ่มต้น) ===
+    ทุกระดับมีแถวเข้าเงื่อนไขเกิน 10 แถว เฉลยจึงต้องเป็น 10 ทุกแถว
+ qf_q03_probe 
+--------------
+ 
+(1 row)
+
+ qf_q03_probe 
+--------------
+ 
+(1 row)
+
+ qf_q03_probe 
+--------------
+ 
+(1 row)
+
+ qf_q03_probe 
+--------------
+ 
+(1 row)
+
+ qf_q03_probe 
+--------------
+ 
+(1 row)
+
+ qf_q03_probe 
+--------------
+ 
+(1 row)
+
+ qf_q03_probe 
+--------------
+ 
+(1 row)
+
+ qf_q03_probe 
+--------------
+ 
+(1 row)
+
+ qf_q03_probe 
+--------------
+ 
+(1 row)
+
+ qf_q03_probe 
+--------------
+ 
+(1 row)
+
+ filter ตรง % | แถวที่เข้าเงื่อนไข | ขอ | ได้จาก index | เฉลย | ใช้ index | buffers 
+--------------+---------------+----+-------------+------+----------+---------
+       100.00 |        100000 | 10 |          10 |   10 | t        |     931
+        50.00 |         50000 | 10 |          10 |   10 | t        |     938
+        20.00 |         20000 | 10 |          10 |   10 | t        |     951
+        10.00 |         10000 | 10 |           2 |   10 | t        |     961
+         5.00 |          5000 | 10 |           1 |   10 | t        |     961
+         2.00 |          2000 | 10 |           0 |   10 | t        |     961
+         1.00 |          1000 | 10 |           0 |   10 | t        |     961
+         0.50 |           500 | 10 |           0 |   10 | t        |     961
+         0.20 |           200 | 10 |           0 |   10 | t        |     961
+         0.10 |           100 | 10 |           0 |   10 | t        |     961
+(10 rows)
+
+
+=== ส่วนที่ 2: ทางแก้ที่เอกสารบอก และเพดานของมัน ===
+    ที่ filter ตรง 1% · ขอ 40 แถว
+CREATE FUNCTION
+ qf_q03_fixstep 
+----------------
+ 
+(1 row)
+
+SET
+ qf_q03_fixstep 
+----------------
+ 
+(1 row)
+
+SET
+ qf_q03_fixstep 
+----------------
+ 
+(1 row)
+
+RESET
+SET
+ qf_q03_fixstep 
+----------------
+ 
+(1 row)
+
+RESET
+SET
+ qf_q03_fixstep 
+----------------
+ 
+(1 row)
+
+SET
+ qf_q03_fixstep 
+----------------
+ 
+(1 row)
+
+RESET
+RESET
+ ขั้น |                เปลี่ยนอะไร                | ขอ | ได้ | buffers 
+----+-----------------------------------------+----+----+---------
+ 1  | ค่าเริ่มต้นทั้งหมด (iterative_scan = off)     | 40 |  0 |     961
+ 2  | เปิด iterative_scan = relaxed_order      | 40 |  0 |    1727
+ 3  | + max_scan_tuples 20000 -> 200000       | 40 |  0 |    1727
+ 4  | + scan_mem_multiplier 1 -> 8            | 40 |  0 |    2994
+ 5  | + work_mem 64kB -> 4MB  <- ตัวที่ปลดล็อกจริง | 40 | 40 |   29250
+ 6  | strict_order + work_mem 4MB             | 40 | 40 |   29224
+(6 rows)
+
+
+=== ส่วนที่ 3: ข้อ 4 ของ EVIDENCE.md — บน PG17+ ต้องเติม + 0 ===
+    ยืนยันจาก **โครงสร้าง plan** ไม่ใช่จากการอ่านเอกสาร (กฎเหล็กข้อ 6)
+SET
+
+--- ไม่มี + 0 : ORDER BY ชั้นนอกถูกตัดทิ้ง ไม่มี Sort node เลย ---
+                           QUERY PLAN                           
+----------------------------------------------------------------
+ Limit
+   CTE nearest
+     ->  Limit
+           InitPlan 1
+             ->  Index Scan using qf_queries_pkey on qf_queries
+                   Index Cond: (id = 1)
+           ->  Index Scan using qf_q03_idx on qf_q03
+                 Order By: (embedding <=> (InitPlan 1).col1)
+                 Filter: (grp < 100)
+   ->  CTE Scan on nearest
+(10 rows)
+
+
+--- มี + 0 : Sort node โผล่ ลำดับถูกจัดใหม่จริง ---
+                           QUERY PLAN                           
+----------------------------------------------------------------
+ Limit
+   CTE nearest
+     ->  Limit
+           InitPlan 1
+             ->  Index Scan using qf_queries_pkey on qf_queries
+                   Index Cond: (id = 1)
+           ->  Index Scan using qf_q03_idx on qf_q03
+                 Order By: (embedding <=> (InitPlan 1).col1)
+                 Filter: (grp < 100)
+   ->  Sort
+         Sort Key: ((nearest.d + '0'::double precision))
+         ->  CTE Scan on nearest
+(12 rows)
+
+RESET
+
+=== assertion ===
+psql:/sql/q03_filter_after_scan.sql:250: NOTICE:  [1/6] OK เฉลยได้ครบ 10 แถวทุกระดับ selectivity
+psql:/sql/q03_filter_after_scan.sql:250: NOTICE:  [2/6] OK มี 7 ระดับที่ index คืนไม่ครบ · แย่สุดที่ filter ตรง %0.10 ได้ 0 จาก 10
+psql:/sql/q03_filter_after_scan.sql:250: NOTICE:  [3/6] OK ไม่มี error สักกรณี — เป็นความล้มเหลวเงียบจริง
+psql:/sql/q03_filter_after_scan.sql:250: NOTICE:  [4/6] OK ไล่ตัวจำกัดได้: off=0 iterative=0 +max_scan_tuples=0 +scan_mem_mult=0 +work_mem=40
+psql:/sql/q03_filter_after_scan.sql:250: NOTICE:  [5/6] OK ยืนยัน + 0 จากโครงสร้าง plan ข้างบน — ไม่มี + 0 ไม่มี Sort node
+psql:/sql/q03_filter_after_scan.sql:250: NOTICE:  [6/6] OK qf_corpus ไม่ถูกแตะ
+psql:/sql/q03_filter_after_scan.sql:250: NOTICE:  
+psql:/sql/q03_filter_after_scan.sql:250: NOTICE:  ⭐ ตัวที่ปลดล็อกทางแก้คือ work_mem ซึ่งเป็นค่าทั่วไปของ PostgreSQL
+psql:/sql/q03_filter_after_scan.sql:250: NOTICE:     ไม่ใช่พารามิเตอร์ของ pgvector — และไม่มีในรายการข้อจำกัด 4 ข้อของ EVIDENCE.md
+DO
+
+=== เก็บกวาด: ทิ้ง index กับตารางข้อมูล เก็บตารางผลไว้ให้ตัวตรวจอ่าน ===
+DROP INDEX
+DROP TABLE
+DROP FUNCTION
+DROP FUNCTION
+ vector_index_ค้าง 
+------------------
+                0
+(1 row)
+
+exit: 0
+
+############ รอบที่ 1 — พิสูจน์ตัวตรวจ 3 สถานะ ############
+LOAD
+SET
+psql:/sql/q03_checker_states.sql:17: NOTICE:  index "qf_q03_idx" does not exist, skipping
+DROP INDEX
+DROP TABLE
+=== สถานะ 1: ยังไม่มีตาราง -> CANNOT_CHECK ===
+LOAD
+ set_config 
+------------
+ ALL
+(1 row)
+
+DROP TABLE
+psql:/sql/score.sql:33: NOTICE:  table "score_result" does not exist, skipping
+CREATE TABLE
+DO
+
+============================================================
+ผลการนับคะแนน
+============================================================
+ fault_id |   verdict    |                                                              detail                                                               
+----------+--------------+-----------------------------------------------------------------------------------------------------------------------------------
+ F01      | NOT_DETECTED | idle in transaction 0 session (ต้อง >= 10) · ค้างนานสุด 0.0 วิ (ต้อง >= 2)
+ F03      | CANNOT_CHECK | ไม่มีตาราง 'qf_f03_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ F05      | NOT_DETECTED | lock ที่ granted=false 0 แถว (ต้อง >= 2) · session ที่ถูกบล็อก 0 (ต้อง >= 2)
+ F10      | CANNOT_CHECK | ไม่มีตาราง 'qf_f10_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ I01      | CANNOT_CHECK | ไม่มี vector index บน 'qf_corpus' เลย — ตรวจ opclass ไม่ได้
+ I02      | CANNOT_CHECK | หาตาราง 'qf_i02' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+ I03      | NOT_DETECTED | ShareLock ที่ได้รับแล้ว 0 แถว · การเขียนที่รออยู่ 0 แถว (ต้อง >= 1 และ >= 1)
+ I04      | CANNOT_CHECK | ไม่มี vector index บน qf_corpus — ไม่มีอะไรให้เทียบว่าถูกสร้างใหม่หรือยัง
+ I05      | DETECTED     | maintenance_work_mem = 64 MB รับได้ประมาณ 28352 tuples แต่ตารางมี 100000 แถว → build จะ spill และช้าลงราว 3 เท่า
+ Q02      | DETECTED     | จาก 34 query ที่ใช้ vector operator · ขาด ORDER BY หรือ LIMIT 2 · เรียง DESC 1 → index ใช้ไม่ได้ (ตรวจ ORDER BY ที่ห่อด้วยนิพจน์ไม่ได้ ต้องดู plan)
+ Q03      | CANNOT_CHECK | หาตาราง 'qf_q03' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+ Q04      | CANNOT_CHECK | ไม่มี ivfflat index บน qf_corpus ที่ระบุ lists — เทียบกับ sqrt(lists) ไม่ได้
+ Q06      | DETECTED     | hnsw.ef_search = 40 แต่โค้ดใช้ LIMIT ได้ถึง 100 → คืนผลได้ไม่เกิน 40 แถว ขาดไป 60
+ V07      | CANNOT_CHECK | หาตาราง 'qf_v07' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+(14 rows)
+
+
+--- สรุป ---
+ detected | not_detected | cannot_check | total 
+----------+--------------+--------------+-------
+        3 |            3 |            8 |    14
+(1 row)
+
+
+หมายเหตุ: cannot_check ไม่ใช่ผ่าน และไม่ใช่ไม่พบ (กฎเหล็กข้อ 10)
+
+=== สร้างตารางและ hnsw index ===
+CREATE TABLE
+INSERT 0 100000
+ANALYZE
+psql:/sql/q03_checker_states.sql:28: NOTICE:  hnsw graph no longer fits into maintenance_work_mem after 28370 tuples
+DETAIL:  Building will take significantly more time.
+HINT:  Increase maintenance_work_mem to speed up builds.
+CREATE INDEX
+psql:/sql/q03_checker_states.sql:30: NOTICE:  identifier "แถวที่เข้าเงื่อนไข_grp_lt_10" will be truncated to "แถวที่เข้าเงื่อนไข_grp_lt_1"
+psql:/sql/q03_checker_states.sql:30: NOTICE:  identifier "แถวที่เข้าเงื่อนไข_grp_lt_10" will be truncated to "แถวที่เข้าเงื่อนไข_grp_lt_1"
+ แถวที่เข้าเงื่อนไข_grp_lt_1 
+------------------------
+                   1000
+(1 row)
+
+
+=== สถานะ 2: ค่าเริ่มต้น (iterative_scan = off) -> DETECTED ===
+    มีแถวเข้าเงื่อนไข 1,000 แถว แต่ขอ 10 จะได้ไม่ครบ
+LOAD
+ set_config 
+------------
+ ALL
+(1 row)
+
+DROP TABLE
+CREATE TABLE
+DO
+
+============================================================
+ผลการนับคะแนน
+============================================================
+ fault_id |   verdict    |                                                              detail                                                               
+----------+--------------+-----------------------------------------------------------------------------------------------------------------------------------
+ F01      | NOT_DETECTED | idle in transaction 0 session (ต้อง >= 10) · ค้างนานสุด 0.0 วิ (ต้อง >= 2)
+ F03      | CANNOT_CHECK | ไม่มีตาราง 'qf_f03_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ F05      | NOT_DETECTED | lock ที่ granted=false 0 แถว (ต้อง >= 2) · session ที่ถูกบล็อก 0 (ต้อง >= 2)
+ F10      | CANNOT_CHECK | ไม่มีตาราง 'qf_f10_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ I01      | CANNOT_CHECK | ไม่มี vector index บน 'qf_corpus' เลย — ตรวจ opclass ไม่ได้
+ I02      | CANNOT_CHECK | หาตาราง 'qf_i02' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+ I03      | NOT_DETECTED | ShareLock ที่ได้รับแล้ว 0 แถว · การเขียนที่รออยู่ 0 แถว (ต้อง >= 1 และ >= 1)
+ I04      | CANNOT_CHECK | ไม่มี vector index บน qf_corpus — ไม่มีอะไรให้เทียบว่าถูกสร้างใหม่หรือยัง
+ I05      | DETECTED     | maintenance_work_mem = 64 MB รับได้ประมาณ 28352 tuples แต่ตารางมี 100000 แถว → build จะ spill และช้าลงราว 3 เท่า
+ Q02      | DETECTED     | จาก 34 query ที่ใช้ vector operator · ขาด ORDER BY หรือ LIMIT 2 · เรียง DESC 1 → index ใช้ไม่ได้ (ตรวจ ORDER BY ที่ห่อด้วยนิพจน์ไม่ได้ ต้องดู plan)
+ Q03      | DETECTED     | ขอ 10 แถว ได้ 3 (ขาด 7) ทั้งที่มีแถวเข้าเงื่อนไข 1000 แถว · hnsw.ef_search = 40 · iterative_scan = off
+ Q04      | CANNOT_CHECK | ไม่มี ivfflat index บน qf_corpus ที่ระบุ lists — เทียบกับ sqrt(lists) ไม่ได้
+ Q06      | DETECTED     | hnsw.ef_search = 40 แต่โค้ดใช้ LIMIT ได้ถึง 100 → คืนผลได้ไม่เกิน 40 แถว ขาดไป 60
+ V07      | CANNOT_CHECK | หาตาราง 'qf_v07' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+(14 rows)
+
+
+--- สรุป ---
+ detected | not_detected | cannot_check | total 
+----------+--------------+--------------+-------
+        4 |            3 |            7 |    14
+(1 row)
+
+
+หมายเหตุ: cannot_check ไม่ใช่ผ่าน และไม่ใช่ไม่พบ (กฎเหล็กข้อ 10)
+
+=== เปิดทางแก้ให้ครบ: iterative_scan + work_mem ===
+    (เปิด iterative_scan อย่างเดียวไม่พอ — วัดแล้วใน q03_filter_after_scan.sql)
+SET
+SET
+
+=== สถานะ 3: ทางแก้ครบ -> NOT_DETECTED ===
+LOAD
+ set_config 
+------------
+ ALL
+(1 row)
+
+DROP TABLE
+CREATE TABLE
+DO
+
+============================================================
+ผลการนับคะแนน
+============================================================
+ fault_id |   verdict    |                                                              detail                                                               
+----------+--------------+-----------------------------------------------------------------------------------------------------------------------------------
+ F01      | NOT_DETECTED | idle in transaction 0 session (ต้อง >= 10) · ค้างนานสุด 0.0 วิ (ต้อง >= 2)
+ F03      | CANNOT_CHECK | ไม่มีตาราง 'qf_f03_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ F05      | NOT_DETECTED | lock ที่ granted=false 0 แถว (ต้อง >= 2) · session ที่ถูกบล็อก 0 (ต้อง >= 2)
+ F10      | CANNOT_CHECK | ไม่มีตาราง 'qf_f10_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ I01      | CANNOT_CHECK | ไม่มี vector index บน 'qf_corpus' เลย — ตรวจ opclass ไม่ได้
+ I02      | CANNOT_CHECK | หาตาราง 'qf_i02' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+ I03      | NOT_DETECTED | ShareLock ที่ได้รับแล้ว 0 แถว · การเขียนที่รออยู่ 0 แถว (ต้อง >= 1 และ >= 1)
+ I04      | CANNOT_CHECK | ไม่มี vector index บน qf_corpus — ไม่มีอะไรให้เทียบว่าถูกสร้างใหม่หรือยัง
+ I05      | DETECTED     | maintenance_work_mem = 64 MB รับได้ประมาณ 28352 tuples แต่ตารางมี 100000 แถว → build จะ spill และช้าลงราว 3 เท่า
+ Q02      | DETECTED     | จาก 35 query ที่ใช้ vector operator · ขาด ORDER BY หรือ LIMIT 2 · เรียง DESC 1 → index ใช้ไม่ได้ (ตรวจ ORDER BY ที่ห่อด้วยนิพจน์ไม่ได้ ต้องดู plan)
+ Q03      | NOT_DETECTED | ขอ 10 แถว ได้ครบ 10 (มีแถวเข้าเงื่อนไข 1000 แถว · iterative_scan = relaxed_order)
+ Q04      | CANNOT_CHECK | ไม่มี ivfflat index บน qf_corpus ที่ระบุ lists — เทียบกับ sqrt(lists) ไม่ได้
+ Q06      | DETECTED     | hnsw.ef_search = 40 แต่โค้ดใช้ LIMIT ได้ถึง 100 → คืนผลได้ไม่เกิน 40 แถว ขาดไป 60
+ V07      | CANNOT_CHECK | หาตาราง 'qf_v07' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+(14 rows)
+
+
+--- สรุป ---
+ detected | not_detected | cannot_check | total 
+----------+--------------+--------------+-------
+        3 |            4 |            7 |    14
+(1 row)
+
+
+หมายเหตุ: cannot_check ไม่ใช่ผ่าน และไม่ใช่ไม่พบ (กฎเหล็กข้อ 10)
+
+=== เก็บกวาด ===
+RESET
+RESET
+DROP INDEX
+DROP TABLE
+RESET
+ vector_index_ค้าง 
+------------------
+                0
+(1 row)
+
+ corpus_rows |        corpus_fingerprint        
+-------------+----------------------------------
+        5000 | 5a32cba54ea2be4ed022fe8bfedae9b0
+(1 row)
+
+exit: 0
+
+############ รอบที่ 2 — การทดลอง ############
+Timing is off.
+LOAD
+DROP INDEX
+psql:/sql/q03_filter_after_scan.sql:22: NOTICE:  index "qf_q03_idx" does not exist, skipping
+psql:/sql/q03_filter_after_scan.sql:23: NOTICE:  table "qf_q03" does not exist, skipping
+DROP TABLE
+DROP TABLE
+DROP TABLE
+psql:/sql/q03_filter_after_scan.sql:26: NOTICE:  table "qf_q03_guard" does not exist, skipping
+DROP TABLE
+SELECT 1
+SET
+CREATE TABLE
+INSERT 0 100000
+ANALYZE
+psql:/sql/q03_filter_after_scan.sql:38: NOTICE:  hnsw graph no longer fits into maintenance_work_mem after 28362 tuples
+DETAIL:  Building will take significantly more time.
+HINT:  Increase maintenance_work_mem to speed up builds.
+CREATE INDEX
+CREATE TABLE
+CREATE TABLE
+=== ค่าที่ใช้ ===
+ ef_search | iterative_scan | max_scan_tuples | scan_mem_multiplier | work_mem 
+-----------+----------------+-----------------+---------------------+----------
+ 40        | off            | 20000           | 1                   | 64kB
+(1 row)
+
+ count 
+-------
+    10
+(1 row)
+
+CREATE FUNCTION
+
+=== ส่วนที่ 1: ไล่ selectivity · LIMIT 10 · ef_search=40 (ค่าเริ่มต้น) ===
+    ทุกระดับมีแถวเข้าเงื่อนไขเกิน 10 แถว เฉลยจึงต้องเป็น 10 ทุกแถว
+ qf_q03_probe 
+--------------
+ 
+(1 row)
+
+ qf_q03_probe 
+--------------
+ 
+(1 row)
+
+ qf_q03_probe 
+--------------
+ 
+(1 row)
+
+ qf_q03_probe 
+--------------
+ 
+(1 row)
+
+ qf_q03_probe 
+--------------
+ 
+(1 row)
+
+ qf_q03_probe 
+--------------
+ 
+(1 row)
+
+ qf_q03_probe 
+--------------
+ 
+(1 row)
+
+ qf_q03_probe 
+--------------
+ 
+(1 row)
+
+ qf_q03_probe 
+--------------
+ 
+(1 row)
+
+ qf_q03_probe 
+--------------
+ 
+(1 row)
+
+ filter ตรง % | แถวที่เข้าเงื่อนไข | ขอ | ได้จาก index | เฉลย | ใช้ index | buffers 
+--------------+---------------+----+-------------+------+----------+---------
+       100.00 |        100000 | 10 |          10 |   10 | t        |     952
+        50.00 |         50000 | 10 |          10 |   10 | t        |     959
+        20.00 |         20000 | 10 |          10 |   10 | t        |     971
+        10.00 |         10000 | 10 |           2 |   10 | t        |     982
+         5.00 |          5000 | 10 |           1 |   10 | t        |     982
+         2.00 |          2000 | 10 |           0 |   10 | t        |     982
+         1.00 |          1000 | 10 |           0 |   10 | t        |     982
+         0.50 |           500 | 10 |           0 |   10 | t        |     982
+         0.20 |           200 | 10 |           0 |   10 | t        |     982
+         0.10 |           100 | 10 |           0 |   10 | t        |     982
+(10 rows)
+
+
+=== ส่วนที่ 2: ทางแก้ที่เอกสารบอก และเพดานของมัน ===
+    ที่ filter ตรง 1% · ขอ 40 แถว
+CREATE FUNCTION
+ qf_q03_fixstep 
+----------------
+ 
+(1 row)
+
+SET
+ qf_q03_fixstep 
+----------------
+ 
+(1 row)
+
+SET
+ qf_q03_fixstep 
+----------------
+ 
+(1 row)
+
+RESET
+SET
+ qf_q03_fixstep 
+----------------
+ 
+(1 row)
+
+RESET
+SET
+ qf_q03_fixstep 
+----------------
+ 
+(1 row)
+
+SET
+ qf_q03_fixstep 
+----------------
+ 
+(1 row)
+
+RESET
+RESET
+ ขั้น |                เปลี่ยนอะไร                | ขอ | ได้ | buffers 
+----+-----------------------------------------+----+----+---------
+ 1  | ค่าเริ่มต้นทั้งหมด (iterative_scan = off)     | 40 |  0 |     982
+ 2  | เปิด iterative_scan = relaxed_order      | 40 |  0 |    1749
+ 3  | + max_scan_tuples 20000 -> 200000       | 40 |  0 |    1749
+ 4  | + scan_mem_multiplier 1 -> 8            | 40 |  0 |    3039
+ 5  | + work_mem 64kB -> 4MB  <- ตัวที่ปลดล็อกจริง | 40 | 40 |   28670
+ 6  | strict_order + work_mem 4MB             | 40 | 40 |   28320
+(6 rows)
+
+
+=== ส่วนที่ 3: ข้อ 4 ของ EVIDENCE.md — บน PG17+ ต้องเติม + 0 ===
+    ยืนยันจาก **โครงสร้าง plan** ไม่ใช่จากการอ่านเอกสาร (กฎเหล็กข้อ 6)
+SET
+
+--- ไม่มี + 0 : ORDER BY ชั้นนอกถูกตัดทิ้ง ไม่มี Sort node เลย ---
+                           QUERY PLAN                           
+----------------------------------------------------------------
+ Limit
+   CTE nearest
+     ->  Limit
+           InitPlan 1
+             ->  Index Scan using qf_queries_pkey on qf_queries
+                   Index Cond: (id = 1)
+           ->  Index Scan using qf_q03_idx on qf_q03
+                 Order By: (embedding <=> (InitPlan 1).col1)
+                 Filter: (grp < 100)
+   ->  CTE Scan on nearest
+(10 rows)
+
+
+--- มี + 0 : Sort node โผล่ ลำดับถูกจัดใหม่จริง ---
+                           QUERY PLAN                           
+----------------------------------------------------------------
+ Limit
+   CTE nearest
+     ->  Limit
+           InitPlan 1
+             ->  Index Scan using qf_queries_pkey on qf_queries
+                   Index Cond: (id = 1)
+           ->  Index Scan using qf_q03_idx on qf_q03
+                 Order By: (embedding <=> (InitPlan 1).col1)
+                 Filter: (grp < 100)
+   ->  Sort
+         Sort Key: ((nearest.d + '0'::double precision))
+         ->  CTE Scan on nearest
+(12 rows)
+
+RESET
+
+=== assertion ===
+psql:/sql/q03_filter_after_scan.sql:250: NOTICE:  [1/6] OK เฉลยได้ครบ 10 แถวทุกระดับ selectivity
+psql:/sql/q03_filter_after_scan.sql:250: NOTICE:  [2/6] OK มี 7 ระดับที่ index คืนไม่ครบ · แย่สุดที่ filter ตรง %0.10 ได้ 0 จาก 10
+psql:/sql/q03_filter_after_scan.sql:250: NOTICE:  [3/6] OK ไม่มี error สักกรณี — เป็นความล้มเหลวเงียบจริง
+psql:/sql/q03_filter_after_scan.sql:250: NOTICE:  [4/6] OK ไล่ตัวจำกัดได้: off=0 iterative=0 +max_scan_tuples=0 +scan_mem_mult=0 +work_mem=40
+psql:/sql/q03_filter_after_scan.sql:250: NOTICE:  [5/6] OK ยืนยัน + 0 จากโครงสร้าง plan ข้างบน — ไม่มี + 0 ไม่มี Sort node
+psql:/sql/q03_filter_after_scan.sql:250: NOTICE:  [6/6] OK qf_corpus ไม่ถูกแตะ
+psql:/sql/q03_filter_after_scan.sql:250: NOTICE:  
+psql:/sql/q03_filter_after_scan.sql:250: NOTICE:  ⭐ ตัวที่ปลดล็อกทางแก้คือ work_mem ซึ่งเป็นค่าทั่วไปของ PostgreSQL
+psql:/sql/q03_filter_after_scan.sql:250: NOTICE:     ไม่ใช่พารามิเตอร์ของ pgvector — และไม่มีในรายการข้อจำกัด 4 ข้อของ EVIDENCE.md
+DO
+
+=== เก็บกวาด: ทิ้ง index กับตารางข้อมูล เก็บตารางผลไว้ให้ตัวตรวจอ่าน ===
+DROP INDEX
+DROP TABLE
+DROP FUNCTION
+DROP FUNCTION
+ vector_index_ค้าง 
+------------------
+                0
+(1 row)
+
+exit: 0
+
+############ รอบที่ 2 — พิสูจน์ตัวตรวจ 3 สถานะ ############
+LOAD
+SET
+DROP INDEX
+psql:/sql/q03_checker_states.sql:17: NOTICE:  index "qf_q03_idx" does not exist, skipping
+DROP TABLE
+=== สถานะ 1: ยังไม่มีตาราง -> CANNOT_CHECK ===
+LOAD
+ set_config 
+------------
+ ALL
+(1 row)
+
+psql:/sql/score.sql:33: NOTICE:  table "score_result" does not exist, skipping
+DROP TABLE
+CREATE TABLE
+DO
+
+============================================================
+ผลการนับคะแนน
+============================================================
+ fault_id |   verdict    |                                                              detail                                                               
+----------+--------------+-----------------------------------------------------------------------------------------------------------------------------------
+ F01      | NOT_DETECTED | idle in transaction 0 session (ต้อง >= 10) · ค้างนานสุด 0.0 วิ (ต้อง >= 2)
+ F03      | CANNOT_CHECK | ไม่มีตาราง 'qf_f03_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ F05      | NOT_DETECTED | lock ที่ granted=false 0 แถว (ต้อง >= 2) · session ที่ถูกบล็อก 0 (ต้อง >= 2)
+ F10      | CANNOT_CHECK | ไม่มีตาราง 'qf_f10_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ I01      | CANNOT_CHECK | ไม่มี vector index บน 'qf_corpus' เลย — ตรวจ opclass ไม่ได้
+ I02      | CANNOT_CHECK | หาตาราง 'qf_i02' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+ I03      | NOT_DETECTED | ShareLock ที่ได้รับแล้ว 0 แถว · การเขียนที่รออยู่ 0 แถว (ต้อง >= 1 และ >= 1)
+ I04      | CANNOT_CHECK | ไม่มี vector index บน qf_corpus — ไม่มีอะไรให้เทียบว่าถูกสร้างใหม่หรือยัง
+ I05      | DETECTED     | maintenance_work_mem = 64 MB รับได้ประมาณ 28352 tuples แต่ตารางมี 100000 แถว → build จะ spill และช้าลงราว 3 เท่า
+ Q02      | DETECTED     | จาก 37 query ที่ใช้ vector operator · ขาด ORDER BY หรือ LIMIT 2 · เรียง DESC 1 → index ใช้ไม่ได้ (ตรวจ ORDER BY ที่ห่อด้วยนิพจน์ไม่ได้ ต้องดู plan)
+ Q03      | CANNOT_CHECK | หาตาราง 'qf_q03' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+ Q04      | CANNOT_CHECK | ไม่มี ivfflat index บน qf_corpus ที่ระบุ lists — เทียบกับ sqrt(lists) ไม่ได้
+ Q06      | DETECTED     | hnsw.ef_search = 40 แต่โค้ดใช้ LIMIT ได้ถึง 100 → คืนผลได้ไม่เกิน 40 แถว ขาดไป 60
+ V07      | CANNOT_CHECK | หาตาราง 'qf_v07' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+(14 rows)
+
+
+--- สรุป ---
+ detected | not_detected | cannot_check | total 
+----------+--------------+--------------+-------
+        3 |            3 |            8 |    14
+(1 row)
+
+
+หมายเหตุ: cannot_check ไม่ใช่ผ่าน และไม่ใช่ไม่พบ (กฎเหล็กข้อ 10)
+
+=== สร้างตารางและ hnsw index ===
+CREATE TABLE
+INSERT 0 100000
+ANALYZE
+psql:/sql/q03_checker_states.sql:28: NOTICE:  hnsw graph no longer fits into maintenance_work_mem after 28360 tuples
+DETAIL:  Building will take significantly more time.
+HINT:  Increase maintenance_work_mem to speed up builds.
+CREATE INDEX
+psql:/sql/q03_checker_states.sql:30: NOTICE:  identifier "แถวที่เข้าเงื่อนไข_grp_lt_10" will be truncated to "แถวที่เข้าเงื่อนไข_grp_lt_1"
+psql:/sql/q03_checker_states.sql:30: NOTICE:  identifier "แถวที่เข้าเงื่อนไข_grp_lt_10" will be truncated to "แถวที่เข้าเงื่อนไข_grp_lt_1"
+ แถวที่เข้าเงื่อนไข_grp_lt_1 
+------------------------
+                   1000
+(1 row)
+
+
+=== สถานะ 2: ค่าเริ่มต้น (iterative_scan = off) -> DETECTED ===
+    มีแถวเข้าเงื่อนไข 1,000 แถว แต่ขอ 10 จะได้ไม่ครบ
+LOAD
+ set_config 
+------------
+ ALL
+(1 row)
+
+DROP TABLE
+CREATE TABLE
+DO
+
+============================================================
+ผลการนับคะแนน
+============================================================
+ fault_id |   verdict    |                                                              detail                                                               
+----------+--------------+-----------------------------------------------------------------------------------------------------------------------------------
+ F01      | NOT_DETECTED | idle in transaction 0 session (ต้อง >= 10) · ค้างนานสุด 0.0 วิ (ต้อง >= 2)
+ F03      | CANNOT_CHECK | ไม่มีตาราง 'qf_f03_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ F05      | NOT_DETECTED | lock ที่ granted=false 0 แถว (ต้อง >= 2) · session ที่ถูกบล็อก 0 (ต้อง >= 2)
+ F10      | CANNOT_CHECK | ไม่มีตาราง 'qf_f10_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ I01      | CANNOT_CHECK | ไม่มี vector index บน 'qf_corpus' เลย — ตรวจ opclass ไม่ได้
+ I02      | CANNOT_CHECK | หาตาราง 'qf_i02' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+ I03      | NOT_DETECTED | ShareLock ที่ได้รับแล้ว 0 แถว · การเขียนที่รออยู่ 0 แถว (ต้อง >= 1 และ >= 1)
+ I04      | CANNOT_CHECK | ไม่มี vector index บน qf_corpus — ไม่มีอะไรให้เทียบว่าถูกสร้างใหม่หรือยัง
+ I05      | DETECTED     | maintenance_work_mem = 64 MB รับได้ประมาณ 28352 tuples แต่ตารางมี 100000 แถว → build จะ spill และช้าลงราว 3 เท่า
+ Q02      | DETECTED     | จาก 37 query ที่ใช้ vector operator · ขาด ORDER BY หรือ LIMIT 2 · เรียง DESC 1 → index ใช้ไม่ได้ (ตรวจ ORDER BY ที่ห่อด้วยนิพจน์ไม่ได้ ต้องดู plan)
+ Q03      | DETECTED     | ขอ 10 แถว ได้ 3 (ขาด 7) ทั้งที่มีแถวเข้าเงื่อนไข 1000 แถว · hnsw.ef_search = 40 · iterative_scan = off
+ Q04      | CANNOT_CHECK | ไม่มี ivfflat index บน qf_corpus ที่ระบุ lists — เทียบกับ sqrt(lists) ไม่ได้
+ Q06      | DETECTED     | hnsw.ef_search = 40 แต่โค้ดใช้ LIMIT ได้ถึง 100 → คืนผลได้ไม่เกิน 40 แถว ขาดไป 60
+ V07      | CANNOT_CHECK | หาตาราง 'qf_v07' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+(14 rows)
+
+
+--- สรุป ---
+ detected | not_detected | cannot_check | total 
+----------+--------------+--------------+-------
+        4 |            3 |            7 |    14
+(1 row)
+
+
+หมายเหตุ: cannot_check ไม่ใช่ผ่าน และไม่ใช่ไม่พบ (กฎเหล็กข้อ 10)
+
+=== เปิดทางแก้ให้ครบ: iterative_scan + work_mem ===
+    (เปิด iterative_scan อย่างเดียวไม่พอ — วัดแล้วใน q03_filter_after_scan.sql)
+SET
+SET
+
+=== สถานะ 3: ทางแก้ครบ -> NOT_DETECTED ===
+LOAD
+ set_config 
+------------
+ ALL
+(1 row)
+
+DROP TABLE
+CREATE TABLE
+DO
+
+============================================================
+ผลการนับคะแนน
+============================================================
+ fault_id |   verdict    |                                                              detail                                                               
+----------+--------------+-----------------------------------------------------------------------------------------------------------------------------------
+ F01      | NOT_DETECTED | idle in transaction 0 session (ต้อง >= 10) · ค้างนานสุด 0.0 วิ (ต้อง >= 2)
+ F03      | CANNOT_CHECK | ไม่มีตาราง 'qf_f03_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ F05      | NOT_DETECTED | lock ที่ granted=false 0 แถว (ต้อง >= 2) · session ที่ถูกบล็อก 0 (ต้อง >= 2)
+ F10      | CANNOT_CHECK | ไม่มีตาราง 'qf_f10_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ I01      | CANNOT_CHECK | ไม่มี vector index บน 'qf_corpus' เลย — ตรวจ opclass ไม่ได้
+ I02      | CANNOT_CHECK | หาตาราง 'qf_i02' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+ I03      | NOT_DETECTED | ShareLock ที่ได้รับแล้ว 0 แถว · การเขียนที่รออยู่ 0 แถว (ต้อง >= 1 และ >= 1)
+ I04      | CANNOT_CHECK | ไม่มี vector index บน qf_corpus — ไม่มีอะไรให้เทียบว่าถูกสร้างใหม่หรือยัง
+ I05      | DETECTED     | maintenance_work_mem = 64 MB รับได้ประมาณ 28352 tuples แต่ตารางมี 100000 แถว → build จะ spill และช้าลงราว 3 เท่า
+ Q02      | DETECTED     | จาก 38 query ที่ใช้ vector operator · ขาด ORDER BY หรือ LIMIT 2 · เรียง DESC 1 → index ใช้ไม่ได้ (ตรวจ ORDER BY ที่ห่อด้วยนิพจน์ไม่ได้ ต้องดู plan)
+ Q03      | NOT_DETECTED | ขอ 10 แถว ได้ครบ 10 (มีแถวเข้าเงื่อนไข 1000 แถว · iterative_scan = relaxed_order)
+ Q04      | CANNOT_CHECK | ไม่มี ivfflat index บน qf_corpus ที่ระบุ lists — เทียบกับ sqrt(lists) ไม่ได้
+ Q06      | DETECTED     | hnsw.ef_search = 40 แต่โค้ดใช้ LIMIT ได้ถึง 100 → คืนผลได้ไม่เกิน 40 แถว ขาดไป 60
+ V07      | CANNOT_CHECK | หาตาราง 'qf_v07' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+(14 rows)
+
+
+--- สรุป ---
+ detected | not_detected | cannot_check | total 
+----------+--------------+--------------+-------
+        3 |            4 |            7 |    14
+(1 row)
+
+
+หมายเหตุ: cannot_check ไม่ใช่ผ่าน และไม่ใช่ไม่พบ (กฎเหล็กข้อ 10)
+
+=== เก็บกวาด ===
+RESET
+RESET
+DROP INDEX
+DROP TABLE
+RESET
+ vector_index_ค้าง 
+------------------
+                0
+(1 row)
+
+ corpus_rows |        corpus_fingerprint        
+-------------+----------------------------------
+        5000 | 5a32cba54ea2be4ed022fe8bfedae9b0
+(1 row)
+
+exit: 0
+
+############ รอบที่ 3 — การทดลอง ############
+Timing is off.
+LOAD
+DROP INDEX
+psql:/sql/q03_filter_after_scan.sql:22: NOTICE:  index "qf_q03_idx" does not exist, skipping
+DROP TABLE
+psql:/sql/q03_filter_after_scan.sql:23: NOTICE:  table "qf_q03" does not exist, skipping
+DROP TABLE
+DROP TABLE
+psql:/sql/q03_filter_after_scan.sql:26: NOTICE:  table "qf_q03_guard" does not exist, skipping
+DROP TABLE
+SELECT 1
+SET
+CREATE TABLE
+INSERT 0 100000
+ANALYZE
+psql:/sql/q03_filter_after_scan.sql:38: NOTICE:  hnsw graph no longer fits into maintenance_work_mem after 28373 tuples
+DETAIL:  Building will take significantly more time.
+HINT:  Increase maintenance_work_mem to speed up builds.
+CREATE INDEX
+CREATE TABLE
+CREATE TABLE
+=== ค่าที่ใช้ ===
+ ef_search | iterative_scan | max_scan_tuples | scan_mem_multiplier | work_mem 
+-----------+----------------+-----------------+---------------------+----------
+ 40        | off            | 20000           | 1                   | 64kB
+(1 row)
+
+ count 
+-------
+    10
+(1 row)
+
+CREATE FUNCTION
+
+=== ส่วนที่ 1: ไล่ selectivity · LIMIT 10 · ef_search=40 (ค่าเริ่มต้น) ===
+    ทุกระดับมีแถวเข้าเงื่อนไขเกิน 10 แถว เฉลยจึงต้องเป็น 10 ทุกแถว
+ qf_q03_probe 
+--------------
+ 
+(1 row)
+
+ qf_q03_probe 
+--------------
+ 
+(1 row)
+
+ qf_q03_probe 
+--------------
+ 
+(1 row)
+
+ qf_q03_probe 
+--------------
+ 
+(1 row)
+
+ qf_q03_probe 
+--------------
+ 
+(1 row)
+
+ qf_q03_probe 
+--------------
+ 
+(1 row)
+
+ qf_q03_probe 
+--------------
+ 
+(1 row)
+
+ qf_q03_probe 
+--------------
+ 
+(1 row)
+
+ qf_q03_probe 
+--------------
+ 
+(1 row)
+
+ qf_q03_probe 
+--------------
+ 
+(1 row)
+
+ filter ตรง % | แถวที่เข้าเงื่อนไข | ขอ | ได้จาก index | เฉลย | ใช้ index | buffers 
+--------------+---------------+----+-------------+------+----------+---------
+       100.00 |        100000 | 10 |          10 |   10 | t        |     938
+        50.00 |         50000 | 10 |          10 |   10 | t        |     945
+        20.00 |         20000 | 10 |          10 |   10 | t        |     957
+        10.00 |         10000 | 10 |           2 |   10 | t        |     968
+         5.00 |          5000 | 10 |           1 |   10 | t        |     968
+         2.00 |          2000 | 10 |           0 |   10 | t        |     968
+         1.00 |          1000 | 10 |           0 |   10 | t        |     968
+         0.50 |           500 | 10 |           0 |   10 | t        |     968
+         0.20 |           200 | 10 |           0 |   10 | t        |     968
+         0.10 |           100 | 10 |           0 |   10 | t        |     968
+(10 rows)
+
+
+=== ส่วนที่ 2: ทางแก้ที่เอกสารบอก และเพดานของมัน ===
+    ที่ filter ตรง 1% · ขอ 40 แถว
+CREATE FUNCTION
+ qf_q03_fixstep 
+----------------
+ 
+(1 row)
+
+SET
+ qf_q03_fixstep 
+----------------
+ 
+(1 row)
+
+SET
+ qf_q03_fixstep 
+----------------
+ 
+(1 row)
+
+RESET
+SET
+ qf_q03_fixstep 
+----------------
+ 
+(1 row)
+
+RESET
+SET
+ qf_q03_fixstep 
+----------------
+ 
+(1 row)
+
+SET
+ qf_q03_fixstep 
+----------------
+ 
+(1 row)
+
+RESET
+RESET
+ ขั้น |                เปลี่ยนอะไร                | ขอ | ได้ | buffers 
+----+-----------------------------------------+----+----+---------
+ 1  | ค่าเริ่มต้นทั้งหมด (iterative_scan = off)     | 40 |  0 |     968
+ 2  | เปิด iterative_scan = relaxed_order      | 40 |  0 |    1729
+ 3  | + max_scan_tuples 20000 -> 200000       | 40 |  0 |    1729
+ 4  | + scan_mem_multiplier 1 -> 8            | 40 |  0 |    3018
+ 5  | + work_mem 64kB -> 4MB  <- ตัวที่ปลดล็อกจริง | 40 | 40 |   28933
+ 6  | strict_order + work_mem 4MB             | 40 | 40 |   28950
+(6 rows)
+
+
+=== ส่วนที่ 3: ข้อ 4 ของ EVIDENCE.md — บน PG17+ ต้องเติม + 0 ===
+    ยืนยันจาก **โครงสร้าง plan** ไม่ใช่จากการอ่านเอกสาร (กฎเหล็กข้อ 6)
+SET
+
+--- ไม่มี + 0 : ORDER BY ชั้นนอกถูกตัดทิ้ง ไม่มี Sort node เลย ---
+                           QUERY PLAN                           
+----------------------------------------------------------------
+ Limit
+   CTE nearest
+     ->  Limit
+           InitPlan 1
+             ->  Index Scan using qf_queries_pkey on qf_queries
+                   Index Cond: (id = 1)
+           ->  Index Scan using qf_q03_idx on qf_q03
+                 Order By: (embedding <=> (InitPlan 1).col1)
+                 Filter: (grp < 100)
+   ->  CTE Scan on nearest
+(10 rows)
+
+
+--- มี + 0 : Sort node โผล่ ลำดับถูกจัดใหม่จริง ---
+                           QUERY PLAN                           
+----------------------------------------------------------------
+ Limit
+   CTE nearest
+     ->  Limit
+           InitPlan 1
+             ->  Index Scan using qf_queries_pkey on qf_queries
+                   Index Cond: (id = 1)
+           ->  Index Scan using qf_q03_idx on qf_q03
+                 Order By: (embedding <=> (InitPlan 1).col1)
+                 Filter: (grp < 100)
+   ->  Sort
+         Sort Key: ((nearest.d + '0'::double precision))
+         ->  CTE Scan on nearest
+(12 rows)
+
+RESET
+
+=== assertion ===
+psql:/sql/q03_filter_after_scan.sql:250: NOTICE:  [1/6] OK เฉลยได้ครบ 10 แถวทุกระดับ selectivity
+psql:/sql/q03_filter_after_scan.sql:250: NOTICE:  [2/6] OK มี 7 ระดับที่ index คืนไม่ครบ · แย่สุดที่ filter ตรง %0.10 ได้ 0 จาก 10
+psql:/sql/q03_filter_after_scan.sql:250: NOTICE:  [3/6] OK ไม่มี error สักกรณี — เป็นความล้มเหลวเงียบจริง
+psql:/sql/q03_filter_after_scan.sql:250: NOTICE:  [4/6] OK ไล่ตัวจำกัดได้: off=0 iterative=0 +max_scan_tuples=0 +scan_mem_mult=0 +work_mem=40
+psql:/sql/q03_filter_after_scan.sql:250: NOTICE:  [5/6] OK ยืนยัน + 0 จากโครงสร้าง plan ข้างบน — ไม่มี + 0 ไม่มี Sort node
+psql:/sql/q03_filter_after_scan.sql:250: NOTICE:  [6/6] OK qf_corpus ไม่ถูกแตะ
+psql:/sql/q03_filter_after_scan.sql:250: NOTICE:  
+psql:/sql/q03_filter_after_scan.sql:250: NOTICE:  ⭐ ตัวที่ปลดล็อกทางแก้คือ work_mem ซึ่งเป็นค่าทั่วไปของ PostgreSQL
+psql:/sql/q03_filter_after_scan.sql:250: NOTICE:     ไม่ใช่พารามิเตอร์ของ pgvector — และไม่มีในรายการข้อจำกัด 4 ข้อของ EVIDENCE.md
+DO
+
+=== เก็บกวาด: ทิ้ง index กับตารางข้อมูล เก็บตารางผลไว้ให้ตัวตรวจอ่าน ===
+DROP INDEX
+DROP TABLE
+DROP FUNCTION
+DROP FUNCTION
+ vector_index_ค้าง 
+------------------
+                0
+(1 row)
+
+exit: 0
+
+############ รอบที่ 3 — พิสูจน์ตัวตรวจ 3 สถานะ ############
+LOAD
+SET
+psql:/sql/q03_checker_states.sql:17: NOTICE:  index "qf_q03_idx" does not exist, skipping
+DROP INDEX
+DROP TABLE
+=== สถานะ 1: ยังไม่มีตาราง -> CANNOT_CHECK ===
+LOAD
+ set_config 
+------------
+ ALL
+(1 row)
+
+psql:/sql/score.sql:33: NOTICE:  table "score_result" does not exist, skipping
+DROP TABLE
+CREATE TABLE
+DO
+
+============================================================
+ผลการนับคะแนน
+============================================================
+ fault_id |   verdict    |                                                              detail                                                               
+----------+--------------+-----------------------------------------------------------------------------------------------------------------------------------
+ F01      | NOT_DETECTED | idle in transaction 0 session (ต้อง >= 10) · ค้างนานสุด 0.0 วิ (ต้อง >= 2)
+ F03      | CANNOT_CHECK | ไม่มีตาราง 'qf_f03_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ F05      | NOT_DETECTED | lock ที่ granted=false 0 แถว (ต้อง >= 2) · session ที่ถูกบล็อก 0 (ต้อง >= 2)
+ F10      | CANNOT_CHECK | ไม่มีตาราง 'qf_f10_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ I01      | CANNOT_CHECK | ไม่มี vector index บน 'qf_corpus' เลย — ตรวจ opclass ไม่ได้
+ I02      | CANNOT_CHECK | หาตาราง 'qf_i02' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+ I03      | NOT_DETECTED | ShareLock ที่ได้รับแล้ว 0 แถว · การเขียนที่รออยู่ 0 แถว (ต้อง >= 1 และ >= 1)
+ I04      | CANNOT_CHECK | ไม่มี vector index บน qf_corpus — ไม่มีอะไรให้เทียบว่าถูกสร้างใหม่หรือยัง
+ I05      | DETECTED     | maintenance_work_mem = 64 MB รับได้ประมาณ 28352 tuples แต่ตารางมี 100000 แถว → build จะ spill และช้าลงราว 3 เท่า
+ Q02      | DETECTED     | จาก 40 query ที่ใช้ vector operator · ขาด ORDER BY หรือ LIMIT 2 · เรียง DESC 1 → index ใช้ไม่ได้ (ตรวจ ORDER BY ที่ห่อด้วยนิพจน์ไม่ได้ ต้องดู plan)
+ Q03      | CANNOT_CHECK | หาตาราง 'qf_q03' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+ Q04      | CANNOT_CHECK | ไม่มี ivfflat index บน qf_corpus ที่ระบุ lists — เทียบกับ sqrt(lists) ไม่ได้
+ Q06      | DETECTED     | hnsw.ef_search = 40 แต่โค้ดใช้ LIMIT ได้ถึง 100 → คืนผลได้ไม่เกิน 40 แถว ขาดไป 60
+ V07      | CANNOT_CHECK | หาตาราง 'qf_v07' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+(14 rows)
+
+
+--- สรุป ---
+ detected | not_detected | cannot_check | total 
+----------+--------------+--------------+-------
+        3 |            3 |            8 |    14
+(1 row)
+
+
+หมายเหตุ: cannot_check ไม่ใช่ผ่าน และไม่ใช่ไม่พบ (กฎเหล็กข้อ 10)
+
+=== สร้างตารางและ hnsw index ===
+CREATE TABLE
+INSERT 0 100000
+ANALYZE
+psql:/sql/q03_checker_states.sql:28: NOTICE:  hnsw graph no longer fits into maintenance_work_mem after 28357 tuples
+DETAIL:  Building will take significantly more time.
+HINT:  Increase maintenance_work_mem to speed up builds.
+CREATE INDEX
+psql:/sql/q03_checker_states.sql:30: NOTICE:  identifier "แถวที่เข้าเงื่อนไข_grp_lt_10" will be truncated to "แถวที่เข้าเงื่อนไข_grp_lt_1"
+psql:/sql/q03_checker_states.sql:30: NOTICE:  identifier "แถวที่เข้าเงื่อนไข_grp_lt_10" will be truncated to "แถวที่เข้าเงื่อนไข_grp_lt_1"
+ แถวที่เข้าเงื่อนไข_grp_lt_1 
+------------------------
+                   1000
+(1 row)
+
+
+=== สถานะ 2: ค่าเริ่มต้น (iterative_scan = off) -> DETECTED ===
+    มีแถวเข้าเงื่อนไข 1,000 แถว แต่ขอ 10 จะได้ไม่ครบ
+LOAD
+ set_config 
+------------
+ ALL
+(1 row)
+
+DROP TABLE
+CREATE TABLE
+DO
+
+============================================================
+ผลการนับคะแนน
+============================================================
+ fault_id |   verdict    |                                                              detail                                                               
+----------+--------------+-----------------------------------------------------------------------------------------------------------------------------------
+ F01      | NOT_DETECTED | idle in transaction 0 session (ต้อง >= 10) · ค้างนานสุด 0.0 วิ (ต้อง >= 2)
+ F03      | CANNOT_CHECK | ไม่มีตาราง 'qf_f03_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ F05      | NOT_DETECTED | lock ที่ granted=false 0 แถว (ต้อง >= 2) · session ที่ถูกบล็อก 0 (ต้อง >= 2)
+ F10      | CANNOT_CHECK | ไม่มีตาราง 'qf_f10_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ I01      | CANNOT_CHECK | ไม่มี vector index บน 'qf_corpus' เลย — ตรวจ opclass ไม่ได้
+ I02      | CANNOT_CHECK | หาตาราง 'qf_i02' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+ I03      | NOT_DETECTED | ShareLock ที่ได้รับแล้ว 0 แถว · การเขียนที่รออยู่ 0 แถว (ต้อง >= 1 และ >= 1)
+ I04      | CANNOT_CHECK | ไม่มี vector index บน qf_corpus — ไม่มีอะไรให้เทียบว่าถูกสร้างใหม่หรือยัง
+ I05      | DETECTED     | maintenance_work_mem = 64 MB รับได้ประมาณ 28352 tuples แต่ตารางมี 100000 แถว → build จะ spill และช้าลงราว 3 เท่า
+ Q02      | DETECTED     | จาก 40 query ที่ใช้ vector operator · ขาด ORDER BY หรือ LIMIT 2 · เรียง DESC 1 → index ใช้ไม่ได้ (ตรวจ ORDER BY ที่ห่อด้วยนิพจน์ไม่ได้ ต้องดู plan)
+ Q03      | DETECTED     | ขอ 10 แถว ได้ 3 (ขาด 7) ทั้งที่มีแถวเข้าเงื่อนไข 1000 แถว · hnsw.ef_search = 40 · iterative_scan = off
+ Q04      | CANNOT_CHECK | ไม่มี ivfflat index บน qf_corpus ที่ระบุ lists — เทียบกับ sqrt(lists) ไม่ได้
+ Q06      | DETECTED     | hnsw.ef_search = 40 แต่โค้ดใช้ LIMIT ได้ถึง 100 → คืนผลได้ไม่เกิน 40 แถว ขาดไป 60
+ V07      | CANNOT_CHECK | หาตาราง 'qf_v07' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+(14 rows)
+
+
+--- สรุป ---
+ detected | not_detected | cannot_check | total 
+----------+--------------+--------------+-------
+        4 |            3 |            7 |    14
+(1 row)
+
+
+หมายเหตุ: cannot_check ไม่ใช่ผ่าน และไม่ใช่ไม่พบ (กฎเหล็กข้อ 10)
+
+=== เปิดทางแก้ให้ครบ: iterative_scan + work_mem ===
+    (เปิด iterative_scan อย่างเดียวไม่พอ — วัดแล้วใน q03_filter_after_scan.sql)
+SET
+SET
+
+=== สถานะ 3: ทางแก้ครบ -> NOT_DETECTED ===
+LOAD
+ set_config 
+------------
+ ALL
+(1 row)
+
+DROP TABLE
+CREATE TABLE
+DO
+
+============================================================
+ผลการนับคะแนน
+============================================================
+ fault_id |   verdict    |                                                              detail                                                               
+----------+--------------+-----------------------------------------------------------------------------------------------------------------------------------
+ F01      | NOT_DETECTED | idle in transaction 0 session (ต้อง >= 10) · ค้างนานสุด 0.0 วิ (ต้อง >= 2)
+ F03      | CANNOT_CHECK | ไม่มีตาราง 'qf_f03_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ F05      | NOT_DETECTED | lock ที่ granted=false 0 แถว (ต้อง >= 2) · session ที่ถูกบล็อก 0 (ต้อง >= 2)
+ F10      | CANNOT_CHECK | ไม่มีตาราง 'qf_f10_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ I01      | CANNOT_CHECK | ไม่มี vector index บน 'qf_corpus' เลย — ตรวจ opclass ไม่ได้
+ I02      | CANNOT_CHECK | หาตาราง 'qf_i02' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+ I03      | NOT_DETECTED | ShareLock ที่ได้รับแล้ว 0 แถว · การเขียนที่รออยู่ 0 แถว (ต้อง >= 1 และ >= 1)
+ I04      | CANNOT_CHECK | ไม่มี vector index บน qf_corpus — ไม่มีอะไรให้เทียบว่าถูกสร้างใหม่หรือยัง
+ I05      | DETECTED     | maintenance_work_mem = 64 MB รับได้ประมาณ 28352 tuples แต่ตารางมี 100000 แถว → build จะ spill และช้าลงราว 3 เท่า
+ Q02      | DETECTED     | จาก 41 query ที่ใช้ vector operator · ขาด ORDER BY หรือ LIMIT 2 · เรียง DESC 1 → index ใช้ไม่ได้ (ตรวจ ORDER BY ที่ห่อด้วยนิพจน์ไม่ได้ ต้องดู plan)
+ Q03      | NOT_DETECTED | ขอ 10 แถว ได้ครบ 10 (มีแถวเข้าเงื่อนไข 1000 แถว · iterative_scan = relaxed_order)
+ Q04      | CANNOT_CHECK | ไม่มี ivfflat index บน qf_corpus ที่ระบุ lists — เทียบกับ sqrt(lists) ไม่ได้
+ Q06      | DETECTED     | hnsw.ef_search = 40 แต่โค้ดใช้ LIMIT ได้ถึง 100 → คืนผลได้ไม่เกิน 40 แถว ขาดไป 60
+ V07      | CANNOT_CHECK | หาตาราง 'qf_v07' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+(14 rows)
+
+
+--- สรุป ---
+ detected | not_detected | cannot_check | total 
+----------+--------------+--------------+-------
+        3 |            4 |            7 |    14
+(1 row)
+
+
+หมายเหตุ: cannot_check ไม่ใช่ผ่าน และไม่ใช่ไม่พบ (กฎเหล็กข้อ 10)
+
+=== เก็บกวาด ===
+RESET
+RESET
+DROP INDEX
+DROP TABLE
+RESET
+ vector_index_ค้าง 
+------------------
+                0
+(1 row)
+
+ corpus_rows |        corpus_fingerprint        
+-------------+----------------------------------
+        5000 | 5a32cba54ea2be4ed022fe8bfedae9b0
+(1 row)
+
+exit: 0
+
+จบ: 2026-07-27 23:21:17
+>>> DONE

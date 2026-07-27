@@ -25,19 +25,19 @@
     "I04",
     "I05",
     "Q02",
+    "Q03",
     "Q04",
     "Q06",
     "V07"
   ],
-  "faults_remaining": [
-    "Q03"
-  ],
+  "faults_remaining": [],
   "checker_states_file_required": [
     "I01",
     "I02",
     "I04",
     "I05",
     "Q02",
+    "Q03",
     "Q04",
     "Q06",
     "V07"
@@ -54,7 +54,7 @@
     "results/qdrant_queries.csv",
     "results/qdrant_search_results.csv"
   ],
-  "score_expected_rows": 13,
+  "score_expected_rows": 14,
   "_reproduce_comment_th": "รันตัวฉีดจริงซ้ำ ไม่ใช่แค่ดูว่าหลักฐานมีอยู่ · สำเร็จ = exit 0 เพราะทุกสคริปต์ใช้ ON_ERROR_STOP และ RAISE EXCEPTION เมื่อ assertion ตก",
   "reproduce": {
     "I01": {
@@ -84,6 +84,10 @@
     "I02": {
       "script": "sql/i02_index_built_too_early.sql",
       "minutes": 9
+    },
+    "Q03": {
+      "script": "sql/q03_filter_after_scan.sql",
+      "minutes": 4
     }
   },
   "reproduce_manual_only": {

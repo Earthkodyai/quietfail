@@ -1,0 +1,204 @@
+{
+  "fault_id": "Q03",
+  "group": "B_index_never_used",
+  "name": "filter_applied_after_index_scan",
+  "true_cause": "filter_runs_after_index_returns_candidates",
+  "true_cause_th": "HNSW คืน candidate มาตามจำนวน ef_search **ก่อน** แล้ว filter ค่อยคัดออกทีหลัง ถ้าเงื่อนไขตรงแถวส่วนน้อย candidate ที่รอดจะเหลือน้อยกว่าที่ขอ — และถ้าไม่รอดเลยก็ได้ศูนย์แถว",
+  "surface_symptom": "query คืนแถวน้อยกว่า LIMIT หรือ **ไม่คืนเลย** ทั้งที่มีแถวเข้าเงื่อนไขเป็นพัน · ไม่มี error · plan แสดงว่าใช้ index ถูกต้อง",
+  "differs_from_q06_th": "Q06 เพดานคือ ef_search (ขอเกิน 40 ได้ 40) · Q03 เพดานคือจำนวน candidate ที่ **รอดจาก filter** ซึ่งน้อยกว่านั้นมาก · แยกกันด้วยการวัดที่ LIMIT 10 ซึ่งต่ำกว่า ef_search=40 ชัดเจน — Q06 วัดแล้วว่าที่ 39-40 ยังได้ครบ",
+  "misleading_fixes": [
+    "เพิ่ม LIMIT (ยิ่งขอยิ่งไม่ได้)",
+    "เพิ่ม lists / m / ef_construction",
+    "สร้าง index ใหม่",
+    "เพิ่ม btree index บนคอลัมน์ filter (ไม่เกี่ยว)",
+    "สรุปว่าไม่มีข้อมูลตรงเงื่อนไข"
+  ],
+  "correct_diagnosis": "นับแถวที่เข้าเงื่อนไข filter เทียบกับจำนวนแถวที่ query คืนจริง · ถ้ามีแถวเข้าเงื่อนไขเกิน LIMIT แต่ได้กลับมาไม่ถึง LIMIT แปลว่าผลหายไปในเส้นทาง index",
+  "correct_fix_th": "เปิด hnsw.iterative_scan **และต้องเพิ่ม work_mem ด้วย** — วัดแล้วว่าเปิด iterative_scan อย่างเดียวไม่ช่วยอะไรเลยบนโปรไฟล์ fragile (work_mem=64kB) · ทางเลือกอื่นคือกรองด้วย partial index หรือแยกตารางตามเงื่อนไข",
+  "evidence_query": "วัดสดใน score.sql — ถาม k แถวแล้วนับว่าได้กี่แถว ไม่ต้องรู้เฉลย",
+  "evidence_expectation": {
+    "target_table": "qf_q03",
+    "vector_column": "embedding",
+    "filter_column": "grp",
+    "filter_predicate": "grp < 10",
+    "limit_k": 10,
+    "detect_when": "query คืนแถวน้อยกว่า limit_k ทั้งที่มีแถวเข้าเงื่อนไขมากกว่า limit_k"
+  },
+  "checker_design_note_th": "ข้อนี้ตรวจง่ายที่สุดในบรรดาข้อที่ต้องวัดสด เพราะ **ไม่ต้องรู้เฉลย** แค่เทียบ 'จำนวนแถวที่เข้าเงื่อนไข' กับ 'จำนวนแถวที่ได้คืนมา' · ตัวตรวจบังคับให้ limit_k < ef_search ไม่งั้นตอบ CANNOT_CHECK เพราะจะแยกจาก Q06 ไม่ออก",
+  "checker_limitation_th": "บอกว่าแถวหายจริง แต่บอกไม่ได้ว่าหายไปกี่แถวจากทั้งหมดที่ควรได้ (ต้องเทียบกับ exact search ถึงจะรู้) · และถ้า planner เลิกใช้ index จะได้ครบแล้วตอบ NOT_DETECTED ซึ่งถูกต้องตามสภาพจริง ณ ตอนนั้น",
+  "measured_2026_07_27": {
+    "table_rows": 100000,
+    "dim": 384,
+    "ef_search": 40,
+    "iterative_scan_default": "off",
+    "work_mem_profile": "64kB",
+    "sweep_limit_10_note_th": "ใช้ LIMIT 10 ซึ่งต่ำกว่า ef_search=40 ชัดเจน เพื่อแยกจาก Q06 · ทุกระดับมีแถวเข้าเงื่อนไขเกิน 10 เฉลยจึงเป็น 10 ทุกแถว",
+    "sweep": [
+      {
+        "filter_pct": 100,
+        "rows_matching": 100000,
+        "asked": 10,
+        "got": 10,
+        "exact": 10,
+        "uses_index": true,
+        "buffers": 947
+      },
+      {
+        "filter_pct": 50,
+        "rows_matching": 50000,
+        "asked": 10,
+        "got": 10,
+        "exact": 10,
+        "uses_index": true,
+        "buffers": 954
+      },
+      {
+        "filter_pct": 20,
+        "rows_matching": 20000,
+        "asked": 10,
+        "got": 10,
+        "exact": 10,
+        "uses_index": true,
+        "buffers": 966
+      },
+      {
+        "filter_pct": 10,
+        "rows_matching": 10000,
+        "asked": 10,
+        "got": 2,
+        "exact": 10,
+        "uses_index": true,
+        "buffers": 977
+      },
+      {
+        "filter_pct": 5,
+        "rows_matching": 5000,
+        "asked": 10,
+        "got": 1,
+        "exact": 10,
+        "uses_index": true,
+        "buffers": 977
+      },
+      {
+        "filter_pct": 2,
+        "rows_matching": 2000,
+        "asked": 10,
+        "got": 0,
+        "exact": 10,
+        "uses_index": true,
+        "buffers": 977
+      },
+      {
+        "filter_pct": 1,
+        "rows_matching": 1000,
+        "asked": 10,
+        "got": 0,
+        "exact": 10,
+        "uses_index": true,
+        "buffers": 977
+      },
+      {
+        "filter_pct": 0.5,
+        "rows_matching": 500,
+        "asked": 10,
+        "got": 0,
+        "exact": 10,
+        "uses_index": true,
+        "buffers": 977
+      },
+      {
+        "filter_pct": 0.2,
+        "rows_matching": 200,
+        "asked": 10,
+        "got": 0,
+        "exact": 10,
+        "uses_index": true,
+        "buffers": 977
+      },
+      {
+        "filter_pct": 0.1,
+        "rows_matching": 100,
+        "asked": 10,
+        "got": 0,
+        "exact": 10,
+        "uses_index": true,
+        "buffers": 977
+      }
+    ],
+    "cliff_th": "หน้าผาอยู่ระหว่าง 20% (ได้ครบ 10) กับ 10% (ได้ 2) · ตั้งแต่ 2% ลงไปได้ **ศูนย์แถว** ทั้งที่มีแถวเข้าเงื่อนไข 2,000 แถว",
+    "vs_doc_th": "เอกสารบอกว่า filter 10% กับ ef_search=40 จะเหลือราว 4 แถว · วัดเองที่ LIMIT 10 ได้ 2 แถว — อันดับเดียวกัน แต่ตัวเลขต้องมาจากการวัดเอง (กฎเหล็กข้อ 2)",
+    "fix_ladder": [
+      {
+        "step": 1,
+        "changed": "ค่าเริ่มต้นทั้งหมด (iterative_scan=off)",
+        "asked": 40,
+        "got": 0,
+        "buffers": 977
+      },
+      {
+        "step": 2,
+        "changed": "เปิด iterative_scan=relaxed_order",
+        "asked": 40,
+        "got": 0,
+        "buffers": 1743
+      },
+      {
+        "step": 3,
+        "changed": "+ max_scan_tuples 20000->200000",
+        "asked": 40,
+        "got": 0,
+        "buffers": 1743
+      },
+      {
+        "step": 4,
+        "changed": "+ scan_mem_multiplier 1->8",
+        "asked": 40,
+        "got": 0,
+        "buffers": 3035
+      },
+      {
+        "step": 5,
+        "changed": "+ work_mem 64kB->4MB",
+        "asked": 40,
+        "got": 40,
+        "buffers": 27145
+      },
+      {
+        "step": 6,
+        "changed": "strict_order + work_mem 4MB",
+        "asked": 40,
+        "got": 40,
+        "buffers": 28212
+      }
+    ],
+    "fix_finding_th": "⭐ ตัวที่ปลดล็อกคือ **work_mem** ซึ่งเป็นค่าทั่วไปของ PostgreSQL ไม่ใช่พารามิเตอร์ของ pgvector และ **ไม่มีอยู่ในรายการข้อจำกัด 4 ข้อที่ EVIDENCE.md จดไว้จากเอกสาร** · ขั้น 2-4 จ่าย I/O เพิ่ม (977->1743->3035 buffers) โดยไม่ได้แถวเพิ่มแม้แต่แถวเดียว",
+    "fix_cost_th": "ทางแก้ที่ได้ผลจ่าย buffers 27,145 เทียบกับ 977 = **แพงขึ้น 28 เท่า**",
+    "plus_zero_finding_th": "ยืนยันข้อ 4 ของ EVIDENCE.md จากโครงสร้าง plan: `ORDER BY d` ชั้นนอกไม่เกิด Sort node เลยบน PG 17.10 (planner ถือว่าเรียงมาแล้ว) · ใส่ `ORDER BY d + 0` แล้ว Sort node โผล่ — จำเป็นเมื่อใช้ relaxed_order ซึ่งไม่รับประกันลำดับ",
+    "errors_raised": 0,
+    "across_3_cycles": {
+      "levels_incomplete": [
+        7,
+        7,
+        7
+      ],
+      "worst_case": "filter 0.10% ได้ 0 จาก 10 ทุกรอบ",
+      "fix_ladder_every_cycle": "off=0 iterative=0 +max_scan_tuples=0 +scan_mem_mult=0 +work_mem=40",
+      "note_th": "ผลเหมือนกันเป๊ะทั้ง 3 รอบ — ต่างจาก I02/I04 ที่มีความไม่นิ่งของ build เพราะ Q03 เป็นผลเชิงโครงสร้างของลำดับการทำงาน (filter หลัง index) ไม่ขึ้นกับการสุ่มตอน build"
+    }
+  },
+  "reproduce": "sql/q03_filter_after_scan.sql",
+  "config_profile": "fragile",
+  "safety_note_th": "ใช้ตารางแยก qf_q03 · qf_corpus อ่านอย่างเดียวและตรวจ fingerprint ก่อน/หลัง",
+  "verified_on": {
+    "postgres_version": "17.10 (Debian 17.10-1.pgdg12+1)",
+    "pgvector_version": "0.8.5",
+    "image_tag": "pgvector/pgvector:0.8.5-pg17",
+    "config_profile": "fragile",
+    "date": "2026-07-27",
+    "consecutive_successful_runs": 3,
+    "assertions_per_run": "6/6 ทุกรอบ (18/18 รวม)",
+    "checker_states_verified": "CANNOT_CHECK (ไม่มีตาราง) / DETECTED (ขอ 10 ได้ 3) / NOT_DETECTED (iterative+work_mem ได้ครบ 10) — 3 รอบติด",
+    "checker_states_evidence": "sql/q03_checker_states.sql -> results/q03_phase3_cycle.txt",
+    "qf_corpus_untouched": "100000 แถว · fingerprint 5a32cba54ea2be4ed022fe8bfedae9b0 ตรวจทุกรอบใน assertion [6/6]"
+  }
+}
