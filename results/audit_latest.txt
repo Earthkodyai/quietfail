@@ -1,0 +1,47 @@
+==============================================================================
+QuietFail — ตรวจความพร้อมของ repo
+รันเมื่อ : 2026-07-27 15:31:49
+commit  : f23ebdd  audit before handoff: I05 had a checker that was nev
+baseline: scripts/audit_baseline.json (_updated = 2026-07-27)
+==============================================================================
+
+วิธีใช้รายงานนี้แทนการตรวจเอง
+  1. เทียบ commit ข้างบนกับ  git rev-parse --short HEAD
+  2. ตรงกัน + ข้างล่างเขียน 'ผ่านครบทุกข้อ' = เชื่อ CLAUDE.md ได้เลย ไม่ต้องตรวจซ้ำ
+  3. ไม่ตรงกัน = มีอะไรเปลี่ยนหลัง audit ให้รัน  python scripts/audit.py  ใหม่
+
+── 1 git ──
+ FAIL  working tree                                   มีไฟล์ค้าง 3 รายการ ยังไม่ commit: CLAUDE.md, scripts/audit.py, scripts/audit_baseline.json
+  ok   results ถูก track                              24 ไฟล์ · ยกเว้น csv ที่ตั้งใจไม่ track 3 ไฟล์
+── 2 groundtruth ──
+  ok   parse ได้ทุกไฟล์                               11 ไฟล์
+  ok   มี evidence_expectation + verified_on.date     ครบ 11 ข้อ
+  ok   ไฟล์ที่ reproduce ชี้ไปมีจริง                  ครบ 11 ข้อ
+  ok   สูตรข้อ 6 — พิสูจน์ว่าตัวตรวจพลิกได้           ครบ 11 ข้อ (ยกเว้นที่ระบุใน baseline 5 ข้อ)
+  ok   มีไฟล์ *_checker_states.sql ตามที่ baseline กำหนด ครบ 6 ข้อ
+── 3 เอกสาร ──
+  ok   E/D ที่ถูกอ้างมีนิยาม                          47 ตัว อ้างครบทุกตัว
+  ok   สถานะใน CLAUDE.md ตรงกับ baseline              เสร็จ 7 · เหลือ I02 I04 Q03
+  ok   fault ที่ตัดแล้วไม่กลับมา                      Q05 L01 V08 ยังถูกตัดอยู่ (D15)
+── 4 ฐานข้อมูล ──
+  ok   เชื่อมต่อ docker/psql                          ต่อได้
+  ok   qf_corpus จำนวนแถว                             100000
+  ok   qf_corpus มิติ                                 384
+  ok   qf_corpus fingerprint (5,000 แถวแรก)           5a32cba54ea2be4ed022fe8bfedae9b0
+  ok   qf_truth จำนวนแถว                              400
+  ok   orders จำนวนแถว                                200000
+  ok   ไม่มี vector index ค้าง                        0
+  ok   maintenance_work_mem                           64MB
+  ok   PostgreSQL เวอร์ชัน                            17.10
+  ok   pgvector เวอร์ชัน                              0.8.5
+── 5 score.sql ──
+  ok   รันจบไม่มี error                               exit 0
+  ok   ทุก fault มีสาขาที่ตอบได้                      11/11 ข้อ
+  ok   verdict ที่ได้ตอนนี้ (ข้อมูล ไม่ใช่เกณฑ์)      F01=NOT_DETECTED · F03=CANNOT_CHECK · F05=NOT_DETECTED · F10=CANNOT_CHECK · I01=CANNOT_CHECK · I03=NOT_DETECTED · I05=DETECTED · Q02=DETECTED · Q04=CANNOT_CHECK · Q06=DETECTED · V07=CANNOT_CHECK
+
+==============================================================================
+ผ่าน 22 · ไม่ผ่าน 1 · ตรวจไม่ได้ 0   (รวม 23)
+
+❌ ยังไม่พร้อม — แก้ให้ครบก่อนถือว่า CLAUDE.md เชื่อถือได้
+   'ตรวจไม่ได้' ไม่ใช่ 'ผ่าน' (กฎเหล็กข้อ 10)
+==============================================================================
