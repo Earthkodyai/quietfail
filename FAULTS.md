@@ -444,6 +444,64 @@ IVFFlat opclass ถูก 3 build ในรอบเดียวกัน ข้
 ได้ recall@10 = **0.7780 · 0.8020 · 0.7415** (ช่วง 0.06 = 8%)
 เข้ากันได้กับ I04 (k-means สุ่ม) แต่ **ยังไม่ใช่ข้อสรุป** — I04 ต้องออกแบบการทดลองของตัวเอง
 
+### I03 — `CREATE INDEX` ไม่ใช้ `CONCURRENTLY` → บล็อกการเขียนทั้งตาราง
+
+| | |
+|---|---|
+| **อาการที่เห็น** | ระบบเขียนไม่ได้ทั้งระบบตอน deploy · **แต่การอ่านยังปกติทุกอย่าง** |
+| **คนมักแก้ผิด** | restart แอป · โทษ connection pool · rollback deploy ทั้งชุด |
+| **ต้นเหตุจริง** | `CREATE INDEX` ธรรมดาถือ `ShareLock` ตลอดเวลาที่ build · ชนกับ `RowExclusiveLock` ของการเขียน |
+| **ทำไม dev ไม่เจอ** | ข้อมูลเล็ก build เสร็จในวินาทีเดียว · และ staging มักทดสอบด้วย traffic อ่านอย่างเดียว |
+
+**⭐ จุดที่ต่างจาก F05 และเป็นหัวใจของข้อนี้**
+
+| | lock ที่ถือ | บล็อกอะไร |
+|---|---|---|
+| **F05** `ALTER TABLE` | `AccessExclusiveLock` | **ทุกอย่าง** รวมทั้งการอ่าน |
+| **I03** `CREATE INDEX` | `ShareLock` | **เฉพาะการเขียน** — การอ่านยังทำงานปกติ |
+
+→ ทีมที่ทดสอบ migration ด้วย read traffic **ไม่เห็นอะไรผิดเลย**
+แล้วไปเจอตอน production ที่มีการเขียนจริง
+
+**⭐ ระยะเวลาที่เขียนไม่ได้ = เวลา build ซึ่ง I05 วัดไว้แล้ว**
+```
+100k แถว @ maintenance_work_mem=64MB  ->  ~60 วินาที
+500k แถว                              ->  603 วินาที = 10 นาที
+```
+**I03 กับ I05 ประกอบกัน** — `maintenance_work_mem` ต่ำไม่ได้แค่ทำให้ build ช้า
+แต่ทำให้**หน้าต่างที่ระบบเขียนไม่ได้ยาวขึ้นตามไปด้วย**
+
+**วิธีฉีด**
+```
+session A [role lab]:  CREATE INDEX ... USING hnsw (...)   (ไม่ใส่ CONCURRENTLY)
+session B [role app]:  SELECT ...   -> ผ่านปกติ
+session C [role app]:  INSERT ...   -> ค้างจนกว่า build จะเสร็จ
+```
+
+**ground truth**
+```sql
+SELECT a.pid, l.mode, l.granted, left(a.query,44)
+FROM pg_locks l JOIN pg_stat_activity a USING (pid)
+WHERE l.relation = 'qf_corpus'::regclass
+ORDER BY l.granted DESC;
+```
+ต้องเห็น `ShareLock granted=t` ของ `CREATE INDEX`
+คู่กับ `RowExclusiveLock granted=f` ของการเขียนที่รออยู่
+
+**assertion** — ต้องผ่านครบ 4 ข้อ
+1. ระหว่าง build ธรรมดา **การเขียนถูกบล็อก**
+2. ระหว่าง build ธรรมดา **การอ่านต้องยังทำงาน** — ข้อนี้คือจุดที่อธิบายว่าทำไมไม่มีใครเจอ
+3. `pg_locks` ต้องเห็น `ShareLock` จริง — เห็นไม่ได้ = **"ตรวจไม่ได้"** ห้ามสรุปจากเวลาอย่างเดียว
+4. `CONCURRENTLY` **ต้องไม่บล็อกการเขียน** (กลุ่มควบคุม — พิสูจน์ว่าทางแก้ใช้ได้จริง)
+
+> ⚠️ **การเขียนที่ใช้ทดสอบต้อง `ROLLBACK` เสมอ**
+> ไม่งั้น `qf_corpus` ที่ล็อกไว้จะเปลี่ยนจำนวนแถว แล้ว fingerprint กับเฉลยใช้ไม่ได้
+> สคริปต์ตรวจจำนวนแถวก่อน/หลังทุกครั้ง
+
+**สถานะ:** กำลังทำ
+
+---
+
 ### I05 — `maintenance_work_mem` ต่ำ ทำให้ build ช้าผิดปกติ
 
 | | |

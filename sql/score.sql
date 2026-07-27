@@ -71,6 +71,8 @@ DECLARE
     got_dim   int;
     mwm_mb    bigint;
     capacity  bigint;
+    n_share   int;
+    n_waiting int;
 BEGIN
     FOR f IN
         SELECT name FROM pg_ls_dir('/groundtruth') AS name
@@ -328,6 +330,41 @@ BEGIN
                 INSERT INTO score_result VALUES (fid, 'NOT_DETECTED',
                     format('maintenance_work_mem = %s MB รับได้ประมาณ %s tuples · ตารางมี %s แถว',
                            mwm_mb, capacity, n_rows), NULL);
+            END IF;
+
+        -- ---- ตัวตรวจของ I03: ShareLock ของ build กับการเขียนที่รออยู่ ----
+        --
+        -- หลักฐานเป็น **สถานะสดของ DB** เหมือน F05 → ต้องวัดระหว่าง fault ค้าง
+        -- ต่างจาก I01/I05 ที่อ่าน catalog เมื่อไหร่ก็ได้ (ดูตารางชนิดหลักฐานใน CLAUDE.md)
+        ELSIF fid = 'I03' THEN
+            rel := exp ->> 'target_table';
+
+            IF to_regclass(rel) IS NULL THEN
+                INSERT INTO score_result VALUES (fid, 'CANNOT_CHECK',
+                    format('หาตาราง %L ไม่เจอ', rel), NULL);
+                CONTINUE;
+            END IF;
+
+            EXECUTE format(
+                'SELECT count(*) FILTER (WHERE mode = %L AND granted), '
+                '       count(*) FILTER (WHERE mode = %L AND NOT granted) '
+                'FROM pg_locks WHERE relation = %L::regclass',
+                exp ->> 'blocking_mode', exp ->> 'blocked_mode', rel)
+            INTO n_share, n_waiting;
+
+            IF n_share >= (exp ->> 'min_granted_share_locks')::int
+               AND n_waiting >= (exp ->> 'min_waiting_writes')::int THEN
+                INSERT INTO score_result VALUES (fid, 'DETECTED',
+                    format('%s ที่ได้รับแล้ว %s แถวบน %s · การเขียนรออยู่ %s แถว '
+                           '→ build กำลังบล็อกการเขียน',
+                           exp ->> 'blocking_mode', n_share, rel, n_waiting),
+                    doc ->> 'correct_diagnosis');
+            ELSE
+                INSERT INTO score_result VALUES (fid, 'NOT_DETECTED',
+                    format('%s ที่ได้รับแล้ว %s แถว · การเขียนที่รออยู่ %s แถว (ต้อง >= %s และ >= %s)',
+                           exp ->> 'blocking_mode', n_share, n_waiting,
+                           exp ->> 'min_granted_share_locks', exp ->> 'min_waiting_writes'),
+                    NULL);
             END IF;
 
         ELSE

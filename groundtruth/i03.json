@@ -1,0 +1,50 @@
+{
+  "fault_id": "I03",
+  "group": "B_deploy_blocks_writes",
+  "name": "create_index_without_concurrently_blocks_writes",
+
+  "true_cause": "share_lock_held_for_whole_index_build",
+  "true_cause_th": "CREATE INDEX ธรรมดาถือ ShareLock ตลอดเวลาที่ build ซึ่งชนกับ RowExclusiveLock ของการเขียน",
+
+  "surface_symptom": "ระบบเขียนไม่ได้ทั้งระบบตอน deploy แต่การอ่านยังปกติทุกอย่าง",
+
+  "why_nobody_catches_it_th": "ShareLock ชนกับการเขียนเท่านั้น ไม่ชนกับ AccessShareLock ของการอ่าน → staging ที่ทดสอบด้วย read traffic อย่างเดียวไม่เห็นอะไรผิดเลย · ต่างจาก F05 ที่ ALTER TABLE ถือ AccessExclusiveLock แล้วบล็อกทุกอย่างรวมทั้งการอ่าน",
+
+  "misleading_fixes": [
+    "restart แอป",
+    "โทษ connection pool ฝั่ง client",
+    "rollback deploy ทั้งชุดโดยไม่รู้ว่าอะไรค้าง",
+    "เพิ่ม max_connections"
+  ],
+
+  "correct_diagnosis": "ดู pg_locks บนตารางเป้าหมาย จะเห็น ShareLock granted=true ของ CREATE INDEX คู่กับ RowExclusiveLock granted=false ของการเขียนที่รออยู่",
+
+  "correct_fix_th": "ใช้ CREATE INDEX CONCURRENTLY ซึ่งถือ ShareUpdateExclusiveLock แทน จึงไม่ชนกับการเขียน · แลกกับ build ที่นานกว่าและอาจล้มเหลวแล้วทิ้ง invalid index ไว้",
+
+  "composes_with_th": "ระยะเวลาที่เขียนไม่ได้เท่ากับเวลา build ซึ่ง I05 วัดไว้แล้ว — 100k แถวที่ maintenance_work_mem=64MB ใช้ ~60 วินาที · 500k แถวใช้ 603 วินาที = เขียนไม่ได้ 10 นาที · maintenance_work_mem ต่ำจึงไม่ได้แค่ทำให้ build ช้า แต่ยืดหน้าต่างที่ระบบเขียนไม่ได้ด้วย",
+
+  "evidence_query": "SELECT a.pid, l.mode, l.granted, left(a.query,44) AS query FROM pg_locks l JOIN pg_stat_activity a USING (pid) WHERE l.relation = 'qf_corpus'::regclass ORDER BY l.granted DESC",
+
+  "evidence_expectation": {
+    "target_table": "qf_corpus",
+    "blocking_mode": "ShareLock",
+    "blocked_mode": "RowExclusiveLock",
+    "min_granted_share_locks": 1,
+    "min_waiting_writes": 1
+  },
+
+  "reproduce": "faults/i03_create_index_lock.sh",
+  "config_profile": "fragile",
+
+  "safety_note_th": "การเขียนที่ใช้ทดสอบต้อง ROLLBACK เสมอ ไม่งั้น qf_corpus ที่ล็อกไว้เปลี่ยนจำนวนแถว แล้ว fingerprint กับเฉลยใช้ไม่ได้ · สคริปต์ตรวจจำนวนแถวก่อน/หลังทุกรอบ",
+
+  "verified_on": {
+    "postgres_version": "17.10 (Debian 17.10-1.pgdg12+1)",
+    "pgvector_version": "0.8.5",
+    "image_tag": "pgvector/pgvector:0.8.5-pg17",
+    "config_profile": "fragile",
+    "date": "2026-07-27",
+    "corpus_rows": 100000,
+    "note": "รอผล 3 รอบติด — เติมหลังรันจริง"
+  }
+}
