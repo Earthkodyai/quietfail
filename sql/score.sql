@@ -85,6 +85,13 @@ DECLARE
     n_lists    int;
     probes_now int;
     probes_rec int;
+    rec_tbl    text;
+    rec_node   oid;
+    cur_node   oid;
+    cur_am     text;
+    cur_name   text;
+    rec_recall numeric;
+    rec_when   text;
 BEGIN
     FOR f IN
         SELECT name FROM pg_ls_dir('/groundtruth') AS name
@@ -532,6 +539,76 @@ BEGIN
                 INSERT INTO score_result VALUES (fid, 'NOT_DETECTED',
                     format('ivfflat.probes = %s >= sqrt(lists) = %s (lists = %s)',
                            probes_now, probes_rec, n_lists), NULL);
+            END IF;
+
+        -- ---- ตัวตรวจของ I04: ตัวเลข recall ที่มีอยู่ วัดบน index ตัวปัจจุบันหรือเปล่า ----
+        --
+        -- I04 ตรวจ "ความไม่แน่นอนของ k-means" ตรงๆ ไม่ได้ เพราะทุก ivfflat index
+        -- ก็สุ่มเหมือนกันหมด → ตัวตรวจที่ตอบ DETECTED เสมอ = ไม่ได้วัดอะไรเลย
+        --
+        -- จึงตรวจ **ผลกระทบจริง** แทน: recall ที่ทีมวัดไว้ ยังอธิบาย index ตัวที่ใช้อยู่ไหม
+        -- ใช้ relfilenode เป็นตัวชี้ตัวตน — สร้าง index ใหม่ทีไร เลขนี้เปลี่ยนทุกครั้ง
+        -- (พิสูจน์แล้วใน results/i04_phase3_cycle.txt: 5 build ได้ 5 ค่าไม่ซ้ำ)
+        ELSIF fid = 'I04' THEN
+            rel     := exp ->> 'target_table';
+            rec_tbl := exp ->> 'record_table';
+
+            IF to_regclass(rel) IS NULL THEN
+                INSERT INTO score_result VALUES (fid, 'CANNOT_CHECK',
+                    format('หาตาราง %L ไม่เจอ', rel), NULL);
+                CONTINUE;
+            END IF;
+
+            SELECT c.relfilenode, am.amname, c.relname
+              INTO cur_node, cur_am, cur_name
+            FROM pg_index i
+            JOIN pg_class c ON c.oid = i.indexrelid
+            JOIN pg_class t ON t.oid = i.indrelid
+            JOIN pg_am am   ON am.oid = c.relam
+            WHERE t.relname = rel AND am.amname IN ('ivfflat', 'hnsw')
+            ORDER BY c.relname
+            LIMIT 1;
+
+            IF cur_node IS NULL THEN
+                INSERT INTO score_result VALUES (fid, 'CANNOT_CHECK',
+                    format('ไม่มี vector index บน %s — ไม่มีอะไรให้เทียบว่าถูกสร้างใหม่หรือยัง', rel),
+                    NULL);
+                CONTINUE;
+            END IF;
+
+            -- กฎเหล็กข้อ 10: ไม่เคยบันทึกว่า recall วัดบน build ไหน = ตรวจไม่ได้
+            -- **ไม่ใช่ "ผ่าน"** — ทีมที่ไม่เคยจดเลย คือทีมที่เสี่ยงที่สุด
+            IF to_regclass(rec_tbl) IS NULL THEN
+                INSERT INTO score_result VALUES (fid, 'CANNOT_CHECK',
+                    format('ไม่มีตาราง %L — ไม่เคยบันทึกว่าตัวเลข recall วัดบน index build ไหน '
+                           'จึงบอกไม่ได้ว่าตัวเลขที่ถืออยู่ยังใช้ได้หรือเปล่า', rec_tbl),
+                    NULL);
+                CONTINUE;
+            END IF;
+
+            EXECUTE format(
+                'SELECT relfilenode, mean_recall, measured_at::text FROM %I '
+                'ORDER BY measured_at DESC LIMIT 1', rec_tbl)
+            INTO rec_node, rec_recall, rec_when;
+
+            IF rec_node IS NULL THEN
+                INSERT INTO score_result VALUES (fid, 'CANNOT_CHECK',
+                    format('ตาราง %s ว่าง — ยังไม่เคยบันทึกผลการวัด recall', rec_tbl), NULL);
+                CONTINUE;
+            END IF;
+
+            IF rec_node <> cur_node THEN
+                INSERT INTO score_result VALUES (fid, 'DETECTED',
+                    format('index %s (%s) ถูกสร้างใหม่หลังวัด recall ครั้งล่าสุด '
+                           '(relfilenode %s -> %s) → ตัวเลข recall = %s ที่วัดไว้เมื่อ %s '
+                           'อธิบาย index ตัวที่ใช้อยู่ตอนนี้ไม่ได้แล้ว',
+                           cur_name, cur_am, rec_node, cur_node, rec_recall, rec_when),
+                    doc ->> 'correct_diagnosis');
+            ELSE
+                INSERT INTO score_result VALUES (fid, 'NOT_DETECTED',
+                    format('index %s (%s) ยังเป็น build เดียวกับที่วัด recall = %s เมื่อ %s '
+                           '(relfilenode %s)',
+                           cur_name, cur_am, rec_recall, rec_when, cur_node), NULL);
             END IF;
 
         ELSE

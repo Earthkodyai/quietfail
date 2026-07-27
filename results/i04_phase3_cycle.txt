@@ -1,0 +1,1042 @@
+════════════════════════════════════════════════════════════
+I04 — เฟส 3 · รัน 3 รอบติด
+เริ่ม: 2026-07-27 15:57:08
+════════════════════════════════════════════════════════════
+
+############ รอบที่ 1 — การทดลอง 5 build ############
+Timing is off.
+LOAD
+DROP INDEX
+psql:/sql/i04_kmeans_nondeterminism.sql:32: NOTICE:  index "qf_i04_idx" does not exist, skipping
+DROP TABLE
+DROP TABLE
+DROP TABLE
+psql:/sql/i04_kmeans_nondeterminism.sql:35: NOTICE:  table "qf_i04_guard" does not exist, skipping
+SELECT 1
+CREATE TABLE
+CREATE TABLE
+=== สภาพแวดล้อมที่ใช้วัด (บันทึกไว้เพราะอาจเป็นตัวแปรแฝง) ===
+ mwm  | par_maint | par_gather | corpus_rows 
+------+-----------+------------+-------------
+ 64MB | 2         | 2          |      100000
+(1 row)
+
+CREATE FUNCTION
+
+=== IVFFlat — สร้างใหม่ 5 รอบ ข้อมูลเดิม พารามิเตอร์เดิม ===
+psql:/sql/i04_kmeans_nondeterminism.sql:158: NOTICE:  index "qf_i04_idx" does not exist, skipping
+ qf_i04_build_and_measure 
+--------------------------
+ 
+(1 row)
+
+ qf_i04_build_and_measure 
+--------------------------
+ 
+(1 row)
+
+ qf_i04_build_and_measure 
+--------------------------
+ 
+(1 row)
+
+ qf_i04_build_and_measure 
+--------------------------
+ 
+(1 row)
+
+ qf_i04_build_and_measure 
+--------------------------
+ 
+(1 row)
+
+
+=== HNSW — กลุ่มควบคุม ข · 5 รอบเหมือนกัน ===
+psql:/sql/i04_kmeans_nondeterminism.sql:166: NOTICE:  hnsw graph no longer fits into maintenance_work_mem after 28363 tuples
+DETAIL:  Building will take significantly more time.
+HINT:  Increase maintenance_work_mem to speed up builds.
+ qf_i04_build_and_measure 
+--------------------------
+ 
+(1 row)
+
+psql:/sql/i04_kmeans_nondeterminism.sql:167: NOTICE:  hnsw graph no longer fits into maintenance_work_mem after 28369 tuples
+DETAIL:  Building will take significantly more time.
+HINT:  Increase maintenance_work_mem to speed up builds.
+ qf_i04_build_and_measure 
+--------------------------
+ 
+(1 row)
+
+psql:/sql/i04_kmeans_nondeterminism.sql:168: NOTICE:  hnsw graph no longer fits into maintenance_work_mem after 28363 tuples
+DETAIL:  Building will take significantly more time.
+HINT:  Increase maintenance_work_mem to speed up builds.
+ qf_i04_build_and_measure 
+--------------------------
+ 
+(1 row)
+
+psql:/sql/i04_kmeans_nondeterminism.sql:169: NOTICE:  hnsw graph no longer fits into maintenance_work_mem after 28360 tuples
+DETAIL:  Building will take significantly more time.
+HINT:  Increase maintenance_work_mem to speed up builds.
+ qf_i04_build_and_measure 
+--------------------------
+ 
+(1 row)
+
+psql:/sql/i04_kmeans_nondeterminism.sql:170: NOTICE:  hnsw graph no longer fits into maintenance_work_mem after 28360 tuples
+DETAIL:  Building will take significantly more time.
+HINT:  Increase maintenance_work_mem to speed up builds.
+ qf_i04_build_and_measure 
+--------------------------
+ 
+(1 row)
+
+
+=== ควบคุม ก: วัดซ้ำบน index ตัวเดิม 2 ครั้ง (build 1) ===
+    ต้องเหมือนกันเป๊ะ ไม่งั้นความแกว่งอาจมาจากฝั่ง query ไม่ใช่ฝั่ง build
+  kind   |     param     | query_ที่ต่างกัน |               ผล               
+---------+---------------+--------------+--------------------------------
+ hnsw    | ef_search=200 |            0 | เหมือนกันทุก query -> ฝั่ง query นิ่ง
+ hnsw    | ef_search=40  |            0 | เหมือนกันทุก query -> ฝั่ง query นิ่ง
+ ivfflat | probes=1      |            0 | เหมือนกันทุก query -> ฝั่ง query นิ่ง
+ ivfflat | probes=5      |            0 | เหมือนกันทุก query -> ฝั่ง query นิ่ง
+(4 rows)
+
+
+=== ค่าเฉลี่ยต่อ build (สิ่งที่ทีมทั่วไปมองเห็น) ===
+  kind   |     param     | build_no | mean_recall | worst  | ครบ_10_10 
+---------+---------------+----------+-------------+--------+-----------
+ hnsw    | ef_search=200 |        1 |      0.9720 | 0.0000 |       174
+ hnsw    | ef_search=200 |        2 |      0.9665 | 0.0000 |       171
+ hnsw    | ef_search=200 |        3 |      0.9800 | 0.0000 |       169
+ hnsw    | ef_search=200 |        4 |      0.9855 | 0.0000 |       180
+ hnsw    | ef_search=200 |        5 |      0.9605 | 0.0000 |       174
+ hnsw    | ef_search=40  |        1 |      0.8420 | 0.0000 |        50
+ hnsw    | ef_search=40  |        2 |      0.8225 | 0.0000 |        42
+ hnsw    | ef_search=40  |        3 |      0.8450 | 0.0000 |        46
+ hnsw    | ef_search=40  |        4 |      0.8375 | 0.0000 |        50
+ hnsw    | ef_search=40  |        5 |      0.8360 | 0.0000 |        49
+ ivfflat | probes=1      |        1 |      0.7705 | 0.0000 |        84
+ ivfflat | probes=1      |        2 |      0.8145 | 0.0000 |       109
+ ivfflat | probes=1      |        3 |      0.7630 | 0.1000 |        94
+ ivfflat | probes=1      |        4 |      0.7715 | 0.0000 |        96
+ ivfflat | probes=1      |        5 |      0.7990 | 0.0000 |        95
+ ivfflat | probes=5      |        1 |      1.0000 | 1.0000 |       200
+ ivfflat | probes=5      |        2 |      1.0000 | 1.0000 |       200
+ ivfflat | probes=5      |        3 |      1.0000 | 1.0000 |       200
+ ivfflat | probes=5      |        4 |      1.0000 | 1.0000 |       200
+ ivfflat | probes=5      |        5 |      1.0000 | 1.0000 |       200
+(20 rows)
+
+
+=== ช่วงการแกว่งข้าม 5 build ===
+  kind   |     param     |  ต่ำสุด  |  สูงสุด  |  ช่วง   | ร้อยละ 
+---------+---------------+--------+--------+--------+-------
+ hnsw    | ef_search=200 | 0.9605 | 0.9855 | 0.0250 |   2.6
+ hnsw    | ef_search=40  | 0.8225 | 0.8450 | 0.0225 |   2.7
+ ivfflat | probes=1      | 0.7630 | 0.8145 | 0.0515 |   6.6
+ ivfflat | probes=5      | 1.0000 | 1.0000 | 0.0000 |   0.0
+(4 rows)
+
+
+=== ⭐ ราย query — สิ่งที่ค่าเฉลี่ยซ่อนไว้ ===
+    query กี่ข้อที่ได้คำตอบไม่เท่ากันข้าม build
+  kind   |     param     | query_ทั้งหมด | query_ที่เปลี่ยนคำตอบ | ร้อยละ | แกว่งมากสุดต่อ_query 
+---------+---------------+-------------+-------------------+-------+-------------------
+ hnsw    | ef_search=200 |         200 |                73 |  36.5 |            1.0000
+ hnsw    | ef_search=40  |         200 |               137 |  68.5 |            1.0000
+ ivfflat | probes=1      |         200 |               185 |  92.5 |            1.0000
+ ivfflat | probes=5      |         200 |                 0 |   0.0 |            0.0000
+(4 rows)
+
+
+=== relfilenode เปลี่ยนทุก build ไหม (ฐานของตัวตรวจ) ===
+  kind   | relfilenode_ที่ต่างกัน | จำนวน_build | build_ms_เฉลี่ย |  ขนาด  
+---------+--------------------+-------------+---------------+--------
+ hnsw    |                  5 |           5 |       68379.1 | 195 MB
+ ivfflat |                  5 |           5 |        1468.3 | 157 MB
+(2 rows)
+
+
+=== assertion ===
+psql:/sql/i04_kmeans_nondeterminism.sql:321: NOTICE:  [1/5] ✅ ควบคุม ก ผ่าน — วัดซ้ำบน index ตัวเดิมได้ผลเหมือนกันทุก query
+psql:/sql/i04_kmeans_nondeterminism.sql:321: NOTICE:  [2/5] ✅ IVFFlat แกว่งจริง — ช่วง recall เฉลี่ย 0.0515 ข้าม 5 build
+psql:/sql/i04_kmeans_nondeterminism.sql:321: NOTICE:  [3/5] ✅ มี 185 query ที่ได้คำตอบไม่เท่ากันข้าม build
+psql:/sql/i04_kmeans_nondeterminism.sql:321: NOTICE:  [4/5] ✅ relfilenode เปลี่ยนทุก build (5 ค่าไม่ซ้ำ) — ตัวตรวจใช้ได้
+psql:/sql/i04_kmeans_nondeterminism.sql:321: NOTICE:  [5/5] ✅ qf_corpus ไม่ถูกแตะ — 5000 แถวแรก fingerprint เดิม
+psql:/sql/i04_kmeans_nondeterminism.sql:321: NOTICE:  
+psql:/sql/i04_kmeans_nondeterminism.sql:321: NOTICE:  ควบคุม ข (HNSW): ช่วงแกว่ง 0.0225 · query ที่เปลี่ยนคำตอบ 137 ข้อ
+psql:/sql/i04_kmeans_nondeterminism.sql:321: NOTICE:    -> HNSW แกว่งด้วย : ห้ามสรุปว่าเป็นเรื่องของ k-means อย่างเดียว
+DO
+
+=== เก็บกวาด: ทิ้ง index ทดสอบ เก็บตารางผลไว้ให้ตัวตรวจอ่าน ===
+DROP INDEX
+DROP TABLE
+DROP FUNCTION
+ vector_index_ค้าง 
+------------------
+                0
+(1 row)
+
+exit: 0
+
+############ รอบที่ 1 — พิสูจน์ตัวตรวจ 3 สถานะ ############
+LOAD
+psql:/sql/i04_checker_states.sql:18: NOTICE:  index "qf_i04_idx" does not exist, skipping
+DROP INDEX
+psql:/sql/i04_checker_states.sql:19: NOTICE:  table "qf_i04_record" does not exist, skipping
+DROP TABLE
+=== สถานะ 1: ไม่มี index และไม่เคยจดว่าวัด recall ไว้บน build ไหน ===
+    -> CANNOT_CHECK  (ไม่ใช่ "ผ่าน" — ทีมที่ไม่เคยจดคือทีมที่เสี่ยงที่สุด)
+LOAD
+ set_config 
+------------
+ ALL
+(1 row)
+
+DROP TABLE
+psql:/sql/score.sql:33: NOTICE:  table "score_result" does not exist, skipping
+CREATE TABLE
+DO
+
+============================================================
+ผลการนับคะแนน
+============================================================
+ fault_id |   verdict    |                                                              detail                                                              
+----------+--------------+----------------------------------------------------------------------------------------------------------------------------------
+ F01      | NOT_DETECTED | idle in transaction 0 session (ต้อง >= 10) · ค้างนานสุด 0.0 วิ (ต้อง >= 2)
+ F03      | CANNOT_CHECK | ไม่มีตาราง 'qf_f03_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ F05      | NOT_DETECTED | lock ที่ granted=false 0 แถว (ต้อง >= 2) · session ที่ถูกบล็อก 0 (ต้อง >= 2)
+ F10      | CANNOT_CHECK | ไม่มีตาราง 'qf_f10_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ I01      | CANNOT_CHECK | ไม่มี vector index บน 'qf_corpus' เลย — ตรวจ opclass ไม่ได้
+ I03      | NOT_DETECTED | ShareLock ที่ได้รับแล้ว 0 แถว · การเขียนที่รออยู่ 0 แถว (ต้อง >= 1 และ >= 1)
+ I04      | CANNOT_CHECK | ไม่มี vector index บน qf_corpus — ไม่มีอะไรให้เทียบว่าถูกสร้างใหม่หรือยัง
+ I05      | DETECTED     | maintenance_work_mem = 64 MB รับได้ประมาณ 28352 tuples แต่ตารางมี 100000 แถว → build จะ spill และช้าลงราว 3 เท่า
+ Q02      | DETECTED     | จาก 5 query ที่ใช้ vector operator · ขาด ORDER BY หรือ LIMIT 1 · เรียง DESC 0 → index ใช้ไม่ได้ (ตรวจ ORDER BY ที่ห่อด้วยนิพจน์ไม่ได้ ต้องดู plan)
+ Q04      | CANNOT_CHECK | ไม่มี ivfflat index บน qf_corpus ที่ระบุ lists — เทียบกับ sqrt(lists) ไม่ได้
+ Q06      | DETECTED     | hnsw.ef_search = 40 แต่โค้ดใช้ LIMIT ได้ถึง 100 → คืนผลได้ไม่เกิน 40 แถว ขาดไป 60
+ V07      | CANNOT_CHECK | หาตาราง 'qf_v07' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+(12 rows)
+
+
+--- สรุป ---
+ detected | not_detected | cannot_check | total 
+----------+--------------+--------------+-------
+        3 |            3 |            6 |    12
+(1 row)
+
+
+หมายเหตุ: cannot_check ไม่ใช่ผ่าน และไม่ใช่ไม่พบ (กฎเหล็กข้อ 10)
+
+=== สร้าง index แล้วจดไว้ว่า recall วัดบน build นี้ ===
+SET
+CREATE INDEX
+CREATE TABLE
+SET
+INSERT 0 1
+ index_name | relfilenode | mean_recall 
+------------+-------------+-------------
+ qf_i04_idx |       75714 |      0.7775
+(1 row)
+
+
+=== สถานะ 2: index ยังเป็น build เดิมที่วัด recall ไว้ -> NOT_DETECTED ===
+LOAD
+ set_config 
+------------
+ ALL
+(1 row)
+
+DROP TABLE
+CREATE TABLE
+DO
+
+============================================================
+ผลการนับคะแนน
+============================================================
+ fault_id |   verdict    |                                                              detail                                                              
+----------+--------------+----------------------------------------------------------------------------------------------------------------------------------
+ F01      | NOT_DETECTED | idle in transaction 0 session (ต้อง >= 10) · ค้างนานสุด 0.0 วิ (ต้อง >= 2)
+ F03      | CANNOT_CHECK | ไม่มีตาราง 'qf_f03_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ F05      | NOT_DETECTED | lock ที่ granted=false 0 แถว (ต้อง >= 2) · session ที่ถูกบล็อก 0 (ต้อง >= 2)
+ F10      | CANNOT_CHECK | ไม่มีตาราง 'qf_f10_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ I01      | NOT_DETECTED | vector index ทั้ง 1 ตัวบน qf_corpus ใช้ opclass vector_cosine_ops ถูกต้อง
+ I03      | NOT_DETECTED | ShareLock ที่ได้รับแล้ว 0 แถว · การเขียนที่รออยู่ 0 แถว (ต้อง >= 1 และ >= 1)
+ I04      | NOT_DETECTED | index qf_i04_idx (ivfflat) ยังเป็น build เดียวกับที่วัด recall = 0.7775 เมื่อ 2026-07-27 16:03:12.114702+07 (relfilenode 75714)
+ I05      | DETECTED     | maintenance_work_mem = 64 MB รับได้ประมาณ 28352 tuples แต่ตารางมี 100000 แถว → build จะ spill และช้าลงราว 3 เท่า
+ Q02      | DETECTED     | จาก 5 query ที่ใช้ vector operator · ขาด ORDER BY หรือ LIMIT 1 · เรียง DESC 0 → index ใช้ไม่ได้ (ตรวจ ORDER BY ที่ห่อด้วยนิพจน์ไม่ได้ ต้องดู plan)
+ Q04      | DETECTED     | ivfflat.probes = 1 แต่ index ตั้ง lists = 100 → เอกสารแนะนำ sqrt(lists) = 10 · ต่ำกว่าคำแนะนำ 10.0 เท่า
+ Q06      | DETECTED     | hnsw.ef_search = 40 แต่โค้ดใช้ LIMIT ได้ถึง 100 → คืนผลได้ไม่เกิน 40 แถว ขาดไป 60
+ V07      | CANNOT_CHECK | หาตาราง 'qf_v07' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+(12 rows)
+
+
+--- สรุป ---
+ detected | not_detected | cannot_check | total 
+----------+--------------+--------------+-------
+        4 |            5 |            3 |    12
+(1 row)
+
+
+หมายเหตุ: cannot_check ไม่ใช่ผ่าน และไม่ใช่ไม่พบ (กฎเหล็กข้อ 10)
+
+=== สร้าง index ใหม่ โดยไม่วัด recall ใหม่ — คือสิ่งที่ทีมทำจริงตอน reindex ===
+DROP INDEX
+CREATE INDEX
+ relfilenode_ที่จดไว้ | relfilenode_ตอนนี้ 
+-------------------+------------------
+             75714 |            75726
+(1 row)
+
+
+=== สถานะ 3: index ถูกสร้างใหม่หลังวัด -> DETECTED ===
+    ตัวเลข recall ที่ทีมถืออยู่ อธิบาย index ตัวที่ใช้จริงไม่ได้แล้ว
+LOAD
+ set_config 
+------------
+ ALL
+(1 row)
+
+DROP TABLE
+CREATE TABLE
+DO
+
+============================================================
+ผลการนับคะแนน
+============================================================
+ fault_id |   verdict    |                                                                                       detail                                                                                        
+----------+--------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ F01      | NOT_DETECTED | idle in transaction 0 session (ต้อง >= 10) · ค้างนานสุด 0.0 วิ (ต้อง >= 2)
+ F03      | CANNOT_CHECK | ไม่มีตาราง 'qf_f03_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ F05      | NOT_DETECTED | lock ที่ granted=false 0 แถว (ต้อง >= 2) · session ที่ถูกบล็อก 0 (ต้อง >= 2)
+ F10      | CANNOT_CHECK | ไม่มีตาราง 'qf_f10_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ I01      | NOT_DETECTED | vector index ทั้ง 1 ตัวบน qf_corpus ใช้ opclass vector_cosine_ops ถูกต้อง
+ I03      | NOT_DETECTED | ShareLock ที่ได้รับแล้ว 0 แถว · การเขียนที่รออยู่ 0 แถว (ต้อง >= 1 และ >= 1)
+ I04      | DETECTED     | index qf_i04_idx (ivfflat) ถูกสร้างใหม่หลังวัด recall ครั้งล่าสุด (relfilenode 75714 -> 75726) → ตัวเลข recall = 0.7775 ที่วัดไว้เมื่อ 2026-07-27 16:03:12.114702+07 อธิบาย index ตัวที่ใช้อยู่ตอนนี้ไม่ได้แล้ว
+ I05      | DETECTED     | maintenance_work_mem = 64 MB รับได้ประมาณ 28352 tuples แต่ตารางมี 100000 แถว → build จะ spill และช้าลงราว 3 เท่า
+ Q02      | DETECTED     | จาก 5 query ที่ใช้ vector operator · ขาด ORDER BY หรือ LIMIT 1 · เรียง DESC 0 → index ใช้ไม่ได้ (ตรวจ ORDER BY ที่ห่อด้วยนิพจน์ไม่ได้ ต้องดู plan)
+ Q04      | DETECTED     | ivfflat.probes = 1 แต่ index ตั้ง lists = 100 → เอกสารแนะนำ sqrt(lists) = 10 · ต่ำกว่าคำแนะนำ 10.0 เท่า
+ Q06      | DETECTED     | hnsw.ef_search = 40 แต่โค้ดใช้ LIMIT ได้ถึง 100 → คืนผลได้ไม่เกิน 40 แถว ขาดไป 60
+ V07      | CANNOT_CHECK | หาตาราง 'qf_v07' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+(12 rows)
+
+
+--- สรุป ---
+ detected | not_detected | cannot_check | total 
+----------+--------------+--------------+-------
+        5 |            4 |            3 |    12
+(1 row)
+
+
+หมายเหตุ: cannot_check ไม่ใช่ผ่าน และไม่ใช่ไม่พบ (กฎเหล็กข้อ 10)
+
+=== เก็บกวาด ===
+DROP INDEX
+DROP TABLE
+RESET
+RESET
+ vector_index_ค้าง 
+------------------
+                0
+(1 row)
+
+ corpus_rows |        corpus_fingerprint        
+-------------+----------------------------------
+        5000 | 5a32cba54ea2be4ed022fe8bfedae9b0
+(1 row)
+
+exit: 0
+
+############ รอบที่ 2 — การทดลอง 5 build ############
+Timing is off.
+LOAD
+psql:/sql/i04_kmeans_nondeterminism.sql:32: NOTICE:  index "qf_i04_idx" does not exist, skipping
+DROP INDEX
+DROP TABLE
+DROP TABLE
+psql:/sql/i04_kmeans_nondeterminism.sql:35: NOTICE:  table "qf_i04_guard" does not exist, skipping
+DROP TABLE
+SELECT 1
+CREATE TABLE
+CREATE TABLE
+=== สภาพแวดล้อมที่ใช้วัด (บันทึกไว้เพราะอาจเป็นตัวแปรแฝง) ===
+ mwm  | par_maint | par_gather | corpus_rows 
+------+-----------+------------+-------------
+ 64MB | 2         | 2          |      100000
+(1 row)
+
+CREATE FUNCTION
+
+=== IVFFlat — สร้างใหม่ 5 รอบ ข้อมูลเดิม พารามิเตอร์เดิม ===
+psql:/sql/i04_kmeans_nondeterminism.sql:158: NOTICE:  index "qf_i04_idx" does not exist, skipping
+ qf_i04_build_and_measure 
+--------------------------
+ 
+(1 row)
+
+ qf_i04_build_and_measure 
+--------------------------
+ 
+(1 row)
+
+ qf_i04_build_and_measure 
+--------------------------
+ 
+(1 row)
+
+ qf_i04_build_and_measure 
+--------------------------
+ 
+(1 row)
+
+ qf_i04_build_and_measure 
+--------------------------
+ 
+(1 row)
+
+
+=== HNSW — กลุ่มควบคุม ข · 5 รอบเหมือนกัน ===
+psql:/sql/i04_kmeans_nondeterminism.sql:166: NOTICE:  hnsw graph no longer fits into maintenance_work_mem after 28363 tuples
+DETAIL:  Building will take significantly more time.
+HINT:  Increase maintenance_work_mem to speed up builds.
+ qf_i04_build_and_measure 
+--------------------------
+ 
+(1 row)
+
+psql:/sql/i04_kmeans_nondeterminism.sql:167: NOTICE:  hnsw graph no longer fits into maintenance_work_mem after 28371 tuples
+DETAIL:  Building will take significantly more time.
+HINT:  Increase maintenance_work_mem to speed up builds.
+ qf_i04_build_and_measure 
+--------------------------
+ 
+(1 row)
+
+psql:/sql/i04_kmeans_nondeterminism.sql:168: NOTICE:  hnsw graph no longer fits into maintenance_work_mem after 28364 tuples
+DETAIL:  Building will take significantly more time.
+HINT:  Increase maintenance_work_mem to speed up builds.
+ qf_i04_build_and_measure 
+--------------------------
+ 
+(1 row)
+
+psql:/sql/i04_kmeans_nondeterminism.sql:169: NOTICE:  hnsw graph no longer fits into maintenance_work_mem after 28366 tuples
+DETAIL:  Building will take significantly more time.
+HINT:  Increase maintenance_work_mem to speed up builds.
+ qf_i04_build_and_measure 
+--------------------------
+ 
+(1 row)
+
+psql:/sql/i04_kmeans_nondeterminism.sql:170: NOTICE:  hnsw graph no longer fits into maintenance_work_mem after 28364 tuples
+DETAIL:  Building will take significantly more time.
+HINT:  Increase maintenance_work_mem to speed up builds.
+ qf_i04_build_and_measure 
+--------------------------
+ 
+(1 row)
+
+
+=== ควบคุม ก: วัดซ้ำบน index ตัวเดิม 2 ครั้ง (build 1) ===
+    ต้องเหมือนกันเป๊ะ ไม่งั้นความแกว่งอาจมาจากฝั่ง query ไม่ใช่ฝั่ง build
+  kind   |     param     | query_ที่ต่างกัน |               ผล               
+---------+---------------+--------------+--------------------------------
+ hnsw    | ef_search=200 |            0 | เหมือนกันทุก query -> ฝั่ง query นิ่ง
+ hnsw    | ef_search=40  |            0 | เหมือนกันทุก query -> ฝั่ง query นิ่ง
+ ivfflat | probes=1      |            0 | เหมือนกันทุก query -> ฝั่ง query นิ่ง
+ ivfflat | probes=5      |            0 | เหมือนกันทุก query -> ฝั่ง query นิ่ง
+(4 rows)
+
+
+=== ค่าเฉลี่ยต่อ build (สิ่งที่ทีมทั่วไปมองเห็น) ===
+  kind   |     param     | build_no | mean_recall | worst  | ครบ_10_10 
+---------+---------------+----------+-------------+--------+-----------
+ hnsw    | ef_search=200 |        1 |      0.9795 | 0.0000 |       170
+ hnsw    | ef_search=200 |        2 |      0.9840 | 0.0000 |       178
+ hnsw    | ef_search=200 |        3 |      0.9805 | 0.0000 |       179
+ hnsw    | ef_search=200 |        4 |      0.9765 | 0.0000 |       180
+ hnsw    | ef_search=200 |        5 |      0.9845 | 0.0000 |       180
+ hnsw    | ef_search=40  |        1 |      0.8465 | 0.0000 |        46
+ hnsw    | ef_search=40  |        2 |      0.8315 | 0.0000 |        48
+ hnsw    | ef_search=40  |        3 |      0.8470 | 0.0000 |        49
+ hnsw    | ef_search=40  |        4 |      0.8420 | 0.0000 |        51
+ hnsw    | ef_search=40  |        5 |      0.8590 | 0.0000 |        50
+ ivfflat | probes=1      |        1 |      0.7945 | 0.0000 |        87
+ ivfflat | probes=1      |        2 |      0.7610 | 0.0000 |        85
+ ivfflat | probes=1      |        3 |      0.7750 | 0.0000 |        87
+ ivfflat | probes=1      |        4 |      0.8470 | 0.1000 |       113
+ ivfflat | probes=1      |        5 |      0.7585 | 0.0000 |        87
+ ivfflat | probes=5      |        1 |      1.0000 | 1.0000 |       200
+ ivfflat | probes=5      |        2 |      1.0000 | 1.0000 |       200
+ ivfflat | probes=5      |        3 |      1.0000 | 1.0000 |       200
+ ivfflat | probes=5      |        4 |      1.0000 | 1.0000 |       200
+ ivfflat | probes=5      |        5 |      1.0000 | 1.0000 |       200
+(20 rows)
+
+
+=== ช่วงการแกว่งข้าม 5 build ===
+  kind   |     param     |  ต่ำสุด  |  สูงสุด  |  ช่วง   | ร้อยละ 
+---------+---------------+--------+--------+--------+-------
+ hnsw    | ef_search=200 | 0.9765 | 0.9845 | 0.0080 |   0.8
+ hnsw    | ef_search=40  | 0.8315 | 0.8590 | 0.0275 |   3.3
+ ivfflat | probes=1      | 0.7585 | 0.8470 | 0.0885 |  11.2
+ ivfflat | probes=5      | 1.0000 | 1.0000 | 0.0000 |   0.0
+(4 rows)
+
+
+=== ⭐ ราย query — สิ่งที่ค่าเฉลี่ยซ่อนไว้ ===
+    query กี่ข้อที่ได้คำตอบไม่เท่ากันข้าม build
+  kind   |     param     | query_ทั้งหมด | query_ที่เปลี่ยนคำตอบ | ร้อยละ | แกว่งมากสุดต่อ_query 
+---------+---------------+-------------+-------------------+-------+-------------------
+ hnsw    | ef_search=200 |         200 |                65 |  32.5 |            1.0000
+ hnsw    | ef_search=40  |         200 |               126 |  63.0 |            1.0000
+ ivfflat | probes=1      |         200 |               199 |  99.5 |            1.0000
+ ivfflat | probes=5      |         200 |                 0 |   0.0 |            0.0000
+(4 rows)
+
+
+=== relfilenode เปลี่ยนทุก build ไหม (ฐานของตัวตรวจ) ===
+  kind   | relfilenode_ที่ต่างกัน | จำนวน_build | build_ms_เฉลี่ย |  ขนาด  
+---------+--------------------+-------------+---------------+--------
+ hnsw    |                  5 |           5 |       70573.6 | 195 MB
+ ivfflat |                  5 |           5 |        1554.6 | 157 MB
+(2 rows)
+
+
+=== assertion ===
+psql:/sql/i04_kmeans_nondeterminism.sql:321: NOTICE:  [1/5] ✅ ควบคุม ก ผ่าน — วัดซ้ำบน index ตัวเดิมได้ผลเหมือนกันทุก query
+psql:/sql/i04_kmeans_nondeterminism.sql:321: NOTICE:  [2/5] ✅ IVFFlat แกว่งจริง — ช่วง recall เฉลี่ย 0.0885 ข้าม 5 build
+psql:/sql/i04_kmeans_nondeterminism.sql:321: NOTICE:  [3/5] ✅ มี 199 query ที่ได้คำตอบไม่เท่ากันข้าม build
+psql:/sql/i04_kmeans_nondeterminism.sql:321: NOTICE:  [4/5] ✅ relfilenode เปลี่ยนทุก build (5 ค่าไม่ซ้ำ) — ตัวตรวจใช้ได้
+psql:/sql/i04_kmeans_nondeterminism.sql:321: NOTICE:  [5/5] ✅ qf_corpus ไม่ถูกแตะ — 5000 แถวแรก fingerprint เดิม
+psql:/sql/i04_kmeans_nondeterminism.sql:321: NOTICE:  
+psql:/sql/i04_kmeans_nondeterminism.sql:321: NOTICE:  ควบคุม ข (HNSW): ช่วงแกว่ง 0.0275 · query ที่เปลี่ยนคำตอบ 126 ข้อ
+psql:/sql/i04_kmeans_nondeterminism.sql:321: NOTICE:    -> HNSW แกว่งด้วย : ห้ามสรุปว่าเป็นเรื่องของ k-means อย่างเดียว
+DO
+
+=== เก็บกวาด: ทิ้ง index ทดสอบ เก็บตารางผลไว้ให้ตัวตรวจอ่าน ===
+DROP INDEX
+DROP TABLE
+DROP FUNCTION
+ vector_index_ค้าง 
+------------------
+                0
+(1 row)
+
+exit: 0
+
+############ รอบที่ 2 — พิสูจน์ตัวตรวจ 3 สถานะ ############
+LOAD
+DROP INDEX
+psql:/sql/i04_checker_states.sql:18: NOTICE:  index "qf_i04_idx" does not exist, skipping
+DROP TABLE
+=== สถานะ 1: ไม่มี index และไม่เคยจดว่าวัด recall ไว้บน build ไหน ===
+psql:/sql/i04_checker_states.sql:19: NOTICE:  table "qf_i04_record" does not exist, skipping
+    -> CANNOT_CHECK  (ไม่ใช่ "ผ่าน" — ทีมที่ไม่เคยจดคือทีมที่เสี่ยงที่สุด)
+LOAD
+ set_config 
+------------
+ ALL
+(1 row)
+
+DROP TABLE
+psql:/sql/score.sql:33: NOTICE:  table "score_result" does not exist, skipping
+CREATE TABLE
+DO
+
+============================================================
+ผลการนับคะแนน
+============================================================
+ fault_id |   verdict    |                                                              detail                                                              
+----------+--------------+----------------------------------------------------------------------------------------------------------------------------------
+ F01      | NOT_DETECTED | idle in transaction 0 session (ต้อง >= 10) · ค้างนานสุด 0.0 วิ (ต้อง >= 2)
+ F03      | CANNOT_CHECK | ไม่มีตาราง 'qf_f03_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ F05      | NOT_DETECTED | lock ที่ granted=false 0 แถว (ต้อง >= 2) · session ที่ถูกบล็อก 0 (ต้อง >= 2)
+ F10      | CANNOT_CHECK | ไม่มีตาราง 'qf_f10_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ I01      | CANNOT_CHECK | ไม่มี vector index บน 'qf_corpus' เลย — ตรวจ opclass ไม่ได้
+ I03      | NOT_DETECTED | ShareLock ที่ได้รับแล้ว 0 แถว · การเขียนที่รออยู่ 0 แถว (ต้อง >= 1 และ >= 1)
+ I04      | CANNOT_CHECK | ไม่มี vector index บน qf_corpus — ไม่มีอะไรให้เทียบว่าถูกสร้างใหม่หรือยัง
+ I05      | DETECTED     | maintenance_work_mem = 64 MB รับได้ประมาณ 28352 tuples แต่ตารางมี 100000 แถว → build จะ spill และช้าลงราว 3 เท่า
+ Q02      | DETECTED     | จาก 5 query ที่ใช้ vector operator · ขาด ORDER BY หรือ LIMIT 1 · เรียง DESC 0 → index ใช้ไม่ได้ (ตรวจ ORDER BY ที่ห่อด้วยนิพจน์ไม่ได้ ต้องดู plan)
+ Q04      | CANNOT_CHECK | ไม่มี ivfflat index บน qf_corpus ที่ระบุ lists — เทียบกับ sqrt(lists) ไม่ได้
+ Q06      | DETECTED     | hnsw.ef_search = 40 แต่โค้ดใช้ LIMIT ได้ถึง 100 → คืนผลได้ไม่เกิน 40 แถว ขาดไป 60
+ V07      | CANNOT_CHECK | หาตาราง 'qf_v07' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+(12 rows)
+
+
+--- สรุป ---
+ detected | not_detected | cannot_check | total 
+----------+--------------+--------------+-------
+        3 |            3 |            6 |    12
+(1 row)
+
+
+หมายเหตุ: cannot_check ไม่ใช่ผ่าน และไม่ใช่ไม่พบ (กฎเหล็กข้อ 10)
+
+=== สร้าง index แล้วจดไว้ว่า recall วัดบน build นี้ ===
+SET
+CREATE INDEX
+CREATE TABLE
+SET
+INSERT 0 1
+ index_name | relfilenode | mean_recall 
+------------+-------------+-------------
+ qf_i04_idx |       75764 |      0.7770
+(1 row)
+
+
+=== สถานะ 2: index ยังเป็น build เดิมที่วัด recall ไว้ -> NOT_DETECTED ===
+LOAD
+ set_config 
+------------
+ ALL
+(1 row)
+
+DROP TABLE
+CREATE TABLE
+DO
+
+============================================================
+ผลการนับคะแนน
+============================================================
+ fault_id |   verdict    |                                                              detail                                                              
+----------+--------------+----------------------------------------------------------------------------------------------------------------------------------
+ F01      | NOT_DETECTED | idle in transaction 0 session (ต้อง >= 10) · ค้างนานสุด 0.0 วิ (ต้อง >= 2)
+ F03      | CANNOT_CHECK | ไม่มีตาราง 'qf_f03_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ F05      | NOT_DETECTED | lock ที่ granted=false 0 แถว (ต้อง >= 2) · session ที่ถูกบล็อก 0 (ต้อง >= 2)
+ F10      | CANNOT_CHECK | ไม่มีตาราง 'qf_f10_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ I01      | NOT_DETECTED | vector index ทั้ง 1 ตัวบน qf_corpus ใช้ opclass vector_cosine_ops ถูกต้อง
+ I03      | NOT_DETECTED | ShareLock ที่ได้รับแล้ว 0 แถว · การเขียนที่รออยู่ 0 แถว (ต้อง >= 1 และ >= 1)
+ I04      | NOT_DETECTED | index qf_i04_idx (ivfflat) ยังเป็น build เดียวกับที่วัด recall = 0.7770 เมื่อ 2026-07-27 16:09:30.409609+07 (relfilenode 75764)
+ I05      | DETECTED     | maintenance_work_mem = 64 MB รับได้ประมาณ 28352 tuples แต่ตารางมี 100000 แถว → build จะ spill และช้าลงราว 3 เท่า
+ Q02      | DETECTED     | จาก 5 query ที่ใช้ vector operator · ขาด ORDER BY หรือ LIMIT 1 · เรียง DESC 0 → index ใช้ไม่ได้ (ตรวจ ORDER BY ที่ห่อด้วยนิพจน์ไม่ได้ ต้องดู plan)
+ Q04      | DETECTED     | ivfflat.probes = 1 แต่ index ตั้ง lists = 100 → เอกสารแนะนำ sqrt(lists) = 10 · ต่ำกว่าคำแนะนำ 10.0 เท่า
+ Q06      | DETECTED     | hnsw.ef_search = 40 แต่โค้ดใช้ LIMIT ได้ถึง 100 → คืนผลได้ไม่เกิน 40 แถว ขาดไป 60
+ V07      | CANNOT_CHECK | หาตาราง 'qf_v07' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+(12 rows)
+
+
+--- สรุป ---
+ detected | not_detected | cannot_check | total 
+----------+--------------+--------------+-------
+        4 |            5 |            3 |    12
+(1 row)
+
+
+หมายเหตุ: cannot_check ไม่ใช่ผ่าน และไม่ใช่ไม่พบ (กฎเหล็กข้อ 10)
+
+=== สร้าง index ใหม่ โดยไม่วัด recall ใหม่ — คือสิ่งที่ทีมทำจริงตอน reindex ===
+DROP INDEX
+CREATE INDEX
+ relfilenode_ที่จดไว้ | relfilenode_ตอนนี้ 
+-------------------+------------------
+             75764 |            75776
+(1 row)
+
+
+=== สถานะ 3: index ถูกสร้างใหม่หลังวัด -> DETECTED ===
+    ตัวเลข recall ที่ทีมถืออยู่ อธิบาย index ตัวที่ใช้จริงไม่ได้แล้ว
+LOAD
+ set_config 
+------------
+ ALL
+(1 row)
+
+DROP TABLE
+CREATE TABLE
+DO
+
+============================================================
+ผลการนับคะแนน
+============================================================
+ fault_id |   verdict    |                                                                                       detail                                                                                        
+----------+--------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ F01      | NOT_DETECTED | idle in transaction 0 session (ต้อง >= 10) · ค้างนานสุด 0.0 วิ (ต้อง >= 2)
+ F03      | CANNOT_CHECK | ไม่มีตาราง 'qf_f03_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ F05      | NOT_DETECTED | lock ที่ granted=false 0 แถว (ต้อง >= 2) · session ที่ถูกบล็อก 0 (ต้อง >= 2)
+ F10      | CANNOT_CHECK | ไม่มีตาราง 'qf_f10_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ I01      | NOT_DETECTED | vector index ทั้ง 1 ตัวบน qf_corpus ใช้ opclass vector_cosine_ops ถูกต้อง
+ I03      | NOT_DETECTED | ShareLock ที่ได้รับแล้ว 0 แถว · การเขียนที่รออยู่ 0 แถว (ต้อง >= 1 และ >= 1)
+ I04      | DETECTED     | index qf_i04_idx (ivfflat) ถูกสร้างใหม่หลังวัด recall ครั้งล่าสุด (relfilenode 75764 -> 75776) → ตัวเลข recall = 0.7770 ที่วัดไว้เมื่อ 2026-07-27 16:09:30.409609+07 อธิบาย index ตัวที่ใช้อยู่ตอนนี้ไม่ได้แล้ว
+ I05      | DETECTED     | maintenance_work_mem = 64 MB รับได้ประมาณ 28352 tuples แต่ตารางมี 100000 แถว → build จะ spill และช้าลงราว 3 เท่า
+ Q02      | DETECTED     | จาก 5 query ที่ใช้ vector operator · ขาด ORDER BY หรือ LIMIT 1 · เรียง DESC 0 → index ใช้ไม่ได้ (ตรวจ ORDER BY ที่ห่อด้วยนิพจน์ไม่ได้ ต้องดู plan)
+ Q04      | DETECTED     | ivfflat.probes = 1 แต่ index ตั้ง lists = 100 → เอกสารแนะนำ sqrt(lists) = 10 · ต่ำกว่าคำแนะนำ 10.0 เท่า
+ Q06      | DETECTED     | hnsw.ef_search = 40 แต่โค้ดใช้ LIMIT ได้ถึง 100 → คืนผลได้ไม่เกิน 40 แถว ขาดไป 60
+ V07      | CANNOT_CHECK | หาตาราง 'qf_v07' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+(12 rows)
+
+
+--- สรุป ---
+ detected | not_detected | cannot_check | total 
+----------+--------------+--------------+-------
+        5 |            4 |            3 |    12
+(1 row)
+
+
+หมายเหตุ: cannot_check ไม่ใช่ผ่าน และไม่ใช่ไม่พบ (กฎเหล็กข้อ 10)
+
+=== เก็บกวาด ===
+DROP INDEX
+DROP TABLE
+RESET
+RESET
+ vector_index_ค้าง 
+------------------
+                0
+(1 row)
+
+ corpus_rows |        corpus_fingerprint        
+-------------+----------------------------------
+        5000 | 5a32cba54ea2be4ed022fe8bfedae9b0
+(1 row)
+
+exit: 0
+
+############ รอบที่ 3 — การทดลอง 5 build ############
+Timing is off.
+LOAD
+psql:/sql/i04_kmeans_nondeterminism.sql:32: NOTICE:  index "qf_i04_idx" does not exist, skipping
+DROP INDEX
+DROP TABLE
+DROP TABLE
+DROP TABLE
+psql:/sql/i04_kmeans_nondeterminism.sql:35: NOTICE:  table "qf_i04_guard" does not exist, skipping
+SELECT 1
+CREATE TABLE
+CREATE TABLE
+=== สภาพแวดล้อมที่ใช้วัด (บันทึกไว้เพราะอาจเป็นตัวแปรแฝง) ===
+ mwm  | par_maint | par_gather | corpus_rows 
+------+-----------+------------+-------------
+ 64MB | 2         | 2          |      100000
+(1 row)
+
+CREATE FUNCTION
+
+=== IVFFlat — สร้างใหม่ 5 รอบ ข้อมูลเดิม พารามิเตอร์เดิม ===
+psql:/sql/i04_kmeans_nondeterminism.sql:158: NOTICE:  index "qf_i04_idx" does not exist, skipping
+ qf_i04_build_and_measure 
+--------------------------
+ 
+(1 row)
+
+ qf_i04_build_and_measure 
+--------------------------
+ 
+(1 row)
+
+ qf_i04_build_and_measure 
+--------------------------
+ 
+(1 row)
+
+ qf_i04_build_and_measure 
+--------------------------
+ 
+(1 row)
+
+ qf_i04_build_and_measure 
+--------------------------
+ 
+(1 row)
+
+
+=== HNSW — กลุ่มควบคุม ข · 5 รอบเหมือนกัน ===
+psql:/sql/i04_kmeans_nondeterminism.sql:166: NOTICE:  hnsw graph no longer fits into maintenance_work_mem after 28359 tuples
+DETAIL:  Building will take significantly more time.
+HINT:  Increase maintenance_work_mem to speed up builds.
+ qf_i04_build_and_measure 
+--------------------------
+ 
+(1 row)
+
+psql:/sql/i04_kmeans_nondeterminism.sql:167: NOTICE:  hnsw graph no longer fits into maintenance_work_mem after 28351 tuples
+DETAIL:  Building will take significantly more time.
+HINT:  Increase maintenance_work_mem to speed up builds.
+ qf_i04_build_and_measure 
+--------------------------
+ 
+(1 row)
+
+psql:/sql/i04_kmeans_nondeterminism.sql:168: NOTICE:  hnsw graph no longer fits into maintenance_work_mem after 28367 tuples
+DETAIL:  Building will take significantly more time.
+HINT:  Increase maintenance_work_mem to speed up builds.
+ qf_i04_build_and_measure 
+--------------------------
+ 
+(1 row)
+
+psql:/sql/i04_kmeans_nondeterminism.sql:169: NOTICE:  hnsw graph no longer fits into maintenance_work_mem after 28358 tuples
+DETAIL:  Building will take significantly more time.
+HINT:  Increase maintenance_work_mem to speed up builds.
+ qf_i04_build_and_measure 
+--------------------------
+ 
+(1 row)
+
+psql:/sql/i04_kmeans_nondeterminism.sql:170: NOTICE:  hnsw graph no longer fits into maintenance_work_mem after 28365 tuples
+DETAIL:  Building will take significantly more time.
+HINT:  Increase maintenance_work_mem to speed up builds.
+ qf_i04_build_and_measure 
+--------------------------
+ 
+(1 row)
+
+
+=== ควบคุม ก: วัดซ้ำบน index ตัวเดิม 2 ครั้ง (build 1) ===
+    ต้องเหมือนกันเป๊ะ ไม่งั้นความแกว่งอาจมาจากฝั่ง query ไม่ใช่ฝั่ง build
+  kind   |     param     | query_ที่ต่างกัน |               ผล               
+---------+---------------+--------------+--------------------------------
+ hnsw    | ef_search=200 |            0 | เหมือนกันทุก query -> ฝั่ง query นิ่ง
+ hnsw    | ef_search=40  |            0 | เหมือนกันทุก query -> ฝั่ง query นิ่ง
+ ivfflat | probes=1      |            0 | เหมือนกันทุก query -> ฝั่ง query นิ่ง
+ ivfflat | probes=5      |            0 | เหมือนกันทุก query -> ฝั่ง query นิ่ง
+(4 rows)
+
+
+=== ค่าเฉลี่ยต่อ build (สิ่งที่ทีมทั่วไปมองเห็น) ===
+  kind   |     param     | build_no | mean_recall | worst  | ครบ_10_10 
+---------+---------------+----------+-------------+--------+-----------
+ hnsw    | ef_search=200 |        1 |      0.9695 | 0.0000 |       170
+ hnsw    | ef_search=200 |        2 |      0.9625 | 0.0000 |       172
+ hnsw    | ef_search=200 |        3 |      0.9725 | 0.0000 |       174
+ hnsw    | ef_search=200 |        4 |      0.9825 | 0.0000 |       177
+ hnsw    | ef_search=200 |        5 |      0.9875 | 0.8000 |       176
+ hnsw    | ef_search=40  |        1 |      0.8330 | 0.0000 |        43
+ hnsw    | ef_search=40  |        2 |      0.8450 | 0.0000 |        50
+ hnsw    | ef_search=40  |        3 |      0.8470 | 0.0000 |        50
+ hnsw    | ef_search=40  |        4 |      0.8565 | 0.0000 |        50
+ hnsw    | ef_search=40  |        5 |      0.8580 | 0.0000 |        45
+ ivfflat | probes=1      |        1 |      0.7840 | 0.1000 |        93
+ ivfflat | probes=1      |        2 |      0.8140 | 0.0000 |       106
+ ivfflat | probes=1      |        3 |      0.8355 | 0.0000 |       112
+ ivfflat | probes=1      |        4 |      0.7920 | 0.0000 |        99
+ ivfflat | probes=1      |        5 |      0.7635 | 0.0000 |        89
+ ivfflat | probes=5      |        1 |      1.0000 | 1.0000 |       200
+ ivfflat | probes=5      |        2 |      1.0000 | 1.0000 |       200
+ ivfflat | probes=5      |        3 |      1.0000 | 1.0000 |       200
+ ivfflat | probes=5      |        4 |      1.0000 | 1.0000 |       200
+ ivfflat | probes=5      |        5 |      1.0000 | 1.0000 |       200
+(20 rows)
+
+
+=== ช่วงการแกว่งข้าม 5 build ===
+  kind   |     param     |  ต่ำสุด  |  สูงสุด  |  ช่วง   | ร้อยละ 
+---------+---------------+--------+--------+--------+-------
+ hnsw    | ef_search=200 | 0.9625 | 0.9875 | 0.0250 |   2.6
+ hnsw    | ef_search=40  | 0.8330 | 0.8580 | 0.0250 |   2.9
+ ivfflat | probes=1      | 0.7635 | 0.8355 | 0.0720 |   9.0
+ ivfflat | probes=5      | 1.0000 | 1.0000 | 0.0000 |   0.0
+(4 rows)
+
+
+=== ⭐ ราย query — สิ่งที่ค่าเฉลี่ยซ่อนไว้ ===
+    query กี่ข้อที่ได้คำตอบไม่เท่ากันข้าม build
+  kind   |     param     | query_ทั้งหมด | query_ที่เปลี่ยนคำตอบ | ร้อยละ | แกว่งมากสุดต่อ_query 
+---------+---------------+-------------+-------------------+-------+-------------------
+ hnsw    | ef_search=200 |         200 |                74 |  37.0 |            1.0000
+ hnsw    | ef_search=40  |         200 |               128 |  64.0 |            1.0000
+ ivfflat | probes=1      |         200 |               192 |  96.0 |            1.0000
+ ivfflat | probes=5      |         200 |                 0 |   0.0 |            0.0000
+(4 rows)
+
+
+=== relfilenode เปลี่ยนทุก build ไหม (ฐานของตัวตรวจ) ===
+  kind   | relfilenode_ที่ต่างกัน | จำนวน_build | build_ms_เฉลี่ย |  ขนาด  
+---------+--------------------+-------------+---------------+--------
+ hnsw    |                  5 |           5 |       72713.2 | 195 MB
+ ivfflat |                  5 |           5 |        1453.5 | 157 MB
+(2 rows)
+
+
+=== assertion ===
+psql:/sql/i04_kmeans_nondeterminism.sql:321: NOTICE:  [1/5] ✅ ควบคุม ก ผ่าน — วัดซ้ำบน index ตัวเดิมได้ผลเหมือนกันทุก query
+psql:/sql/i04_kmeans_nondeterminism.sql:321: NOTICE:  [2/5] ✅ IVFFlat แกว่งจริง — ช่วง recall เฉลี่ย 0.0720 ข้าม 5 build
+psql:/sql/i04_kmeans_nondeterminism.sql:321: NOTICE:  [3/5] ✅ มี 192 query ที่ได้คำตอบไม่เท่ากันข้าม build
+psql:/sql/i04_kmeans_nondeterminism.sql:321: NOTICE:  [4/5] ✅ relfilenode เปลี่ยนทุก build (5 ค่าไม่ซ้ำ) — ตัวตรวจใช้ได้
+psql:/sql/i04_kmeans_nondeterminism.sql:321: NOTICE:  [5/5] ✅ qf_corpus ไม่ถูกแตะ — 5000 แถวแรก fingerprint เดิม
+psql:/sql/i04_kmeans_nondeterminism.sql:321: NOTICE:  
+psql:/sql/i04_kmeans_nondeterminism.sql:321: NOTICE:  ควบคุม ข (HNSW): ช่วงแกว่ง 0.0250 · query ที่เปลี่ยนคำตอบ 128 ข้อ
+psql:/sql/i04_kmeans_nondeterminism.sql:321: NOTICE:    -> HNSW แกว่งด้วย : ห้ามสรุปว่าเป็นเรื่องของ k-means อย่างเดียว
+DO
+
+=== เก็บกวาด: ทิ้ง index ทดสอบ เก็บตารางผลไว้ให้ตัวตรวจอ่าน ===
+DROP INDEX
+DROP TABLE
+DROP FUNCTION
+ vector_index_ค้าง 
+------------------
+                0
+(1 row)
+
+exit: 0
+
+############ รอบที่ 3 — พิสูจน์ตัวตรวจ 3 สถานะ ############
+LOAD
+psql:/sql/i04_checker_states.sql:18: NOTICE:  index "qf_i04_idx" does not exist, skipping
+DROP INDEX
+DROP TABLE
+=== สถานะ 1: ไม่มี index และไม่เคยจดว่าวัด recall ไว้บน build ไหน ===
+psql:/sql/i04_checker_states.sql:19: NOTICE:  table "qf_i04_record" does not exist, skipping
+    -> CANNOT_CHECK  (ไม่ใช่ "ผ่าน" — ทีมที่ไม่เคยจดคือทีมที่เสี่ยงที่สุด)
+LOAD
+ set_config 
+------------
+ ALL
+(1 row)
+
+psql:/sql/score.sql:33: NOTICE:  table "score_result" does not exist, skipping
+DROP TABLE
+CREATE TABLE
+DO
+
+============================================================
+ผลการนับคะแนน
+============================================================
+ fault_id |   verdict    |                                                              detail                                                              
+----------+--------------+----------------------------------------------------------------------------------------------------------------------------------
+ F01      | NOT_DETECTED | idle in transaction 0 session (ต้อง >= 10) · ค้างนานสุด 0.0 วิ (ต้อง >= 2)
+ F03      | CANNOT_CHECK | ไม่มีตาราง 'qf_f03_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ F05      | NOT_DETECTED | lock ที่ granted=false 0 แถว (ต้อง >= 2) · session ที่ถูกบล็อก 0 (ต้อง >= 2)
+ F10      | CANNOT_CHECK | ไม่มีตาราง 'qf_f10_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ I01      | CANNOT_CHECK | ไม่มี vector index บน 'qf_corpus' เลย — ตรวจ opclass ไม่ได้
+ I03      | NOT_DETECTED | ShareLock ที่ได้รับแล้ว 0 แถว · การเขียนที่รออยู่ 0 แถว (ต้อง >= 1 และ >= 1)
+ I04      | CANNOT_CHECK | ไม่มี vector index บน qf_corpus — ไม่มีอะไรให้เทียบว่าถูกสร้างใหม่หรือยัง
+ I05      | DETECTED     | maintenance_work_mem = 64 MB รับได้ประมาณ 28352 tuples แต่ตารางมี 100000 แถว → build จะ spill และช้าลงราว 3 เท่า
+ Q02      | DETECTED     | จาก 5 query ที่ใช้ vector operator · ขาด ORDER BY หรือ LIMIT 1 · เรียง DESC 0 → index ใช้ไม่ได้ (ตรวจ ORDER BY ที่ห่อด้วยนิพจน์ไม่ได้ ต้องดู plan)
+ Q04      | CANNOT_CHECK | ไม่มี ivfflat index บน qf_corpus ที่ระบุ lists — เทียบกับ sqrt(lists) ไม่ได้
+ Q06      | DETECTED     | hnsw.ef_search = 40 แต่โค้ดใช้ LIMIT ได้ถึง 100 → คืนผลได้ไม่เกิน 40 แถว ขาดไป 60
+ V07      | CANNOT_CHECK | หาตาราง 'qf_v07' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+(12 rows)
+
+
+--- สรุป ---
+ detected | not_detected | cannot_check | total 
+----------+--------------+--------------+-------
+        3 |            3 |            6 |    12
+(1 row)
+
+
+หมายเหตุ: cannot_check ไม่ใช่ผ่าน และไม่ใช่ไม่พบ (กฎเหล็กข้อ 10)
+
+=== สร้าง index แล้วจดไว้ว่า recall วัดบน build นี้ ===
+SET
+CREATE INDEX
+CREATE TABLE
+SET
+INSERT 0 1
+ index_name | relfilenode | mean_recall 
+------------+-------------+-------------
+ qf_i04_idx |       75813 |      0.7745
+(1 row)
+
+
+=== สถานะ 2: index ยังเป็น build เดิมที่วัด recall ไว้ -> NOT_DETECTED ===
+LOAD
+ set_config 
+------------
+ ALL
+(1 row)
+
+DROP TABLE
+CREATE TABLE
+DO
+
+============================================================
+ผลการนับคะแนน
+============================================================
+ fault_id |   verdict    |                                                              detail                                                              
+----------+--------------+----------------------------------------------------------------------------------------------------------------------------------
+ F01      | NOT_DETECTED | idle in transaction 0 session (ต้อง >= 10) · ค้างนานสุด 0.0 วิ (ต้อง >= 2)
+ F03      | CANNOT_CHECK | ไม่มีตาราง 'qf_f03_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ F05      | NOT_DETECTED | lock ที่ granted=false 0 แถว (ต้อง >= 2) · session ที่ถูกบล็อก 0 (ต้อง >= 2)
+ F10      | CANNOT_CHECK | ไม่มีตาราง 'qf_f10_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ I01      | NOT_DETECTED | vector index ทั้ง 1 ตัวบน qf_corpus ใช้ opclass vector_cosine_ops ถูกต้อง
+ I03      | NOT_DETECTED | ShareLock ที่ได้รับแล้ว 0 แถว · การเขียนที่รออยู่ 0 แถว (ต้อง >= 1 และ >= 1)
+ I04      | NOT_DETECTED | index qf_i04_idx (ivfflat) ยังเป็น build เดียวกับที่วัด recall = 0.7745 เมื่อ 2026-07-27 16:15:59.16437+07 (relfilenode 75813)
+ I05      | DETECTED     | maintenance_work_mem = 64 MB รับได้ประมาณ 28352 tuples แต่ตารางมี 100000 แถว → build จะ spill และช้าลงราว 3 เท่า
+ Q02      | DETECTED     | จาก 5 query ที่ใช้ vector operator · ขาด ORDER BY หรือ LIMIT 1 · เรียง DESC 0 → index ใช้ไม่ได้ (ตรวจ ORDER BY ที่ห่อด้วยนิพจน์ไม่ได้ ต้องดู plan)
+ Q04      | DETECTED     | ivfflat.probes = 1 แต่ index ตั้ง lists = 100 → เอกสารแนะนำ sqrt(lists) = 10 · ต่ำกว่าคำแนะนำ 10.0 เท่า
+ Q06      | DETECTED     | hnsw.ef_search = 40 แต่โค้ดใช้ LIMIT ได้ถึง 100 → คืนผลได้ไม่เกิน 40 แถว ขาดไป 60
+ V07      | CANNOT_CHECK | หาตาราง 'qf_v07' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+(12 rows)
+
+
+--- สรุป ---
+ detected | not_detected | cannot_check | total 
+----------+--------------+--------------+-------
+        4 |            5 |            3 |    12
+(1 row)
+
+
+หมายเหตุ: cannot_check ไม่ใช่ผ่าน และไม่ใช่ไม่พบ (กฎเหล็กข้อ 10)
+
+=== สร้าง index ใหม่ โดยไม่วัด recall ใหม่ — คือสิ่งที่ทีมทำจริงตอน reindex ===
+DROP INDEX
+CREATE INDEX
+ relfilenode_ที่จดไว้ | relfilenode_ตอนนี้ 
+-------------------+------------------
+             75813 |            75825
+(1 row)
+
+
+=== สถานะ 3: index ถูกสร้างใหม่หลังวัด -> DETECTED ===
+    ตัวเลข recall ที่ทีมถืออยู่ อธิบาย index ตัวที่ใช้จริงไม่ได้แล้ว
+LOAD
+ set_config 
+------------
+ ALL
+(1 row)
+
+DROP TABLE
+CREATE TABLE
+DO
+
+============================================================
+ผลการนับคะแนน
+============================================================
+ fault_id |   verdict    |                                                                                       detail                                                                                       
+----------+--------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ F01      | NOT_DETECTED | idle in transaction 0 session (ต้อง >= 10) · ค้างนานสุด 0.0 วิ (ต้อง >= 2)
+ F03      | CANNOT_CHECK | ไม่มีตาราง 'qf_f03_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ F05      | NOT_DETECTED | lock ที่ granted=false 0 แถว (ต้อง >= 2) · session ที่ถูกบล็อก 0 (ต้อง >= 2)
+ F10      | CANNOT_CHECK | ไม่มีตาราง 'qf_f10_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ I01      | NOT_DETECTED | vector index ทั้ง 1 ตัวบน qf_corpus ใช้ opclass vector_cosine_ops ถูกต้อง
+ I03      | NOT_DETECTED | ShareLock ที่ได้รับแล้ว 0 แถว · การเขียนที่รออยู่ 0 แถว (ต้อง >= 1 และ >= 1)
+ I04      | DETECTED     | index qf_i04_idx (ivfflat) ถูกสร้างใหม่หลังวัด recall ครั้งล่าสุด (relfilenode 75813 -> 75825) → ตัวเลข recall = 0.7745 ที่วัดไว้เมื่อ 2026-07-27 16:15:59.16437+07 อธิบาย index ตัวที่ใช้อยู่ตอนนี้ไม่ได้แล้ว
+ I05      | DETECTED     | maintenance_work_mem = 64 MB รับได้ประมาณ 28352 tuples แต่ตารางมี 100000 แถว → build จะ spill และช้าลงราว 3 เท่า
+ Q02      | DETECTED     | จาก 5 query ที่ใช้ vector operator · ขาด ORDER BY หรือ LIMIT 1 · เรียง DESC 0 → index ใช้ไม่ได้ (ตรวจ ORDER BY ที่ห่อด้วยนิพจน์ไม่ได้ ต้องดู plan)
+ Q04      | DETECTED     | ivfflat.probes = 1 แต่ index ตั้ง lists = 100 → เอกสารแนะนำ sqrt(lists) = 10 · ต่ำกว่าคำแนะนำ 10.0 เท่า
+ Q06      | DETECTED     | hnsw.ef_search = 40 แต่โค้ดใช้ LIMIT ได้ถึง 100 → คืนผลได้ไม่เกิน 40 แถว ขาดไป 60
+ V07      | CANNOT_CHECK | หาตาราง 'qf_v07' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+(12 rows)
+
+
+--- สรุป ---
+ detected | not_detected | cannot_check | total 
+----------+--------------+--------------+-------
+        5 |            4 |            3 |    12
+(1 row)
+
+
+หมายเหตุ: cannot_check ไม่ใช่ผ่าน และไม่ใช่ไม่พบ (กฎเหล็กข้อ 10)
+
+=== เก็บกวาด ===
+DROP INDEX
+DROP TABLE
+RESET
+RESET
+ vector_index_ค้าง 
+------------------
+                0
+(1 row)
+
+ corpus_rows |        corpus_fingerprint        
+-------------+----------------------------------
+        5000 | 5a32cba54ea2be4ed022fe8bfedae9b0
+(1 row)
+
+exit: 0
+
+จบ: 2026-07-27 16:16:01
+>>> DONE

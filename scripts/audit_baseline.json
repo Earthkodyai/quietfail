@@ -16,10 +16,10 @@
     "pgvector_version": "0.8.5"
   },
 
-  "faults_done": ["F01", "F03", "F05", "F10", "I01", "I03", "I05", "Q02", "Q04", "Q06", "V07"],
-  "faults_remaining": ["I02", "I04", "Q03"],
+  "faults_done": ["F01", "F03", "F05", "F10", "I01", "I03", "I04", "I05", "Q02", "Q04", "Q06", "V07"],
+  "faults_remaining": ["I02", "Q03"],
 
-  "checker_states_file_required": ["I01", "I05", "Q02", "Q04", "Q06", "V07"],
+  "checker_states_file_required": ["I01", "I04", "I05", "Q02", "Q04", "Q06", "V07"],
   "checker_states_file_exempt": {
     "I03": "พิสูจน์ในตัวฉีดเอง — results/i03_phase3_cycle.txt มี DETECTED และ NOT_DETECTED ครบ",
     "F01": "เฟส 1 — พิสูจน์ในไฟล์ผลของตัวเอง 3 รอบต่อสถานะ",
@@ -34,7 +34,7 @@
     "results/qdrant_search_results.csv"
   ],
 
-  "score_expected_rows": 11,
+  "score_expected_rows": 12,
 
   "estimates_not_fixed_values": {
     "n_distinct_orders_merchant_id": {

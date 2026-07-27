@@ -1,0 +1,154 @@
+{
+  "fault_id": "I04",
+  "group": "A_index_built_wrong",
+  "name": "rebuild_changes_answers",
+  "true_cause": "index_build_is_not_reproducible",
+  "true_cause_th": "สร้าง index ใหม่บนข้อมูลเดิมเป๊ะ พารามิเตอร์เดิมเป๊ะ แล้วได้คำตอบไม่เหมือนเดิม — ไม่มี error ไม่มีคำเตือน และไม่มีอะไรในฐานข้อมูลบอกว่าคำตอบเปลี่ยนไปแล้ว",
+  "surface_symptom": "recall ที่ทีมวัดไว้ตอน validate ไม่ตรงกับที่เจอบน production หลัง reindex · หรือรันการทดลองเดิมซ้ำแล้วได้ตัวเลขไม่เท่าเดิม แล้วสรุปว่า 'เครื่องมือวัดเพี้ยน'",
+  "why_this_one_is_special_th": "ข้อเดียวใน 12 ข้อที่ EVIDENCE.md ยืนยันจากเอกสารทางการไม่ได้ — เอกสารของ pgvector ไม่รับประกันว่าสร้าง index ใหม่แล้วจะได้ผลเหมือนเดิม และไม่เตือนว่าจะไม่เหมือน จึงต้องพิสูจน์ด้วยการรันล้วนๆ (กฎเหล็กข้อ 1)",
+  "name_correction_2026_07_27_th": "ชื่อเดิมในทะเบียนคือ 'k-means ของ IVFFlat สุ่ม' ซึ่ง **แคบเกินไป** — กลุ่มควบคุมพบว่า HNSW ที่ไม่มี k-means เลยก็แกว่งเหมือนกัน จึงเปลี่ยนชื่อเป็น 'สร้าง index ใหม่แล้วได้คำตอบไม่เหมือนเดิม' ซึ่งเป็นสิ่งที่วัดได้จริง · รูปแบบเดียวกับ Q02 ที่พบว่า WHERE ไม่ใช่ตัวปัญหา",
+  "misleading_fixes": [
+    "โทษว่าเครื่องมือวัด recall เขียนผิด",
+    "โทษว่าข้อมูลเปลี่ยน (ทั้งที่ fingerprint เดิม)",
+    "รันซ้ำจนได้เลขที่ถูกใจแล้วใช้เลขนั้น",
+    "เพิ่ม m / ef_construction โดยไม่วัดว่าช่วยไหม"
+  ],
+  "correct_diagnosis": "จดว่าตัวเลข recall วัดบน index build ไหน (relfilenode) แล้วเทียบกับ index ตัวที่ใช้อยู่จริง · ถ้าไม่ตรง ตัวเลขที่ถืออยู่อธิบาย index ปัจจุบันไม่ได้แล้ว ต้องวัดใหม่",
+  "correct_fix_th": "วัด recall ใหม่ทุกครั้งหลังสร้าง index ใหม่ ห้ามใช้ตัวเลขเก่า · และตั้งพารามิเตอร์ค้นหาให้พอ (ข้อมูลชุดนี้ ivfflat.probes = 5 ทำให้ผลนิ่งสนิททั้ง 5 build) เพราะการจูนที่พอเพียงกลบความไม่แน่นอนของ build ได้ทั้งหมด",
+  "evidence_query": "SELECT r.relfilenode AS recorded, c.relfilenode AS current FROM qf_i04_record r, pg_class c WHERE c.relname = r.index_name",
+  "evidence_expectation": {
+    "target_table": "qf_corpus",
+    "record_table": "qf_i04_record",
+    "detect_when": "relfilenode ของ index ปัจจุบัน ไม่ตรงกับที่บันทึกไว้ตอนวัด recall ครั้งล่าสุด"
+  },
+  "checker_design_note_th": "ตรวจ 'k-means สุ่มไหม' ตรงๆ ไม่ได้ เพราะทุก ivfflat index ก็สุ่มเหมือนกันหมด → ตัวตรวจจะตอบ DETECTED ตลอดกาล ซึ่งขัดสูตรข้อ 6 · จึงตรวจผลกระทบจริงแทน: ตัวเลข recall ที่ถืออยู่ยังอธิบาย index ตัวปัจจุบันได้ไหม",
+  "checker_limitation_th": "บอกได้แค่ว่าตัวเลข 'ใช้ไม่ได้แล้ว' บอกไม่ได้ว่าเปลี่ยนไปเท่าไหร่ ต้องวัดใหม่เท่านั้น · และถ้ามี vector index หลายตัวบนตารางเดียวกัน ตัวตรวจดูแค่ตัวแรกตามลำดับชื่อ",
+  "measured_2026_07_27": {
+    "corpus_rows": 100000,
+    "dim": 384,
+    "builds_per_config": 5,
+    "queries": 200,
+    "k": 10,
+    "maintenance_work_mem": "64MB",
+    "max_parallel_maintenance_workers": 2,
+    "control_a_same_index_measured_twice": {
+      "queries_differing": 0,
+      "meaning_th": "ฝั่ง query นิ่งสนิททั้ง 4 การตั้งค่า → ความแกว่งมาจากฝั่ง build เท่านั้น"
+    },
+    "ivfflat_probes_1": {
+      "mean_recall_per_build": [
+        0.7415,
+        0.8145,
+        0.7925,
+        0.765,
+        0.7555
+      ],
+      "spread": 0.073,
+      "spread_pct": 9.4,
+      "queries_that_changed_answer": 196,
+      "queries_total": 200,
+      "max_swing_one_query": 1.0
+    },
+    "ivfflat_probes_5": {
+      "mean_recall_per_build": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "spread": 0.0,
+      "queries_that_changed_answer": 0,
+      "meaning_th": "จูนพอแล้วความไม่แน่นอนหายสนิท — ไม่ใช่แค่เฉลี่ยนิ่ง แต่ไม่มี query ไหนเปลี่ยนเลย"
+    },
+    "hnsw_ef_40": {
+      "mean_recall_per_build": [
+        0.8455,
+        0.8515,
+        0.849,
+        0.8125,
+        0.8435
+      ],
+      "spread": 0.039,
+      "spread_pct": 4.6,
+      "queries_that_changed_answer": 132
+    },
+    "hnsw_ef_200": {
+      "mean_recall_per_build": [
+        0.9665,
+        0.979,
+        0.9765,
+        0.9545,
+        0.974
+      ],
+      "spread": 0.0245,
+      "queries_that_changed_answer": 86
+    },
+    "relfilenode_distinct_per_5_builds": {
+      "ivfflat": 5,
+      "hnsw": 5
+    },
+    "build_ms_mean": {
+      "ivfflat": 2049.5,
+      "hnsw": 57897.5
+    },
+    "index_size": {
+      "ivfflat": "157 MB",
+      "hnsw": "195 MB"
+    },
+    "key_finding_th": "ค่าเฉลี่ยแกว่ง 9.4% ซึ่งทีมอาจมองว่าเป็น noise ยอมรับได้ แต่ราย query มี 196 จาก 200 ข้อที่ได้คำตอบไม่เท่ากันข้าม build — **ค่าเฉลี่ยซ่อนความจริงไว้เกือบทั้งหมด**",
+    "control_b_finding_th": "HNSW ซึ่งไม่มี k-means เลย ก็แกว่งเหมือนกัน (132 จาก 200 query) → ชื่อ fault เดิมที่โทษ k-means อธิบายไม่ครบ",
+    "control_c_parallel_off": {
+      "max_parallel_maintenance_workers": 0,
+      "ivfflat_queries_changed": 200,
+      "ivfflat_spread": 0.1065,
+      "hnsw_queries_changed": 127,
+      "hnsw_spread": 0.018,
+      "hnsw_build_ms_mean": 108034,
+      "hnsw_build_slowdown_vs_parallel": 1.9,
+      "conclusion_th": "ปิด parallel แล้วยังแกว่งทั้งคู่ → ไม่ใช่เรื่อง parallel build · IVFFlat ถึงขั้นเปลี่ยนครบ 200 จาก 200 query",
+      "script": "sql/i04_parallel_control.sql"
+    },
+    "across_3_cycles": {
+      "ivfflat_probes_1_spread": [
+        0.0515,
+        0.0885,
+        0.072
+      ],
+      "ivfflat_probes_1_queries_changed": [
+        185,
+        199,
+        192
+      ],
+      "queries_total": 200,
+      "note_th": "ตัวเลขในตารางด้านบนมาจากรอบสำรวจแรก · รัน 3 รอบเต็มแล้วได้ 185/199/192 จาก 200 — ข้อสรุปเชิงคุณภาพเหมือนกันทุกรอบ คือ query ส่วนใหญ่เปลี่ยนคำตอบ"
+    }
+  },
+  "reproduce": "sql/i04_kmeans_nondeterminism.sql",
+  "config_profile": "fragile",
+  "safety_note_th": "สร้าง index บน qf_corpus จริงแต่ทิ้งทุกครั้ง และตรวจจำนวนแถว + fingerprint ก่อน/หลัง — qf_corpus ห้ามเปลี่ยนเพราะเป็นฐานของเฉลยทั้งโปรเจค",
+  "verified_on": {
+    "postgres_version": "17.10 (Debian 17.10-1.pgdg12+1)",
+    "pgvector_version": "0.8.5",
+    "image_tag": "pgvector/pgvector:0.8.5-pg17",
+    "config_profile": "fragile",
+    "date": "2026-07-27",
+    "consecutive_successful_runs": 3,
+    "assertions_per_run": "5/5 ทุกรอบ (15/15 รวม)",
+    "checker_states_verified": "CANNOT_CHECK (ไม่เคยจด) / NOT_DETECTED (build เดิม) / DETECTED (สร้างใหม่หลังวัด) — 3 รอบติด",
+    "checker_states_evidence": "sql/i04_checker_states.sql -> results/i04_phase3_cycle.txt",
+    "qf_corpus_untouched": "100000 แถว · fingerprint 5a32cba54ea2be4ed022fe8bfedae9b0 ตรวจทุกรอบใน assertion [5/5]",
+    "note": "สร้าง index รวม 30 ครั้งใน 3 รอบ · ไม่มี index ค้างหลังจบ"
+  },
+  "what_the_data_supports_th": [
+    "สร้าง index ใหม่แล้วคำตอบเปลี่ยน ทั้ง IVFFlat และ HNSW",
+    "ไม่ได้เกิดจากฝั่ง query (ควบคุม ก)",
+    "ไม่ได้เกิดจาก parallel build (ควบคุม ค)",
+    "จูนให้พอกลบได้ทั้งหมดใน IVFFlat — probes=5 เปลี่ยน 0 จาก 200 ทั้ง 5 build"
+  ],
+  "what_must_not_be_claimed_th": {
+    "k-means คือต้นเหตุ": "HNSW ไม่มี k-means แต่แกว่งเหมือนกัน",
+    "HNSW แกว่งเพราะกลไก X": "ยังไม่ได้แยกกลไกของ HNSW — ตัดออกได้แค่ parallel เท่านั้น",
+    "ปิด parallel ทำให้แย่ลง": "5 ตัวอย่างไม่พอสรุปทิศทาง บอกได้แค่ว่าไม่หาย"
+  }
+}

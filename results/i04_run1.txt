@@ -1,0 +1,177 @@
+Timing is off.
+LOAD
+psql:/sql/i04_kmeans_nondeterminism.sql:32: NOTICE:  index "qf_i04_idx" does not exist, skipping
+DROP INDEX
+psql:/sql/i04_kmeans_nondeterminism.sql:33: NOTICE:  table "qf_i04_obs" does not exist, skipping
+DROP TABLE
+DROP TABLE
+psql:/sql/i04_kmeans_nondeterminism.sql:34: NOTICE:  table "qf_i04_meta" does not exist, skipping
+psql:/sql/i04_kmeans_nondeterminism.sql:35: NOTICE:  table "qf_i04_guard" does not exist, skipping
+DROP TABLE
+SELECT 1
+CREATE TABLE
+CREATE TABLE
+=== สภาพแวดล้อมที่ใช้วัด (บันทึกไว้เพราะอาจเป็นตัวแปรแฝง) ===
+ mwm  | par_maint | par_gather | corpus_rows 
+------+-----------+------------+-------------
+ 64MB | 2         | 2          |      100000
+(1 row)
+
+CREATE FUNCTION
+
+=== IVFFlat — สร้างใหม่ 5 รอบ ข้อมูลเดิม พารามิเตอร์เดิม ===
+psql:/sql/i04_kmeans_nondeterminism.sql:158: NOTICE:  index "qf_i04_idx" does not exist, skipping
+ qf_i04_build_and_measure 
+--------------------------
+ 
+(1 row)
+
+ qf_i04_build_and_measure 
+--------------------------
+ 
+(1 row)
+
+ qf_i04_build_and_measure 
+--------------------------
+ 
+(1 row)
+
+ qf_i04_build_and_measure 
+--------------------------
+ 
+(1 row)
+
+ qf_i04_build_and_measure 
+--------------------------
+ 
+(1 row)
+
+
+=== HNSW — กลุ่มควบคุม ข · 5 รอบเหมือนกัน ===
+psql:/sql/i04_kmeans_nondeterminism.sql:166: NOTICE:  hnsw graph no longer fits into maintenance_work_mem after 28375 tuples
+DETAIL:  Building will take significantly more time.
+HINT:  Increase maintenance_work_mem to speed up builds.
+ qf_i04_build_and_measure 
+--------------------------
+ 
+(1 row)
+
+psql:/sql/i04_kmeans_nondeterminism.sql:167: NOTICE:  hnsw graph no longer fits into maintenance_work_mem after 28361 tuples
+DETAIL:  Building will take significantly more time.
+HINT:  Increase maintenance_work_mem to speed up builds.
+ qf_i04_build_and_measure 
+--------------------------
+ 
+(1 row)
+
+psql:/sql/i04_kmeans_nondeterminism.sql:168: NOTICE:  hnsw graph no longer fits into maintenance_work_mem after 28373 tuples
+DETAIL:  Building will take significantly more time.
+HINT:  Increase maintenance_work_mem to speed up builds.
+ qf_i04_build_and_measure 
+--------------------------
+ 
+(1 row)
+
+psql:/sql/i04_kmeans_nondeterminism.sql:169: NOTICE:  hnsw graph no longer fits into maintenance_work_mem after 28364 tuples
+DETAIL:  Building will take significantly more time.
+HINT:  Increase maintenance_work_mem to speed up builds.
+ qf_i04_build_and_measure 
+--------------------------
+ 
+(1 row)
+
+psql:/sql/i04_kmeans_nondeterminism.sql:170: NOTICE:  hnsw graph no longer fits into maintenance_work_mem after 28360 tuples
+DETAIL:  Building will take significantly more time.
+HINT:  Increase maintenance_work_mem to speed up builds.
+ qf_i04_build_and_measure 
+--------------------------
+ 
+(1 row)
+
+
+=== ควบคุม ก: วัดซ้ำบน index ตัวเดิม 2 ครั้ง (build 1) ===
+    ต้องเหมือนกันเป๊ะ ไม่งั้นความแกว่งอาจมาจากฝั่ง query ไม่ใช่ฝั่ง build
+  kind   |     param     | query_ที่ต่างกัน |               ผล               
+---------+---------------+--------------+--------------------------------
+ hnsw    | ef_search=200 |            0 | เหมือนกันทุก query -> ฝั่ง query นิ่ง
+ hnsw    | ef_search=40  |            0 | เหมือนกันทุก query -> ฝั่ง query นิ่ง
+ ivfflat | probes=1      |            0 | เหมือนกันทุก query -> ฝั่ง query นิ่ง
+ ivfflat | probes=5      |            0 | เหมือนกันทุก query -> ฝั่ง query นิ่ง
+(4 rows)
+
+
+=== ค่าเฉลี่ยต่อ build (สิ่งที่ทีมทั่วไปมองเห็น) ===
+  kind   |     param     | build_no | mean_recall | worst  | ครบ_10_10 
+---------+---------------+----------+-------------+--------+-----------
+ hnsw    | ef_search=200 |        1 |      0.9665 | 0.0000 |       167
+ hnsw    | ef_search=200 |        2 |      0.9790 | 0.0000 |       184
+ hnsw    | ef_search=200 |        3 |      0.9765 | 0.0000 |       176
+ hnsw    | ef_search=200 |        4 |      0.9545 | 0.0000 |       171
+ hnsw    | ef_search=200 |        5 |      0.9740 | 0.0000 |       167
+ hnsw    | ef_search=40  |        1 |      0.8455 | 0.0000 |        47
+ hnsw    | ef_search=40  |        2 |      0.8515 | 0.0000 |        52
+ hnsw    | ef_search=40  |        3 |      0.8490 | 0.0000 |        50
+ hnsw    | ef_search=40  |        4 |      0.8125 | 0.0000 |        46
+ hnsw    | ef_search=40  |        5 |      0.8435 | 0.0000 |        53
+ ivfflat | probes=1      |        1 |      0.7415 | 0.0000 |        77
+ ivfflat | probes=1      |        2 |      0.8145 | 0.1000 |       107
+ ivfflat | probes=1      |        3 |      0.7925 | 0.0000 |        90
+ ivfflat | probes=1      |        4 |      0.7650 | 0.0000 |        83
+ ivfflat | probes=1      |        5 |      0.7555 | 0.0000 |        92
+ ivfflat | probes=5      |        1 |      1.0000 | 1.0000 |       200
+ ivfflat | probes=5      |        2 |      1.0000 | 1.0000 |       200
+ ivfflat | probes=5      |        3 |      1.0000 | 1.0000 |       200
+ ivfflat | probes=5      |        4 |      1.0000 | 1.0000 |       200
+ ivfflat | probes=5      |        5 |      1.0000 | 1.0000 |       200
+(20 rows)
+
+
+=== ช่วงการแกว่งข้าม 5 build ===
+  kind   |     param     |  ต่ำสุด  |  สูงสุด  |  ช่วง   | ร้อยละ 
+---------+---------------+--------+--------+--------+-------
+ hnsw    | ef_search=200 | 0.9545 | 0.9790 | 0.0245 |   2.5
+ hnsw    | ef_search=40  | 0.8125 | 0.8515 | 0.0390 |   4.6
+ ivfflat | probes=1      | 0.7415 | 0.8145 | 0.0730 |   9.4
+ ivfflat | probes=5      | 1.0000 | 1.0000 | 0.0000 |   0.0
+(4 rows)
+
+
+=== ⭐ ราย query — สิ่งที่ค่าเฉลี่ยซ่อนไว้ ===
+    query กี่ข้อที่ได้คำตอบไม่เท่ากันข้าม build
+  kind   |     param     | query_ทั้งหมด | query_ที่เปลี่ยนคำตอบ | ร้อยละ | แกว่งมากสุดต่อ_query 
+---------+---------------+-------------+-------------------+-------+-------------------
+ hnsw    | ef_search=200 |         200 |                86 |  43.0 |            1.0000
+ hnsw    | ef_search=40  |         200 |               132 |  66.0 |            1.0000
+ ivfflat | probes=1      |         200 |               196 |  98.0 |            1.0000
+ ivfflat | probes=5      |         200 |                 0 |   0.0 |            0.0000
+(4 rows)
+
+
+=== relfilenode เปลี่ยนทุก build ไหม (ฐานของตัวตรวจ) ===
+  kind   | relfilenode_ที่ต่างกัน | จำนวน_build | build_ms_เฉลี่ย |  ขนาด  
+---------+--------------------+-------------+---------------+--------
+ hnsw    |                  5 |           5 |       57897.5 | 195 MB
+ ivfflat |                  5 |           5 |        2049.5 | 157 MB
+(2 rows)
+
+
+=== assertion ===
+psql:/sql/i04_kmeans_nondeterminism.sql:321: NOTICE:  [1/5] ✅ ควบคุม ก ผ่าน — วัดซ้ำบน index ตัวเดิมได้ผลเหมือนกันทุก query
+psql:/sql/i04_kmeans_nondeterminism.sql:321: NOTICE:  [2/5] ✅ IVFFlat แกว่งจริง — ช่วง recall เฉลี่ย 0.0730 ข้าม 5 build
+psql:/sql/i04_kmeans_nondeterminism.sql:321: NOTICE:  [3/5] ✅ มี 196 query ที่ได้คำตอบไม่เท่ากันข้าม build
+psql:/sql/i04_kmeans_nondeterminism.sql:321: NOTICE:  [4/5] ✅ relfilenode เปลี่ยนทุก build (5 ค่าไม่ซ้ำ) — ตัวตรวจใช้ได้
+psql:/sql/i04_kmeans_nondeterminism.sql:321: NOTICE:  [5/5] ✅ qf_corpus ไม่ถูกแตะ — 5000 แถวแรก fingerprint เดิม
+DO
+
+=== เก็บกวาด: ทิ้ง index ทดสอบ เก็บตารางผลไว้ให้ตัวตรวจอ่าน ===
+psql:/sql/i04_kmeans_nondeterminism.sql:321: NOTICE:  
+psql:/sql/i04_kmeans_nondeterminism.sql:321: NOTICE:  ควบคุม ข (HNSW): ช่วงแกว่ง 0.0390 · query ที่เปลี่ยนคำตอบ 132 ข้อ
+psql:/sql/i04_kmeans_nondeterminism.sql:321: NOTICE:    -> HNSW แกว่งด้วย : ห้ามสรุปว่าเป็นเรื่องของ k-means อย่างเดียว
+DROP INDEX
+DROP TABLE
+DROP FUNCTION
+ vector_index_ค้าง 
+------------------
+                0
+(1 row)
+
