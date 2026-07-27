@@ -37,6 +37,17 @@ git add -f results/ชื่อไฟล์.txt
 | `v07_phase3_cycle.txt` | **V07** — NULL/zero vector หายจาก index 10 แถวพอดี · ตัวตรวจ 3 สถานะ | 2026-07-27 |
 | `q02_phase3_cycle.txt` | **Q02** — 6 รูปแบบ query · 4 แบบ index ใช้ไม่ได้ · buffers ต่าง 21 เท่า | 2026-07-27 |
 | `q04_phase3_cycle.txt` | **Q04** — probes=1 ได้ recall 0.737 · probes=5 ได้ 1.0 · เอกสารแนะนำ 10 ช้าเกินจำเป็น | 2026-07-27 |
+| `i05_checker_states.txt` | **I05 ตัวตรวจ** — พลิกที่ 225→226MB ตรงขอบที่คำนวณไว้ · เติมย้อนหลังจาก audit (E30) | 2026-07-27 |
+
+## ไฟล์ที่ตั้งใจไม่ track ลง git
+
+| ไฟล์ | ขนาด | ทำไม |
+|---|---|---|
+| `qdrant_corpus.csv` | 470 MB | ข้อมูลนำเข้า Qdrant · สร้างใหม่ได้จาก `qf_corpus` ที่มี fingerprint ล็อกไว้ |
+| `qdrant_queries.csv` | 918 KB | เช่นเดียวกัน |
+| `qdrant_search_results.csv` | 400 KB | ผลดิบ · ข้อสรุปอยู่ใน `q01_qdrant_cross_engine.txt` แล้ว |
+
+**ไม่ใช่หลักฐานที่หาย** — ข้อสรุปทั้งหมดอยู่ในไฟล์ `.txt` ที่ track แล้ว
 
 ## การตั้งชื่อ
 

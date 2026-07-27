@@ -2,34 +2,25 @@
   "fault_id": "F01",
   "group": "A_misleading_error",
   "name": "connection_exhaustion_from_idle_in_transaction",
-
   "true_cause": "idle_in_transaction_leak",
   "true_cause_th": "โค้ดเปิด transaction แล้วไม่ commit หรือ rollback",
-
   "surface_error_regex": "remaining connection slots are reserved|too many clients already",
-
   "surface_error_actual": "FATAL:  remaining connection slots are reserved for roles with the SUPERUSER attribute",
   "surface_error_note_th": "เคยเขียนไว้ว่า 'too many clients already' ซึ่งไม่มีวันเกิดกับ role ธรรมดาบนโปรไฟล์ fragile (max_connections=20, superuser_reserved_connections=3) เพราะโควตาผู้ใช้ธรรมดาเต็มก่อนเสมอ — แก้หลังรันจริง ดู E13",
   "surface_error_sqlstate_note": "อ่าน SQLSTATE ไม่ได้เพราะเป็น connection error ระดับ libpq ไม่ใช่ query error · psql -v VERBOSITY=verbose ก็ไม่แสดง · ข้อความเสถียรเพราะ config ล็อก lc_messages='C'",
-
   "misleading_fixes": [
     "เพิ่มค่า max_connections",
     "ขยายเครื่อง / เพิ่ม RAM",
     "โทษ connection pool ฝั่ง client โดยไม่ตรวจก่อน"
   ],
-
   "correct_diagnosis": "ตรวจ pg_stat_activity หา state = 'idle in transaction' ที่ค้างนาน แล้วไล่กลับไปหา code path ที่ลืมปิด transaction",
-
   "evidence_query": "SELECT pid, usename, state, now() - state_change AS stuck_for, query FROM pg_stat_activity WHERE state = 'idle in transaction' ORDER BY state_change ASC",
-
   "evidence_expectation": {
     "min_idle_in_transaction_sessions": 10,
     "min_stuck_seconds": 2
   },
-
   "reproduce": "faults/f01_idle_in_transaction.sh",
   "config_profile": "fragile",
-
   "verified_on": {
     "postgres_version": "17.10 (Debian 17.10-1.pgdg12+1)",
     "pgvector_version": "0.8.5",
@@ -37,6 +28,9 @@
     "config_profile": "fragile",
     "date": "2026-07-26",
     "consecutive_successful_runs": 3,
+    "checker_states_verified": "DETECTED 3 รอบ / NOT_DETECTED 3 รอบ — สลับกันในไฟล์เดียว",
+    "checker_states_evidence": "results/f01_phase1_cycle.txt",
+    "checker_states_recorded_late_th": "หลักฐานมีมาตั้งแต่รันเฟส 1 แล้ว แต่ไม่ได้จดลงช่องนี้ — เติมตอน audit 2026-07-27 ให้ตรวจซ้ำได้โดยไม่ต้องไล่อ่านไฟล์ผล (ดู E30)",
     "observed_idle_in_transaction_sessions": 17,
     "note": "รันจริง 3 รอบติดกัน exit=0 ทุกรอบ ได้ 17 idle-in-transaction sessions เท่ากันทุกรอบ · ข้อความ error ที่ได้ต่างจากที่เดาไว้ตอนแรก ดู E13"
   }

@@ -59,6 +59,11 @@
     "config_profile": "fragile",
     "date": "2026-07-27",
     "consecutive_successful_runs": 3,
+    "checker_states_verified": "DETECTED (64MB) / NOT_DETECTED (256MB) / DETECTED (225MB) / NOT_DETECTED (226MB) — พลิกตรงขอบที่คำนวณไว้พอดี",
+    "checker_states_evidence": "results/i05_checker_states.txt · สคริปต์ sql/i05_checker_states.sql",
+    "checker_states_added_late_th": "เพิ่มย้อนหลัง 2026-07-27 จากการ audit ก่อนส่งงานต่อ — ตอนทำ I05 ครั้งแรกวัด build ครบและ assertion ผ่าน แต่ไม่เคยรัน score.sql เลย ตัวตรวจจึงยังไม่มีหลักฐานว่าตอบลบได้",
+    "checker_states_not_proven_th": "ทาง CANNOT_CHECK อีก 2 ทาง (ไม่มีตาราง / มิติไม่ใช่ 384) ยังไม่ได้พิสูจน์ เพราะต้อง DROP หรือ ALTER qf_corpus ที่ล็อกไว้ — ระบุไว้ตรงๆ ไม่อ้างว่าครบ (กฎเหล็กข้อ 10)",
+    "qf_corpus_untouched": "100000 แถว · fingerprint 5a32cba54ea2be4ed022fe8bfedae9b0 ยืนยันหลังรัน · maintenance_work_mem กลับเป็น 64MB",
     "note": "assertion ผ่าน 3/3 ทุกรอบ · NOTICE ปรากฏที่ 64MB และ 128MB · หายที่ 256MB"
   }
 }

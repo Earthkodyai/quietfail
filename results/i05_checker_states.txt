@@ -1,0 +1,189 @@
+LOAD
+=== I05 checker states — ค่าความจุที่ calibrate ไว้: 443 tuples/MB ที่ 384 มิติ ===
+
+ corpus_rows | dim | mwm_now 
+-------------+-----+---------
+      100000 | 384 | 64MB
+(1 row)
+
+
+--- สถานะ 1: maintenance_work_mem = 64MB (ค่าของโปรไฟล์ fragile) -> DETECTED ---
+    ความจุ 64 x 443 = 28,352 tuples < 100,000 แถว -> ทำนายว่า spill
+SET
+LOAD
+ set_config 
+------------
+ ALL
+(1 row)
+
+DROP TABLE
+psql:/sql/score.sql:33: NOTICE:  table "score_result" does not exist, skipping
+CREATE TABLE
+DO
+
+============================================================
+ผลการนับคะแนน
+============================================================
+ fault_id |   verdict    |                                                              detail                                                              
+----------+--------------+----------------------------------------------------------------------------------------------------------------------------------
+ F01      | NOT_DETECTED | idle in transaction 0 session (ต้อง >= 10) · ค้างนานสุด 0.0 วิ (ต้อง >= 2)
+ F03      | CANNOT_CHECK | ไม่มีตาราง 'qf_f03_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ F05      | NOT_DETECTED | lock ที่ granted=false 0 แถว (ต้อง >= 2) · session ที่ถูกบล็อก 0 (ต้อง >= 2)
+ F10      | CANNOT_CHECK | ไม่มีตาราง 'qf_f10_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ I01      | CANNOT_CHECK | ไม่มี vector index บน 'qf_corpus' เลย — ตรวจ opclass ไม่ได้
+ I03      | NOT_DETECTED | ShareLock ที่ได้รับแล้ว 0 แถว · การเขียนที่รออยู่ 0 แถว (ต้อง >= 1 และ >= 1)
+ I05      | DETECTED     | maintenance_work_mem = 64 MB รับได้ประมาณ 28352 tuples แต่ตารางมี 100000 แถว → build จะ spill และช้าลงราว 3 เท่า
+ Q02      | DETECTED     | จาก 4 query ที่ใช้ vector operator · ขาด ORDER BY หรือ LIMIT 1 · เรียง DESC 0 → index ใช้ไม่ได้ (ตรวจ ORDER BY ที่ห่อด้วยนิพจน์ไม่ได้ ต้องดู plan)
+ Q04      | CANNOT_CHECK | ไม่มี ivfflat index บน qf_corpus ที่ระบุ lists — เทียบกับ sqrt(lists) ไม่ได้
+ Q06      | DETECTED     | hnsw.ef_search = 40 แต่โค้ดใช้ LIMIT ได้ถึง 100 → คืนผลได้ไม่เกิน 40 แถว ขาดไป 60
+ V07      | CANNOT_CHECK | หาตาราง 'qf_v07' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+(11 rows)
+
+
+--- สรุป ---
+ detected | not_detected | cannot_check | total 
+----------+--------------+--------------+-------
+        3 |            3 |            5 |    11
+(1 row)
+
+
+หมายเหตุ: cannot_check ไม่ใช่ผ่าน และไม่ใช่ไม่พบ (กฎเหล็กข้อ 10)
+
+--- สถานะ 2: maintenance_work_mem = 256MB -> NOT_DETECTED ---
+    ความจุ 256 x 443 = 113,408 tuples > 100,000 แถว -> ทำนายว่าไม่ spill
+    ตรงกับที่วัดจริง: 256MB คือค่าเดียวใน 3 ค่าที่ไม่มี NOTICE
+SET
+LOAD
+ set_config 
+------------
+ ALL
+(1 row)
+
+DROP TABLE
+CREATE TABLE
+DO
+
+============================================================
+ผลการนับคะแนน
+============================================================
+ fault_id |   verdict    |                                                              detail                                                              
+----------+--------------+----------------------------------------------------------------------------------------------------------------------------------
+ F01      | NOT_DETECTED | idle in transaction 0 session (ต้อง >= 10) · ค้างนานสุด 0.0 วิ (ต้อง >= 2)
+ F03      | CANNOT_CHECK | ไม่มีตาราง 'qf_f03_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ F05      | NOT_DETECTED | lock ที่ granted=false 0 แถว (ต้อง >= 2) · session ที่ถูกบล็อก 0 (ต้อง >= 2)
+ F10      | CANNOT_CHECK | ไม่มีตาราง 'qf_f10_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ I01      | CANNOT_CHECK | ไม่มี vector index บน 'qf_corpus' เลย — ตรวจ opclass ไม่ได้
+ I03      | NOT_DETECTED | ShareLock ที่ได้รับแล้ว 0 แถว · การเขียนที่รออยู่ 0 แถว (ต้อง >= 1 และ >= 1)
+ I05      | NOT_DETECTED | maintenance_work_mem = 256 MB รับได้ประมาณ 113408 tuples · ตารางมี 100000 แถว
+ Q02      | DETECTED     | จาก 4 query ที่ใช้ vector operator · ขาด ORDER BY หรือ LIMIT 1 · เรียง DESC 0 → index ใช้ไม่ได้ (ตรวจ ORDER BY ที่ห่อด้วยนิพจน์ไม่ได้ ต้องดู plan)
+ Q04      | CANNOT_CHECK | ไม่มี ivfflat index บน qf_corpus ที่ระบุ lists — เทียบกับ sqrt(lists) ไม่ได้
+ Q06      | DETECTED     | hnsw.ef_search = 40 แต่โค้ดใช้ LIMIT ได้ถึง 100 → คืนผลได้ไม่เกิน 40 แถว ขาดไป 60
+ V07      | CANNOT_CHECK | หาตาราง 'qf_v07' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+(11 rows)
+
+
+--- สรุป ---
+ detected | not_detected | cannot_check | total 
+----------+--------------+--------------+-------
+        2 |            4 |            5 |    11
+(1 row)
+
+
+หมายเหตุ: cannot_check ไม่ใช่ผ่าน และไม่ใช่ไม่พบ (กฎเหล็กข้อ 10)
+
+--- สถานะ 3: 225MB — ตรงขอบที่ตัวตรวจพลิก ---
+    ความจุ 225 x 443 = 99,675 < 100,000 -> ยังต้อง DETECTED
+SET
+LOAD
+ set_config 
+------------
+ ALL
+(1 row)
+
+DROP TABLE
+CREATE TABLE
+DO
+
+============================================================
+ผลการนับคะแนน
+============================================================
+ fault_id |   verdict    |                                                              detail                                                              
+----------+--------------+----------------------------------------------------------------------------------------------------------------------------------
+ F01      | NOT_DETECTED | idle in transaction 0 session (ต้อง >= 10) · ค้างนานสุด 0.0 วิ (ต้อง >= 2)
+ F03      | CANNOT_CHECK | ไม่มีตาราง 'qf_f03_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ F05      | NOT_DETECTED | lock ที่ granted=false 0 แถว (ต้อง >= 2) · session ที่ถูกบล็อก 0 (ต้อง >= 2)
+ F10      | CANNOT_CHECK | ไม่มีตาราง 'qf_f10_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ I01      | CANNOT_CHECK | ไม่มี vector index บน 'qf_corpus' เลย — ตรวจ opclass ไม่ได้
+ I03      | NOT_DETECTED | ShareLock ที่ได้รับแล้ว 0 แถว · การเขียนที่รออยู่ 0 แถว (ต้อง >= 1 และ >= 1)
+ I05      | DETECTED     | maintenance_work_mem = 225 MB รับได้ประมาณ 99675 tuples แต่ตารางมี 100000 แถว → build จะ spill และช้าลงราว 3 เท่า
+ Q02      | DETECTED     | จาก 4 query ที่ใช้ vector operator · ขาด ORDER BY หรือ LIMIT 1 · เรียง DESC 0 → index ใช้ไม่ได้ (ตรวจ ORDER BY ที่ห่อด้วยนิพจน์ไม่ได้ ต้องดู plan)
+ Q04      | CANNOT_CHECK | ไม่มี ivfflat index บน qf_corpus ที่ระบุ lists — เทียบกับ sqrt(lists) ไม่ได้
+ Q06      | DETECTED     | hnsw.ef_search = 40 แต่โค้ดใช้ LIMIT ได้ถึง 100 → คืนผลได้ไม่เกิน 40 แถว ขาดไป 60
+ V07      | CANNOT_CHECK | หาตาราง 'qf_v07' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+(11 rows)
+
+
+--- สรุป ---
+ detected | not_detected | cannot_check | total 
+----------+--------------+--------------+-------
+        3 |            3 |            5 |    11
+(1 row)
+
+
+หมายเหตุ: cannot_check ไม่ใช่ผ่าน และไม่ใช่ไม่พบ (กฎเหล็กข้อ 10)
+
+--- สถานะ 4: 226MB — อีก 1MB เดียว ---
+    ความจุ 226 x 443 = 100,118 > 100,000 -> ต้องพลิกเป็น NOT_DETECTED
+SET
+LOAD
+ set_config 
+------------
+ ALL
+(1 row)
+
+DROP TABLE
+CREATE TABLE
+DO
+
+============================================================
+ผลการนับคะแนน
+============================================================
+ fault_id |   verdict    |                                                              detail                                                              
+----------+--------------+----------------------------------------------------------------------------------------------------------------------------------
+ F01      | NOT_DETECTED | idle in transaction 0 session (ต้อง >= 10) · ค้างนานสุด 0.0 วิ (ต้อง >= 2)
+ F03      | CANNOT_CHECK | ไม่มีตาราง 'qf_f03_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ F05      | NOT_DETECTED | lock ที่ granted=false 0 แถว (ต้อง >= 2) · session ที่ถูกบล็อก 0 (ต้อง >= 2)
+ F10      | CANNOT_CHECK | ไม่มีตาราง 'qf_f10_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ I01      | CANNOT_CHECK | ไม่มี vector index บน 'qf_corpus' เลย — ตรวจ opclass ไม่ได้
+ I03      | NOT_DETECTED | ShareLock ที่ได้รับแล้ว 0 แถว · การเขียนที่รออยู่ 0 แถว (ต้อง >= 1 และ >= 1)
+ I05      | NOT_DETECTED | maintenance_work_mem = 226 MB รับได้ประมาณ 100118 tuples · ตารางมี 100000 แถว
+ Q02      | DETECTED     | จาก 4 query ที่ใช้ vector operator · ขาด ORDER BY หรือ LIMIT 1 · เรียง DESC 0 → index ใช้ไม่ได้ (ตรวจ ORDER BY ที่ห่อด้วยนิพจน์ไม่ได้ ต้องดู plan)
+ Q04      | CANNOT_CHECK | ไม่มี ivfflat index บน qf_corpus ที่ระบุ lists — เทียบกับ sqrt(lists) ไม่ได้
+ Q06      | DETECTED     | hnsw.ef_search = 40 แต่โค้ดใช้ LIMIT ได้ถึง 100 → คืนผลได้ไม่เกิน 40 แถว ขาดไป 60
+ V07      | CANNOT_CHECK | หาตาราง 'qf_v07' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+(11 rows)
+
+
+--- สรุป ---
+ detected | not_detected | cannot_check | total 
+----------+--------------+--------------+-------
+        2 |            4 |            5 |    11
+(1 row)
+
+
+หมายเหตุ: cannot_check ไม่ใช่ผ่าน และไม่ใช่ไม่พบ (กฎเหล็กข้อ 10)
+
+=== คืนค่าเดิมของโปรไฟล์ fragile ===
+RESET
+ mwm_restored 
+--------------
+ 64MB
+(1 row)
+
+
+=== ข้อจำกัดที่ต้องพูดตรงๆ (กฎเหล็กข้อ 10) ===
+ตัวตรวจนี้มีทางไป CANNOT_CHECK อีก 2 ทาง ที่ไฟล์นี้ **ไม่ได้พิสูจน์**:
+  ก) ไม่มีตาราง qf_corpus  — พิสูจน์ไม่ได้เพราะต้อง DROP corpus ที่ล็อกไว้
+  ข) มิติไม่ใช่ 384        — พิสูจน์ไม่ได้เพราะต้อง ALTER คอลัมน์ของ corpus ที่ล็อกไว้
+ทั้งสองทางอ่านได้จากโค้ด score.sql บรรทัด 314 และ 325 แต่ยังไม่มีหลักฐานการรัน
+สูตรข้อ 6 ต้องการ "สถานะที่เจอและไม่เจอ" ซึ่งไฟล์นี้ให้ครบแล้ว

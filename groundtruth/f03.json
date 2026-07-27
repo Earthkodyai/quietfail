@@ -2,44 +2,34 @@
   "fault_id": "F03",
   "group": "A_misleading_error",
   "name": "same_timeout_message_two_different_causes",
-  "pair": ["F03", "F03b"],
-
+  "pair": [
+    "F03",
+    "F03b"
+  ],
   "true_cause": "identical_error_text_different_root_cause",
   "true_cause_th": "F03 รอ row lock · F03b query ช้าจริงเพราะไม่มี index — ข้อความ error บรรทัด ERROR เหมือนกันทุกตัวอักษร",
-
   "surface_error_actual": "ERROR:  canceling statement due to statement timeout",
   "surface_error_identical_for_both": true,
-
   "context_line_note_th": "PostgreSQL แถมบรรทัด CONTEXT มาให้เฉพาะ F03 ('while updating tuple (0,1) in relation \"orders\"') แต่ CONTEXT บอกว่าคำสั่งกำลัง update tuple ซึ่งเป็นคุณสมบัติของ **ชนิดคำสั่ง** ไม่ใช่ของ **สาเหตุ** — UPDATE ที่ช้าเองก็ได้ CONTEXT แบบเดียวกัน จึงยังแยกสาเหตุไม่ได้และไม่บอกว่าต้องแก้ตรงไหน · ระบบ log และ client library ส่วนใหญ่โชว์เฉพาะบรรทัด ERROR (ดู E20)",
-
   "misleading_fixes": [
     "เพิ่ม statement_timeout (แก้ได้ทั้งคู่ และผิดทั้งคู่)",
     "ไล่ optimize query ที่ไม่ได้ช้า (กรณี F03)",
     "ไล่หา lock ที่ไม่มีอยู่จริง (กรณี F03b)"
   ],
-
   "correct_diagnosis": "ดู pg_blocking_pids() ของ session ที่โดน timeout ระหว่างที่มันยังทำงานอยู่ — ไม่ว่าง = รอ lock (F03) · ว่าง = ช้าเอง (F03b)",
-
   "correct_fix_th": "F03 ไล่หา transaction ที่ถือ lock แล้วปิดให้จบ · F03b สร้าง index บนคอลัมน์ที่ใช้",
-
   "evidence_query": "SELECT tag, count(*) AS samples, max(cardinality(blockers)) AS max_blockers, bool_or(cardinality(blockers) > 0) AS was_blocked FROM qf_f03_obs GROUP BY tag ORDER BY tag",
-
   "evidence_expectation": {
     "min_samples_per_case": 1,
     "f03_must_be_blocked": true,
     "f03b_must_be_blocked": false,
     "observation_table": "qf_f03_obs"
   },
-
   "reproduce": "faults/f03_timeout_two_causes.sh",
   "config_profile": "fragile",
-
   "timeout_note_th": "สเปกเดิมใน FAULTS.md เขียน statement_timeout = 2s ซึ่งใช้ไม่ได้ — ไม่มี query ไหนบนชุดข้อมูล 200k แถวช้าถึง 2 วินาที ใช้ 100ms แทน โดยวัดค่าต่ำสุดจาก 5 รอบได้ 331ms = margin 3.3 เท่า และสคริปต์ตรวจ margin เองก่อนเริ่มทุกครั้ง (ดู E18)",
-
   "observation_note_th": "ต้องเฝ้าดูจากในฐานข้อมูลด้วยลูป plpgsql เพราะหน้าต่างเวลามีแค่ ~100ms · และต้องเรียก pg_stat_clear_snapshot() ทุกรอบ ไม่งั้น pg_stat_activity ถูก snapshot ครั้งเดียวต่อ transaction แล้วลูปเห็นภาพเดิมซ้ำจนรายงานว่าไม่มีใครถูกบล็อก (ดู E19)",
-
   "why_this_matters_th": "LLM ที่เห็นแค่ข้อความ error แยกสองกรณีนี้ไม่ออกเลย ต้องดูสถานะจริงของ DB — เป็น baseline ที่ตรงที่สุดสำหรับเทียบกับ 'โยน error ให้ LLM อธิบายลอยๆ'",
-
   "verified_on": {
     "postgres_version": "17.10 (Debian 17.10-1.pgdg12+1)",
     "pgvector_version": "0.8.5",
@@ -47,6 +37,9 @@
     "config_profile": "fragile",
     "date": "2026-07-26",
     "consecutive_successful_runs": 3,
+    "checker_states_verified": "DETECTED 3 รอบ / CANNOT_CHECK 3 รอบ (ก่อนตัวฉีดสร้าง qf_f03_obs)",
+    "checker_states_evidence": "results/f03_phase1_cycle.txt",
+    "checker_states_recorded_late_th": "หลักฐานมีมาตั้งแต่รันเฟส 1 แล้ว แต่ไม่ได้จดลงช่องนี้ — เติมตอน audit 2026-07-27 ให้ตรวจซ้ำได้โดยไม่ต้องไล่อ่านไฟล์ผล (ดู E30)",
     "statement_timeout_ms": 100,
     "note": "F03 เก็บได้ 19 ตัวอย่าง มี blocker 18 · F03b เก็บได้ 18 ตัวอย่าง ไม่มี blocker เลย"
   }
