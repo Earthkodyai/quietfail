@@ -24,3 +24,7 @@ desktop.ini
 # ชั่วคราว
 *.tmp
 *.log
+
+# Python bytecode ของ scripts/audit.py
+__pycache__/
+*.pyc

@@ -26,7 +26,7 @@ TRUNCATE qf_truth, qf_queries, qf_corpus, qf_centroids RESTART IDENTITY;
 -- =============================================================
 -- จุดศูนย์กลาง 50 จุด
 --
--- ทำไมต้องมีกลุ่ม: PROJECT.md ข้อ 7 ห้ามใช้ vector สุ่มสม่ำเสมอ
+-- ทำไมต้องมีกลุ่ม: ห้ามใช้ vector สุ่มสม่ำเสมอ (E12 — ในมิติสูงจุดจะห่างเท่ากันหมด)
 -- เพราะในมิติสูงจุดจะห่างกันเกือบเท่ากันหมด ทำให้ recall ดูแย่ผิดปกติ
 -- แล้วสรุปผิดว่า index ห่วย ทั้งที่ข้อมูลต่างหากที่ไม่มีโครงสร้าง
 -- =============================================================
@@ -149,5 +149,5 @@ ON CONFLICT (item) DO UPDATE SET value = EXCLUDED.value, recorded_at = now();
 SELECT item, value FROM qf_manifest ORDER BY item;
 
 \echo ''
-\echo '>>> จด query_set_fingerprint ลง PROJECT.md ข้อ 7 แล้วห้ามแก้ไฟล์นี้อีก'
+\echo '>>> จด query_set_fingerprint ลง CLAUDE.md แล้วห้ามแก้ไฟล์นี้อีก'
 \echo '>>> ต่อด้วย qf12_seed_corpus.sql'

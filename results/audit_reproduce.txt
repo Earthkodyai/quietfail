@@ -1,0 +1,47 @@
+==============================================================================
+QuietFail — รันตัวฉีดจริงซ้ำ (--reproduce)
+รันเมื่อ : 2026-07-27 21:59:12
+commit  : c69efa4
+==============================================================================
+
+โหมดนี้ตอบคำถามที่ audit ปกติตอบไม่ได้ — 'ผลยังเกิดซ้ำได้จริงไหม'
+สำเร็จ = exit 0 เพราะทุกสคริปต์ใช้ ON_ERROR_STOP และ RAISE EXCEPTION เมื่อ assertion ตก
+(อ่าน exit code ไม่ใช่ค้นข้อความใน output — กฎเหล็กข้อ 6)
+
+จะรัน 6 ข้อ: I01 I04 Q02 Q04 Q06 V07  (ประมาณ 21 นาที)
+
+qf_corpus ก่อนรัน : 5000|5a32cba54ea2be4ed022fe8bfedae9b0
+
+── I01 : sql/i01_opclass_mismatch.sql ──
+   ok   exit 0 · assertion 4/4 ข้อ · 380 วินาที
+
+── I04 : sql/i04_kmeans_nondeterminism.sql ──
+   ok   exit 0 · assertion 5/5 ข้อ · 613 วินาที
+
+── Q02 : sql/q02_wrong_query_shape.sql ──
+   ok   exit 0 · assertion 5/5 ข้อ · 35 วินาที
+
+── Q04 : sql/q04_default_params.sql ──
+   ok   exit 0 · assertion 5/5 ข้อ · 219 วินาที
+
+── Q06 : sql/q06_limit_exceeds_ef.sql ──
+   ok   exit 0 · assertion 5/5 ข้อ · 53 วินาที
+
+── V07 : sql/v07_null_zero_vectors.sql ──
+   ok   exit 0 · assertion 4/4 ข้อ · 1 วินาที
+
+qf_corpus หลังรัน : 5000|5a32cba54ea2be4ed022fe8bfedae9b0
+   ok   qf_corpus ไม่เปลี่ยน
+   ok   ไม่มี vector index ค้าง
+
+==============================================================================
+✅ ตัวฉีดที่รัน เกิดซ้ำได้ทุกข้อ · qf_corpus ไม่ถูกแตะ
+
+ยังไม่ครอบคลุม (ต้องรันด้วยมือ เพราะต้องหลาย session หรือต้องตั้ง env):
+  F01  faults/f01_idle_in_transaction.sh — ต้อง HOLD_OPEN เพราะหลักฐานเป็นสถานะสดของ DB
+  F03  faults/f03_timeout_two_causes.sh — ต้อง KEEP_OBS=1 ห้ามใช้ HOLD_OPEN (E21)
+  F05  faults/f05_lock_queue.sh — ต้อง HOLD_OPEN · ต้องใช้ role lab (E15)
+  F10  faults/f10_stale_statistics.sh — ต้อง KEEP_OBS=1
+  I03  faults/i03_create_index_lock.sh — ต้องหลาย session พร้อมกัน
+  I05  faults/i05_maintenance_work_mem.sh — ~4 นาที · ground truth อยู่ใน stderr ห้ามกลบ
+==============================================================================

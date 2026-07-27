@@ -17,7 +17,7 @@ LOAD 'vector';
 -- 384 เพื่อให้ตรงกับ merchant_embeddings ที่มีอยู่ก่อนแล้วใน init/02_schema.sql
 \set dim 384
 
--- จำนวนกลุ่ม — PROJECT.md ข้อ 7 กำหนด 50
+-- จำนวนกลุ่ม — 50 (ล็อกไว้ใน CLAUDE.md หัวข้อ "ฐานวัด recall ที่ล็อกแล้ว")
 \set clusters 50
 
 -- จำนวน query — D09 กำหนด 200 และห้ามเปลี่ยนหลังเห็นผล

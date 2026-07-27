@@ -356,8 +356,152 @@ def check_scorer(bl):
 # ══════════════════════════════════════════════════════════════
 # รายงาน
 # ══════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════
+# โหมด --reproduce : รันตัวฉีดจริงซ้ำ ไม่ใช่แค่ดูว่าหลักฐานมีอยู่
+#
+# audit ปกติ **ไม่รัน fault ซ้ำ** — มันยืนยันว่าหลักฐานมีอยู่และครบรูปแบบ
+# เท่านั้น โหมดนี้มีไว้ตอบคำถามที่ audit ปกติตอบไม่ได้:
+#   "ผลที่บันทึกไว้ ยังเกิดซ้ำได้จริงไหม"
+#
+# แยกออกมาเพราะแพง (รวมกันเกิน 20 นาที) จึงไม่ควรรวมในการตรวจทุกครั้ง
+# ══════════════════════════════════════════════════════════════
+def run_reproduce(bl, want):
+    rep = bl.get("reproduce", {})
+    manual = bl.get("reproduce_manual_only", {})
+
+    if want in ("", "all", None):
+        targets = list(rep.keys())
+    else:
+        targets = [t.strip().upper() for t in want.split(",") if t.strip()]
+
+    lines = []
+
+    # เขียนไฟล์ใหม่ทุกครั้งที่มีบรรทัดเพิ่ม — โหมดนี้ใช้เวลาเกิน 20 นาที
+    # ถ้าเขียนตอนจบอย่างเดียว จะดูความคืบหน้าไม่ได้เลยระหว่างรอ
+    # และถ้าถูกตัดกลางคันจะไม่เหลือหลักฐานว่าไปถึงไหนแล้ว
+    def w(s=""):
+        lines.append(s)
+        f = io.open("results/audit_reproduce.txt", "w",
+                    encoding="utf-8", newline="\n")
+        f.write("\n".join(lines) + "\n")
+        f.close()
+
+    rc_h, head = run(["git", "rev-parse", "--short", "HEAD"])
+    w("=" * 78)
+    w("QuietFail — รันตัวฉีดจริงซ้ำ (--reproduce)")
+    w("รันเมื่อ : %s" % datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+    w("commit  : %s" % (head.strip() if rc_h == 0 else "(อ่านไม่ได้)"))
+    w("=" * 78)
+    w("")
+    w("โหมดนี้ตอบคำถามที่ audit ปกติตอบไม่ได้ — 'ผลยังเกิดซ้ำได้จริงไหม'")
+    w("สำเร็จ = exit 0 เพราะทุกสคริปต์ใช้ ON_ERROR_STOP และ RAISE EXCEPTION เมื่อ assertion ตก")
+    w("(อ่าน exit code ไม่ใช่ค้นข้อความใน output — กฎเหล็กข้อ 6)")
+    w("")
+
+    unknown = [t for t in targets if t not in rep]
+    if unknown:
+        w("!! ไม่รู้จัก: %s" % ", ".join(unknown))
+        for u in unknown:
+            if u in manual:
+                w("   %s รันอัตโนมัติไม่ได้ — %s" % (u, manual[u]))
+        w("")
+        targets = [t for t in targets if t in rep]
+
+    est = sum(rep[t].get("minutes", 0) for t in targets)
+    w("จะรัน %d ข้อ: %s  (ประมาณ %d นาที)" % (len(targets), " ".join(targets), est))
+    w("")
+
+    ok, before = psql(
+        "SELECT count(*)||'|'||md5(string_agg(embedding::text,'|' ORDER BY id)) "
+        "FROM (SELECT id,embedding FROM qf_corpus ORDER BY id LIMIT 5000) s")
+    if not ok:
+        w("!! ต่อ DB ไม่ได้ — รันไม่ได้")
+        return lines, 1
+    w("qf_corpus ก่อนรัน : %s" % before)
+    w("")
+
+    n_fail = 0
+    for fid in targets:
+        script = rep[fid]["script"]
+        w("── %s : %s ──" % (fid, script))
+        t0 = datetime.now()
+        rc, out = run(
+            ["docker", "compose", "exec", "-T", "db", "psql", "-U", "lab",
+             "-d", "faultlab", "-f", "/" + script],
+            timeout=1800)
+        secs = (datetime.now() - t0).total_seconds()
+
+        # สคริปต์แต่ละข้อใช้เครื่องหมายต่างกัน (V07 ใช้ 'OK' · I04 ใช้ '✅')
+        # จึงนับจากโครงสร้าง [i/n] ที่ทุกข้อใช้เหมือนกัน ไม่ใช่จากคำที่ตามหลัง
+        # และตัวชี้ขาดจริงคือ exit code ไม่ใช่ตัวเลขนี้
+        marks = re.findall(r"\[(\d+)/(\d+)\]", out)
+        n_ok = len(marks)
+        total = marks[0][1] if marks else "?"
+        if rc == 0:
+            w("   ok   exit 0 · assertion %s/%s ข้อ · %.0f วินาที" % (n_ok, total, secs))
+        else:
+            n_fail += 1
+            tail = [l for l in out.splitlines() if l.strip()][-3:]
+            w("   FAIL exit %s · %.0f วินาที" % (rc, secs))
+            for l in tail:
+                w("        %s" % l[:150])
+        w("")
+
+    ok, after = psql(
+        "SELECT count(*)||'|'||md5(string_agg(embedding::text,'|' ORDER BY id)) "
+        "FROM (SELECT id,embedding FROM qf_corpus ORDER BY id LIMIT 5000) s")
+    ok2, idx = psql(
+        "SELECT count(*) FROM pg_index i JOIN pg_class c ON c.oid=i.indexrelid "
+        "JOIN pg_am am ON am.oid=c.relam WHERE am.amname IN ('hnsw','ivfflat')")
+
+    w("qf_corpus หลังรัน : %s" % after)
+    if after != before:
+        n_fail += 1
+        w("!! 🔴 qf_corpus เปลี่ยน — ฐานของเฉลยทั้งโปรเจคเสียหาย ต้องสร้างใหม่")
+    else:
+        w("   ok   qf_corpus ไม่เปลี่ยน")
+    if idx.strip() not in ("0", ""):
+        n_fail += 1
+        w("!! vector index ค้าง %s ตัว — ต้องเก็บกวาดก่อนวัดอะไรต่อ" % idx.strip())
+    else:
+        w("   ok   ไม่มี vector index ค้าง")
+
+    w("")
+    w("=" * 78)
+    if n_fail == 0:
+        w("✅ ตัวฉีดที่รัน เกิดซ้ำได้ทุกข้อ · qf_corpus ไม่ถูกแตะ")
+    else:
+        w("❌ มี %d ข้อที่ไม่ผ่าน — ผลที่บันทึกไว้อาจใช้ไม่ได้แล้ว" % n_fail)
+    w("")
+    w("ยังไม่ครอบคลุม (ต้องรันด้วยมือ เพราะต้องหลาย session หรือต้องตั้ง env):")
+    for k, v in sorted(manual.items()):
+        w("  %s  %s" % (k, v))
+    w("=" * 78)
+    return lines, (0 if n_fail == 0 else 1)
+
+
 def main():
     bl = load_baseline()
+
+    if "--reproduce" in sys.argv:
+        i = sys.argv.index("--reproduce")
+        want = sys.argv[i + 1] if len(sys.argv) > i + 1 else "all"
+        lines, rc = run_reproduce(bl, want)
+        report = "\n".join(lines) + "\n"
+        out = io.open("results/audit_reproduce.txt", "w",
+                      encoding="utf-8", newline="\n")
+        out.write(report)
+        out.close()
+        try:
+            sys.stdout.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
+        try:
+            sys.stdout.write(report)
+        except UnicodeEncodeError:
+            enc = sys.stdout.encoding or "ascii"
+            sys.stdout.write(report.encode(enc, "replace").decode(enc, "replace"))
+        return rc
 
     check_git(bl)
     check_groundtruth(bl)
