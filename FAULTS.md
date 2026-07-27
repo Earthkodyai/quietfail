@@ -807,7 +807,9 @@ SELECT id FROM qf_corpus ORDER BY embedding <=> $1 LIMIT 100;   -- ได้ 40 
 | ตัวฉีด | `sql/q06_limit_exceeds_ef.sql` |
 | ground truth | `groundtruth/q06.json` |
 | ตัวนับคะแนน | `sql/score.sql` — **static ล้วน อ่าน GUC เทียบกับ LIMIT ที่ประกาศไว้** |
+| ตัวพิสูจน์ตัวตรวจ | `sql/q06_checker_states.sql` |
 | หลักฐาน | `results/q06_phase3_cycle.txt` |
+| รันจริง | **3 รอบติด assertion ผ่าน 5/5 · ตัวตรวจพลิกถูก 3 รอบติด** |
 
 ### หน้าผาอยู่ตรง k = ef_search + 1 พอดี
 
@@ -1007,6 +1009,10 @@ Milvus ตั้ง `ef = limit` โดยนิยาม · Weaviate ปรั�
 | **H15** | `count(*) = 2` บน `pg_opclass` ได้ 4 เพราะ opclass ชื่อเดียวกันมีทั้ง hnsw และ ivfflat | E25 | assertion ข้อ 3 ตก |
 | **H16** 🔴 | `2>/dev/null` กลบ `CREATE INDEX` ที่ล้มเหลว **เป็นครั้งที่สามในวันเดียว** · ผล 12 ช่องของตัวตรวจผิดทั้งหมด | E26 | ตัวตรวจขึ้น CANNOT_CHECK ทั้งที่ทดสอบมือแล้วผ่าน |
 | **H17** | `score.sql` สร้าง temp table โดยไม่ DROP ก่อน → เรียกซ้ำในเซสชันเดียวไม่ได้ | E26 | เจอทันทีที่เลิกกลบ stderr |
+| **H18** 🔴 | `pg_terminate_backend()` ใส่ **parallel worker** → leader ตาย exit 2 → postmaster **รีเซ็ตทั้งคลัสเตอร์** · คำสั่งถัดไปล้มด้วย "system is in recovery" ที่ไม่ชี้กลับมาที่ต้นเหตุ | E29 | สถานะ 3 ของตัวพิสูจน์ล้มเหลว |
+| **H19** | กรองผล psql ด้วย pattern ที่มีช่องว่าง แต่ `-qAt` ให้ผลแบบ `I03|DETECTED|...` ไม่มีช่องว่าง → ตัวนับรันจริงแต่มองไม่เห็นผล | — | ตารางล็อกว่างเปล่าทั้งที่ assertion ผ่าน |
+| **H20** | ยัด `LOAD 'vector'` ผ่าน `-c` ใน `bash -c` → quote พัง `SET hnsw.ef_search` ไม่เคยทำงาน → ตัวตรวจขึ้น DETECTED ทั้ง 9 ครั้ง | — | ตัวตรวจไม่พลิกทั้งที่ควรพลิก |
+| **H21** | script อ่านไฟล์ครั้งเดียวแล้ว `write()` สองครั้งจากตัวแปรเดิม → การแก้รอบหลังลบรอบแรกทิ้ง ทั้งที่ทั้งสองรอบรายงานว่าสำเร็จ | — | ไล่ตรวจ H-series แล้วพบว่า H18/H19 หายไป |
 
 **H05 กลายเป็นกฎเหล็กข้อ 7ก แล้ว** ส่วน H01–H04, H06, H07 แก้แล้วทุกข้อ
 
