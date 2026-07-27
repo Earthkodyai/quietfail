@@ -1,7 +1,6 @@
 {
   "_comment_th": "ค่าที่ audit.py ใช้เทียบ — แก้ไฟล์นี้ได้เฉพาะเมื่อ 'ตั้งใจ' เปลี่ยนฐาน และต้องมีบรรทัดใน DECISIONS.md",
   "_updated": "2026-07-27",
-
   "db": {
     "corpus_table": "qf_corpus",
     "corpus_rows": 100000,
@@ -15,11 +14,34 @@
     "postgres_version_like": "17.10",
     "pgvector_version": "0.8.5"
   },
-
-  "faults_done": ["F01", "F03", "F05", "F10", "I01", "I03", "I04", "I05", "Q02", "Q04", "Q06", "V07"],
-  "faults_remaining": ["I02", "Q03"],
-
-  "checker_states_file_required": ["I01", "I04", "I05", "Q02", "Q04", "Q06", "V07"],
+  "faults_done": [
+    "F01",
+    "F03",
+    "F05",
+    "F10",
+    "I01",
+    "I02",
+    "I03",
+    "I04",
+    "I05",
+    "Q02",
+    "Q04",
+    "Q06",
+    "V07"
+  ],
+  "faults_remaining": [
+    "Q03"
+  ],
+  "checker_states_file_required": [
+    "I01",
+    "I02",
+    "I04",
+    "I05",
+    "Q02",
+    "Q04",
+    "Q06",
+    "V07"
+  ],
   "checker_states_file_exempt": {
     "I03": "พิสูจน์ในตัวฉีดเอง — results/i03_phase3_cycle.txt มี DETECTED และ NOT_DETECTED ครบ",
     "F01": "เฟส 1 — พิสูจน์ในไฟล์ผลของตัวเอง 3 รอบต่อสถานะ",
@@ -27,23 +49,42 @@
     "F05": "เฟส 1 — พิสูจน์ในไฟล์ผลของตัวเอง 3 รอบต่อสถานะ",
     "F10": "เฟส 1 — พิสูจน์ในไฟล์ผลของตัวเอง 3 รอบต่อสถานะ"
   },
-
   "results_intentionally_untracked": [
     "results/qdrant_corpus.csv",
     "results/qdrant_queries.csv",
     "results/qdrant_search_results.csv"
   ],
-
-  "score_expected_rows": 12,
-
+  "score_expected_rows": 13,
   "_reproduce_comment_th": "รันตัวฉีดจริงซ้ำ ไม่ใช่แค่ดูว่าหลักฐานมีอยู่ · สำเร็จ = exit 0 เพราะทุกสคริปต์ใช้ ON_ERROR_STOP และ RAISE EXCEPTION เมื่อ assertion ตก",
   "reproduce": {
-    "I01": {"script": "sql/i01_opclass_mismatch.sql",        "minutes": 4},
-    "I04": {"script": "sql/i04_kmeans_nondeterminism.sql",   "minutes": 7},
-    "Q02": {"script": "sql/q02_wrong_query_shape.sql",       "minutes": 2},
-    "Q04": {"script": "sql/q04_default_params.sql",          "minutes": 5},
-    "Q06": {"script": "sql/q06_limit_exceeds_ef.sql",        "minutes": 2},
-    "V07": {"script": "sql/v07_null_zero_vectors.sql",       "minutes": 1}
+    "I01": {
+      "script": "sql/i01_opclass_mismatch.sql",
+      "minutes": 4
+    },
+    "I04": {
+      "script": "sql/i04_kmeans_nondeterminism.sql",
+      "minutes": 7
+    },
+    "Q02": {
+      "script": "sql/q02_wrong_query_shape.sql",
+      "minutes": 2
+    },
+    "Q04": {
+      "script": "sql/q04_default_params.sql",
+      "minutes": 5
+    },
+    "Q06": {
+      "script": "sql/q06_limit_exceeds_ef.sql",
+      "minutes": 2
+    },
+    "V07": {
+      "script": "sql/v07_null_zero_vectors.sql",
+      "minutes": 1
+    },
+    "I02": {
+      "script": "sql/i02_index_built_too_early.sql",
+      "minutes": 9
+    }
   },
   "reproduce_manual_only": {
     "F01": "faults/f01_idle_in_transaction.sh — ต้อง HOLD_OPEN เพราะหลักฐานเป็นสถานะสดของ DB",
@@ -53,10 +94,13 @@
     "I03": "faults/i03_create_index_lock.sh — ต้องหลาย session พร้อมกัน",
     "I05": "faults/i05_maintenance_work_mem.sh — ~4 นาที · ground truth อยู่ใน stderr ห้ามกลบ"
   },
-
   "estimates_not_fixed_values": {
     "n_distinct_orders_merchant_id": {
-      "observed": [4656, 4679, 4695],
+      "observed": [
+        4656,
+        4679,
+        4695
+      ],
       "why_th": "ค่าประมาณจากการสุ่มของ ANALYZE เปลี่ยนทุกครั้ง — ห้ามเทียบเป็นค่าตายตัว (E31)"
     }
   }

@@ -1,0 +1,165 @@
+{
+  "fault_id": "I02",
+  "group": "A_index_built_wrong",
+  "name": "index_built_before_data_is_representative",
+  "true_cause": "build_sample_not_representative_of_final_data",
+  "true_cause_th": "IVFFlat วางจุดศูนย์กลางกลุ่มจากข้อมูลที่มีอยู่ **ตอนสร้าง index** แถวที่ใส่ทีหลังถูกจับเข้ากลุ่มเดิมที่มีอยู่แล้ว ไม่มีการคำนวณใหม่ · ถ้าข้อมูลชุดแรกหน้าตาไม่เหมือนข้อมูลสุดท้าย จุดศูนย์กลางจะอยู่ผิดที่ถาวรจนกว่าจะสร้าง index ใหม่",
+  "surface_symptom": "ค้นหาแล้วผลที่ควรเจอหายไปเป็นส่วนใหญ่ · ไม่มี error · ขนาด index ปกติ · เร็วปกติ · `\\di` เห็น index อยู่ครบ",
+  "name_correction_2026_07_27_th": "ชื่อเดิมในทะเบียนคือ 'สร้าง IVFFlat ตอนตารางยังเล็ก' ซึ่ง **ผิดตัวแปร** — วัดแล้วพบว่า build ที่ 50 แถวได้ recall 1.0000 ส่วน build ที่ 1,000 แถวได้ 0.2278 ตัวแปรจริงไม่ใช่ 'เล็กแค่ไหน' แต่คือ 'เป็นตัวแทนหรือไม่' · เป็นข้อที่สามที่ชื่อเดิมถูกการวัดหักล้าง ต่อจาก Q02 และ I04 (ดู E33)",
+  "misleading_fixes": [
+    "เพิ่ม lists",
+    "เพิ่ม probes (ช่วยได้แต่ต้องจ่ายเวลาแพงมาก ไม่ได้แก้ต้นเหตุ)",
+    "เปลี่ยนไปใช้ HNSW โดยไม่รู้ว่าปัญหาคืออะไร",
+    "โทษ embedding model",
+    "รอให้ข้อมูลมากขึ้นแล้วมันจะดีเอง (มันไม่ดีขึ้นเอง ต้องสร้าง index ใหม่)"
+  ],
+  "correct_diagnosis": "วัด recall สดๆ เทียบผลของ index กับ exact search (`SET LOCAL enable_indexscan = off`) บน query ตัวอย่างจากตารางเอง · ถ้าต่ำกว่าที่ index ซึ่ง build บนข้อมูลครบทำได้มาก แปลว่าจุดศูนย์กลางไม่ตรงกับข้อมูลจริง",
+  "correct_fix_th": "สร้าง index ใหม่หลังข้อมูลเข้าครบและเป็นตัวแทนแล้ว (`REINDEX` หรือ `DROP` แล้ว `CREATE`) · ในระบบที่ข้อมูลโตต่อเนื่องต้องตั้งรอบสร้างใหม่เป็นงานประจำ ไม่ใช่ทำครั้งเดียวตอน migration",
+  "evidence_query": "วัดสดใน score.sql — เทียบ index vs exact search ด้วย enable_indexscan=off",
+  "evidence_expectation": {
+    "target_table": "qf_i02",
+    "vector_column": "embedding",
+    "sample_queries": 20,
+    "min_recall": 0.5,
+    "detect_when": "recall@10 ที่วัดสด ต่ำกว่า 0.50"
+  },
+  "threshold_rationale_th": "ไม่ได้ตั้งลอยๆ — มาจากช่องว่างที่วัดได้: index ที่ build บนข้อมูลครบ (เงื่อนไข C) ได้ต่ำสุด 0.7160 ใน 10 รอบ ส่วน index ที่ build บนตัวอย่างเอียง (เงื่อนไข D) ได้สูงสุด 0.2580 · ช่องว่างระหว่าง 0.258 กับ 0.716 กว้างมาก จึงวางเกณฑ์ไว้กลางๆ ที่ 0.50",
+  "checker_design_note_th": "ตรวจจาก catalog ไม่ได้เลย — พิสูจน์ใน probe ว่า `pg_class.reltuples` ของ index เก็บจำนวนแถวตอน build ไว้จริง **แต่ ANALYZE เขียนทับทันที** และ autovacuum ทำเองเสมอ ร่องรอยจึงหายไปเองภายในไม่กี่นาที · และจำนวนแถวตอน build ก็ไม่ใช่ตัวแปรที่สำคัญด้วยซ้ำ จึงต้องวัดผลลัพธ์ตรงๆ",
+  "checker_limitation_th": "บอกได้แค่ว่า 'index คืนผลแย่กว่าที่ควร' บอกไม่ได้ว่าเพราะ I02 หรือเพราะอย่างอื่น (เช่น probes ต่ำมากตาม Q04) · และผูกกับเกณฑ์ที่ calibrate บน corpus ชุดนี้ที่ 384 มิติ 50 กลุ่ม lists=100 probes=1 — ชุดข้อมูลอื่นต้องวัดเกณฑ์ใหม่",
+  "measured_2026_07_27": {
+    "corpus_rows_final": 100000,
+    "dim": 384,
+    "lists": 100,
+    "probes": 1,
+    "k": 10,
+    "queries": 200,
+    "rounds": 5,
+    "note_th": "ทั้ง 4 เงื่อนไขจบที่ข้อมูลชุดเดียวกันเป๊ะ 100,000 แถว fingerprint เดียวกัน — เปลี่ยนแค่ 'ตอนที่ build'",
+    "conditions": {
+      "A_build_at_50_all_clusters": {
+        "rows_at_build": 50,
+        "clusters_at_build": 50,
+        "pgvector_warns": true,
+        "recall_mean": 1.0,
+        "recall_min": 1.0,
+        "recall_max": 1.0,
+        "spread": 0.0
+      },
+      "B_build_at_1000_all_clusters": {
+        "rows_at_build": 1000,
+        "clusters_at_build": 50,
+        "pgvector_warns": false,
+        "recall_mean": 0.8798,
+        "recall_min": 0.846,
+        "recall_max": 0.904,
+        "spread": 0.058
+      },
+      "C_build_at_full": {
+        "rows_at_build": 100000,
+        "clusters_at_build": 50,
+        "pgvector_warns": false,
+        "recall_mean": 0.7682,
+        "recall_min": 0.716,
+        "recall_max": 0.814,
+        "spread": 0.098,
+        "note_th": "วิธีที่เอกสารบอกให้ทำ · ตรงกับฐาน probes=1 ที่ Q04 และ I04 วัดไว้ (0.737-0.815)"
+      },
+      "D_build_at_1000_only_5_of_50_clusters": {
+        "rows_at_build": 1000,
+        "clusters_at_build": 5,
+        "pgvector_warns": false,
+        "recall_mean": 0.2278,
+        "recall_min": 0.1845,
+        "recall_max": 0.258,
+        "spread": 0.0735,
+        "note_th": "แย่กว่า C ทุกรอบ ห่าง 0.458 ถึง 0.630 · ไม่มีคำเตือนใดๆ"
+      }
+    },
+    "paired_within_round_vs_C": {
+      "A_minus_C": [
+        0.2145,
+        0.186,
+        0.2315,
+        0.243,
+        0.284
+      ],
+      "B_minus_C": [
+        0.1,
+        0.0895,
+        0.0915,
+        0.147,
+        0.13
+      ],
+      "D_minus_C": [
+        -0.545,
+        -0.6295,
+        -0.517,
+        -0.5525,
+        -0.458
+      ],
+      "why_paired_th": "I04 พิสูจน์ว่าสร้าง IVFFlat ใหม่บนข้อมูลเดิมได้ recall แกว่งถึง 0.073 การเทียบครั้งเดียวจึงแยกไม่ออกว่าต่างเพราะเงื่อนไขหรือเพราะ build ไม่ reproducible — เทียบเป็นคู่ในรอบเดียวกันตัดปัญหานี้ออก"
+    },
+    "buffers_avg": {
+      "A": 433,
+      "B": 387,
+      "C": 375,
+      "D": 526
+    },
+    "build_ms_avg": {
+      "A": 6.8,
+      "B": 39.2,
+      "C": 2634.9,
+      "D": 38.9
+    },
+    "index_size_all_conditions": "157 MB",
+    "pgvector_notice": {
+      "fires_when": "rows < lists เท่านั้น",
+      "measured_threshold_th": "ออกที่ 50 แถว · ไม่ออกที่ 100 แถว (lists=100) · ไม่ออกที่ 200 และ 1,000",
+      "text": "NOTICE: ivfflat index created with little data / DETAIL: This will cause low recall. / HINT: Drop the index until the table has more data.",
+      "hnsw_equivalent": "ไม่มี — HNSW ที่ 50 แถวไม่เตือนอะไรเลย คำเตือนนี้เป็นของ IVFFlat เฉพาะตัว"
+    },
+    "key_finding_th": "⭐ pgvector เตือนเฉพาะเงื่อนไข A ซึ่งเป็นเงื่อนไขเดียวที่ได้ recall สมบูรณ์ 1.0000 และ **เงียบสนิท**กับเงื่อนไข D ซึ่งผลหายไป 77% · คำเตือนจึงสวนทางกับอันตรายจริง",
+    "second_finding_th": "DETAIL ของ NOTICE เขียนว่า 'This will cause low recall' — วัดแล้วเป็นเท็จบนชุดข้อมูลนี้ กรณีที่ถูกเตือนได้ recall เต็ม",
+    "third_finding_th": "วิธีที่เอกสารบอกให้ทำ (build หลังข้อมูลครบ) ได้ recall ต่ำที่สุดในสามเงื่อนไขที่ตัวอย่างเป็นตัวแทน — รูปแบบเดียวกับ Q04 ที่คำแนะนำของเอกสารเองก็ไม่ใช่คำตอบที่ถูก",
+    "across_3_cycles": {
+      "A": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "B": [
+        0.8581,
+        0.8834,
+        0.8871
+      ],
+      "C": [
+        0.7592,
+        0.7705,
+        0.7806
+      ],
+      "D": [
+        0.2283,
+        0.2252,
+        0.2334
+      ],
+      "note_th": "3 รอบเต็ม (แต่ละรอบคือ 4 เงื่อนไข x 5 build) · A นิ่งสนิท 1.0000 ทุกรอบ · D นิ่งมากเช่นกัน 0.2252-0.2334 → ความเอียงของตัวอย่างมีผลมากกว่าความไม่นิ่งของ build (I04) หลายเท่า"
+    }
+  },
+  "why_A_reaches_perfect_recall_th": "corpus ชุดนี้มี 50 กลุ่มและเรียง id แบบสลับกลุ่ม **50 แถวแรกจึงมีครบ 50 กลุ่มพอดีกลุ่มละ 1 แถว** k-means จึงได้จุดศูนย์กลางที่ตรงกับกลุ่มจริงเป๊ะ · เป็นคุณสมบัติของข้อมูลสังเคราะห์ชุดนี้ **ห้ามสรุปว่า build เร็วดีกว่าเสมอ** — D พิสูจน์ตรงข้ามบนข้อมูลชุดเดียวกัน",
+  "reproduce": "sql/i02_index_built_too_early.sql",
+  "config_profile": "fragile",
+  "safety_note_th": "ใช้ตารางแยก qf_i02 · qf_corpus ถูกอ่านอย่างเดียว และตรวจ fingerprint ก่อน/หลังทุกรอบใน assertion",
+  "verified_on": {
+    "postgres_version": "17.10 (Debian 17.10-1.pgdg12+1)",
+    "pgvector_version": "0.8.5",
+    "image_tag": "pgvector/pgvector:0.8.5-pg17",
+    "config_profile": "fragile",
+    "date": "2026-07-27",
+    "consecutive_successful_runs": 3,
+    "assertions_per_run": "6/6 ทุกรอบ (18/18 รวม)",
+    "checker_states_verified": "CANNOT_CHECK (ไม่มี index) / NOT_DETECTED (build ครบ · 0.8200) / DETECTED (ตัวอย่างเอียง · 0.2850) — 3 รอบติด",
+    "checker_states_evidence": "sql/i02_checker_states.sql -> results/i02_phase3_cycle.txt",
+    "qf_corpus_untouched": "100000 แถว · fingerprint 5a32cba54ea2be4ed022fe8bfedae9b0 ตรวจทุกรอบใน assertion [6/6]",
+    "note": "สร้าง index รวม 60 ครั้งใน 3 รอบ · ไม่มี index ค้างหลังจบ"
+  }
+}

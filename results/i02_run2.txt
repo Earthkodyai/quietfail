@@ -1,0 +1,223 @@
+Timing is off.
+LOAD
+DROP INDEX
+psql:/sql/i02_index_built_too_early.sql:38: NOTICE:  index "qf_i02_idx" does not exist, skipping
+DROP TABLE
+DROP TABLE
+DROP TABLE
+DROP TABLE
+psql:/sql/i02_index_built_too_early.sql:42: NOTICE:  table "qf_i02_guard" does not exist, skipping
+SELECT 1
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+=== สภาพแวดล้อม ===
+ mwm  | corpus_rows | lists_ที่ใช้ 
+------+-------------+-----------
+ 64MB |      100000 |       100
+(1 row)
+
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+SET
+
+=== รอบ 1 ===
+psql:/sql/i02_index_built_too_early.sql:185: NOTICE:  index "qf_i02_idx" does not exist, skipping
+psql:/sql/i02_index_built_too_early.sql:185: NOTICE:  ivfflat index created with little data
+DETAIL:  This will cause low recall.
+HINT:  Drop the index until the table has more data.
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+
+=== รอบ 2 ===
+psql:/sql/i02_index_built_too_early.sql:192: NOTICE:  ivfflat index created with little data
+DETAIL:  This will cause low recall.
+HINT:  Drop the index until the table has more data.
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+
+=== รอบ 3 ===
+psql:/sql/i02_index_built_too_early.sql:199: NOTICE:  ivfflat index created with little data
+DETAIL:  This will cause low recall.
+HINT:  Drop the index until the table has more data.
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+
+=== รอบ 4 ===
+psql:/sql/i02_index_built_too_early.sql:206: NOTICE:  ivfflat index created with little data
+DETAIL:  This will cause low recall.
+HINT:  Drop the index until the table has more data.
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+
+=== รอบ 5 ===
+psql:/sql/i02_index_built_too_early.sql:213: NOTICE:  ivfflat index created with little data
+DETAIL:  This will cause low recall.
+HINT:  Drop the index until the table has more data.
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+
+=== ข้อมูลปลายทางเหมือนกันทุกเงื่อนไขจริงไหม (ต้องเหมือน ไม่งั้นเทียบไม่ได้) ===
+ จำนวนแถวที่ต่างกัน | fingerprint_ที่ต่างกัน |  แถว   
+----------------+--------------------+--------
+              1 |                  1 | 100000
+(1 row)
+
+
+=== recall ต่อเงื่อนไข ข้าม 5 รอบ ===
+      cond       | แถวตอน_build | pgvector_เตือน | recall_เฉลี่ย |  ต่ำสุด  |  สูงสุด  | ช่วงแกว่ง 
+-----------------+--------------+---------------+-------------+--------+--------+---------
+ A_build_at_50   |           50 | t             |      1.0000 | 1.0000 | 1.0000 |  0.0000
+ B_build_at_1000 |         1000 | f             |      0.8798 | 0.8460 | 0.9040 |  0.0580
+ C_build_at_full |       100000 | f             |      0.7682 | 0.7160 | 0.8140 |  0.0980
+ D_skewed_5of50  |         1000 | f             |      0.2278 | 0.1845 | 0.2580 |  0.0735
+(4 rows)
+
+
+=== เทียบเป็นคู่ในรอบเดียวกัน (ตัดผลของ build randomness ออก) ===
+    บวก = เงื่อนไขนั้นดีกว่า C ในรอบเดียวกัน
+ รอบ | a_ลบ_c | b_ลบ_c | d_ลบ_c  
+-----+--------+--------+---------
+   1 | 0.2145 | 0.1000 | -0.5450
+   2 | 0.1860 | 0.0895 | -0.6295
+   3 | 0.2315 | 0.0915 | -0.5170
+   4 | 0.2430 | 0.1470 | -0.5525
+   5 | 0.2840 | 0.1300 | -0.4580
+(5 rows)
+
+
+=== buffers · เวลา build · ขนาด index ===
+      cond       | buffers_เฉลี่ย | build_ms_เฉลี่ย | ขนาด_index 
+-----------------+--------------+---------------+------------
+ A_build_at_50   |          433 |           6.8 | 157 MB
+ B_build_at_1000 |          387 |          39.2 | 157 MB
+ C_build_at_full |          375 |        2634.9 | 157 MB
+ D_skewed_5of50  |          526 |          38.9 | 157 MB
+(4 rows)
+
+
+=== ราย query — เงื่อนไขไหนให้คำตอบต่างจาก C บ้าง (รอบ 1) ===
+      cond       | query_ที่ต่างจาก_c | query_ทั้งหมด 
+-----------------+-----------------+-------------
+ A_build_at_50   |              91 |         200
+ B_build_at_1000 |             126 |         200
+ D_skewed_5of50  |             190 |         200
+(3 rows)
+
+
+=== assertion ===
+psql:/sql/i02_index_built_too_early.sql:364: NOTICE:  [1/5] OK ข้อมูลปลายทางเหมือนกันทุกเงื่อนไข — fingerprint เดียว 100,000 แถว
+psql:/sql/i02_index_built_too_early.sql:364: NOTICE:  [2/5] OK ครบ 4 เงื่อนไข x 5 รอบ
+psql:/sql/i02_index_built_too_early.sql:364: NOTICE:  [3/5] OK A เข้าเกณฑ์เตือนครบ 5 รอบ · B ไม่เข้าเกณฑ์เลย (เงียบสนิท)
+psql:/sql/i02_index_built_too_early.sql:364: NOTICE:  [4/5] OK คำตอบต่างจริง — A ต่างจาก C 533 ครั้ง · B ต่างจาก C 654 ครั้ง (จาก 1,000 คู่)
+psql:/sql/i02_index_built_too_early.sql:364: NOTICE:  [5/5] OK qf_corpus ไม่ถูกแตะ
+psql:/sql/i02_index_built_too_early.sql:364: NOTICE:  
+psql:/sql/i02_index_built_too_early.sql:364: NOTICE:  recall เฉลี่ยข้าม 5 รอบ: A(50)=1.0000  B(1000)=0.8798  C(ครบ)=0.7682
+psql:/sql/i02_index_built_too_early.sql:364: NOTICE:  -> ⭐ กลับด้านจาก HINT ของ pgvector ที่เขียนว่า This will cause low recall
+DO
+
+=== เก็บกวาด: ทิ้ง index กับตารางทดสอบ เก็บตารางผลไว้ให้ตัวตรวจอ่าน ===
+DROP INDEX
+DROP TABLE
+DROP FUNCTION
+DROP FUNCTION
+DROP FUNCTION
+DROP FUNCTION
+RESET
+ vector_index_ค้าง 
+------------------
+                0
+(1 row)
+

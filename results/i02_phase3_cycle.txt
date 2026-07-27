@@ -1,0 +1,1225 @@
+════════════════════════════════════════════════════════════
+I02 — เฟส 3 · รัน 3 รอบติด
+เริ่ม: 2026-07-27 22:43:34
+════════════════════════════════════════════════════════════
+
+############ รอบที่ 1 — การทดลอง 4 เงื่อนไข x 5 รอบ ############
+Timing is off.
+LOAD
+DROP INDEX
+psql:/sql/i02_index_built_too_early.sql:38: NOTICE:  index "qf_i02_idx" does not exist, skipping
+DROP TABLE
+psql:/sql/i02_index_built_too_early.sql:39: NOTICE:  table "qf_i02" does not exist, skipping
+DROP TABLE
+DROP TABLE
+DROP TABLE
+psql:/sql/i02_index_built_too_early.sql:42: NOTICE:  table "qf_i02_guard" does not exist, skipping
+SELECT 1
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+=== สภาพแวดล้อม ===
+ mwm  | corpus_rows | lists_ที่ใช้ 
+------+-------------+-----------
+ 64MB |      100000 |       100
+(1 row)
+
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+SET
+
+=== รอบ 1 ===
+psql:/sql/i02_index_built_too_early.sql:185: NOTICE:  index "qf_i02_idx" does not exist, skipping
+psql:/sql/i02_index_built_too_early.sql:185: NOTICE:  ivfflat index created with little data
+DETAIL:  This will cause low recall.
+HINT:  Drop the index until the table has more data.
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+
+=== รอบ 2 ===
+psql:/sql/i02_index_built_too_early.sql:192: NOTICE:  ivfflat index created with little data
+DETAIL:  This will cause low recall.
+HINT:  Drop the index until the table has more data.
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+
+=== รอบ 3 ===
+psql:/sql/i02_index_built_too_early.sql:199: NOTICE:  ivfflat index created with little data
+DETAIL:  This will cause low recall.
+HINT:  Drop the index until the table has more data.
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+
+=== รอบ 4 ===
+psql:/sql/i02_index_built_too_early.sql:206: NOTICE:  ivfflat index created with little data
+DETAIL:  This will cause low recall.
+HINT:  Drop the index until the table has more data.
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+
+=== รอบ 5 ===
+psql:/sql/i02_index_built_too_early.sql:213: NOTICE:  ivfflat index created with little data
+DETAIL:  This will cause low recall.
+HINT:  Drop the index until the table has more data.
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+
+=== ข้อมูลปลายทางเหมือนกันทุกเงื่อนไขจริงไหม (ต้องเหมือน ไม่งั้นเทียบไม่ได้) ===
+ จำนวนแถวที่ต่างกัน | fingerprint_ที่ต่างกัน |  แถว   
+----------------+--------------------+--------
+              1 |                  1 | 100000
+(1 row)
+
+
+=== recall ต่อเงื่อนไข ข้าม 5 รอบ ===
+      cond       | แถวตอน_build | pgvector_เตือน | recall_เฉลี่ย |  ต่ำสุด  |  สูงสุด  | ช่วงแกว่ง 
+-----------------+--------------+---------------+-------------+--------+--------+---------
+ A_build_at_50   |           50 | t             |      1.0000 | 1.0000 | 1.0000 |  0.0000
+ B_build_at_1000 |         1000 | f             |      0.8581 | 0.8305 | 0.9015 |  0.0710
+ C_build_at_full |       100000 | f             |      0.7592 | 0.7155 | 0.7880 |  0.0725
+ D_skewed_5of50  |         1000 | f             |      0.2283 | 0.2005 | 0.2630 |  0.0625
+(4 rows)
+
+
+=== เทียบเป็นคู่ในรอบเดียวกัน (ตัดผลของ build randomness ออก) ===
+    บวก = เงื่อนไขนั้นดีกว่า C ในรอบเดียวกัน
+ รอบ | a_ลบ_c | b_ลบ_c | d_ลบ_c  
+-----+--------+--------+---------
+   1 | 0.2845 | 0.1180 | -0.5150
+   2 | 0.2560 | 0.1575 | -0.5195
+   3 | 0.2120 | 0.0425 | -0.5250
+   4 | 0.2280 | 0.0960 | -0.5365
+   5 | 0.2235 | 0.0805 | -0.5585
+(5 rows)
+
+
+=== buffers · เวลา build · ขนาด index ===
+      cond       | buffers_เฉลี่ย | build_ms_เฉลี่ย | ขนาด_index 
+-----------------+--------------+---------------+------------
+ A_build_at_50   |          433 |          10.5 | 157 MB
+ B_build_at_1000 |          366 |          35.7 | 157 MB
+ C_build_at_full |          426 |        2684.1 | 157 MB
+ D_skewed_5of50  |          531 |          41.8 | 157 MB
+(4 rows)
+
+
+=== ราย query — เงื่อนไขไหนให้คำตอบต่างจาก C บ้าง (รอบ 1) ===
+      cond       | query_ที่ต่างจาก_c | query_ทั้งหมด 
+-----------------+-----------------+-------------
+ A_build_at_50   |             137 |         200
+ B_build_at_1000 |             152 |         200
+ D_skewed_5of50  |             191 |         200
+(3 rows)
+
+
+=== assertion ===
+psql:/sql/i02_index_built_too_early.sql:386: NOTICE:  [1/6] OK ข้อมูลปลายทางเหมือนกันทุกเงื่อนไข — fingerprint เดียว 100,000 แถว
+psql:/sql/i02_index_built_too_early.sql:386: NOTICE:  [2/6] OK ครบ 4 เงื่อนไข x 5 รอบ
+psql:/sql/i02_index_built_too_early.sql:386: NOTICE:  [3/6] OK A เข้าเกณฑ์เตือนครบ 5 รอบ · B ไม่เข้าเกณฑ์เลย (เงียบสนิท)
+psql:/sql/i02_index_built_too_early.sql:386: NOTICE:  [4/6] OK คำตอบต่างจริง — A ต่างจาก C 583 · B ต่างจาก C 730 · D ต่างจาก C 958 (จาก 1,000 คู่)
+psql:/sql/i02_index_built_too_early.sql:386: NOTICE:  [5/6] OK D (ตัวอย่างเอียง 5 จาก 50 กลุ่ม) แย่กว่า C ครบทั้ง 5 รอบ
+psql:/sql/i02_index_built_too_early.sql:386: NOTICE:  [6/6] OK qf_corpus ไม่ถูกแตะ
+psql:/sql/i02_index_built_too_early.sql:386: NOTICE:  
+psql:/sql/i02_index_built_too_early.sql:386: NOTICE:  recall เฉลี่ยข้าม 5 รอบ: A(50)=1.0000  B(1000)=0.8581  C(ครบ)=0.7592  D(เอียง)=0.2283
+psql:/sql/i02_index_built_too_early.sql:386: NOTICE:  pgvector เตือนเฉพาะ A ซึ่งได้ recall 1.0000 · และเงียบสนิทกับ D ซึ่งได้ 0.2283
+psql:/sql/i02_index_built_too_early.sql:386: NOTICE:  -> ⭐ กลับด้านจาก HINT ของ pgvector ที่เขียนว่า This will cause low recall
+DO
+
+=== เก็บกวาด: ทิ้ง index กับตารางทดสอบ เก็บตารางผลไว้ให้ตัวตรวจอ่าน ===
+DROP INDEX
+DROP TABLE
+DROP FUNCTION
+DROP FUNCTION
+DROP FUNCTION
+DROP FUNCTION
+RESET
+ vector_index_ค้าง 
+------------------
+                0
+(1 row)
+
+exit: 0
+
+############ รอบที่ 1 — พิสูจน์ตัวตรวจ 3 สถานะ ############
+LOAD
+SET
+SET
+DROP INDEX
+psql:/sql/i02_checker_states.sql:19: NOTICE:  index "qf_i02_idx" does not exist, skipping
+DROP TABLE
+CREATE TABLE
+=== สถานะ 1: มีตารางแต่ยังไม่มี ivfflat index -> CANNOT_CHECK ===
+    (กฎเหล็กข้อ 10 — ไม่มีอะไรให้เทียบ ไม่ใช่ "ผ่าน")
+INSERT 0 100000
+LOAD
+ set_config 
+------------
+ ALL
+(1 row)
+
+DROP TABLE
+psql:/sql/score.sql:33: NOTICE:  table "score_result" does not exist, skipping
+CREATE TABLE
+DO
+
+============================================================
+ผลการนับคะแนน
+============================================================
+ fault_id |   verdict    |                                                              detail                                                               
+----------+--------------+-----------------------------------------------------------------------------------------------------------------------------------
+ F01      | NOT_DETECTED | idle in transaction 0 session (ต้อง >= 10) · ค้างนานสุด 0.0 วิ (ต้อง >= 2)
+ F03      | CANNOT_CHECK | ไม่มีตาราง 'qf_f03_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ F05      | NOT_DETECTED | lock ที่ granted=false 0 แถว (ต้อง >= 2) · session ที่ถูกบล็อก 0 (ต้อง >= 2)
+ F10      | CANNOT_CHECK | ไม่มีตาราง 'qf_f10_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ I01      | CANNOT_CHECK | ไม่มี vector index บน 'qf_corpus' เลย — ตรวจ opclass ไม่ได้
+ I02      | CANNOT_CHECK | ไม่มี ivfflat index บน qf_i02 — ไม่มีอะไรให้เทียบกับ exact search
+ I03      | NOT_DETECTED | ShareLock ที่ได้รับแล้ว 0 แถว · การเขียนที่รออยู่ 0 แถว (ต้อง >= 1 และ >= 1)
+ I04      | CANNOT_CHECK | ไม่มี vector index บน qf_corpus — ไม่มีอะไรให้เทียบว่าถูกสร้างใหม่หรือยัง
+ I05      | DETECTED     | maintenance_work_mem = 64 MB รับได้ประมาณ 28352 tuples แต่ตารางมี 100000 แถว → build จะ spill และช้าลงราว 3 เท่า
+ Q02      | DETECTED     | จาก 17 query ที่ใช้ vector operator · ขาด ORDER BY หรือ LIMIT 2 · เรียง DESC 1 → index ใช้ไม่ได้ (ตรวจ ORDER BY ที่ห่อด้วยนิพจน์ไม่ได้ ต้องดู plan)
+ Q04      | CANNOT_CHECK | ไม่มี ivfflat index บน qf_corpus ที่ระบุ lists — เทียบกับ sqrt(lists) ไม่ได้
+ Q06      | DETECTED     | hnsw.ef_search = 40 แต่โค้ดใช้ LIMIT ได้ถึง 100 → คืนผลได้ไม่เกิน 40 แถว ขาดไป 60
+ V07      | CANNOT_CHECK | หาตาราง 'qf_v07' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+(13 rows)
+
+
+--- สรุป ---
+ detected | not_detected | cannot_check | total 
+----------+--------------+--------------+-------
+        3 |            3 |            7 |    13
+(1 row)
+
+
+หมายเหตุ: cannot_check ไม่ใช่ผ่าน และไม่ใช่ไม่พบ (กฎเหล็กข้อ 10)
+
+=== สร้าง index บนข้อมูลครบ (วิธีที่ถูก) ===
+CREATE INDEX
+
+=== สถานะ 2: index build บนข้อมูลครบ -> NOT_DETECTED ===
+    recall ควรอยู่ราว 0.72-0.81 ซึ่งคือฐานปกติของ probes=1 (Q04 · I04)
+LOAD
+ set_config 
+------------
+ ALL
+(1 row)
+
+DROP TABLE
+CREATE TABLE
+psql:/sql/score.sql:732: NOTICE:  table "i02_probe_q" does not exist, skipping
+psql:/sql/score.sql:732: NOTICE:  table "i02_probe_truth" does not exist, skipping
+DO
+
+============================================================
+ผลการนับคะแนน
+============================================================
+ fault_id |   verdict    |                                                              detail                                                               
+----------+--------------+-----------------------------------------------------------------------------------------------------------------------------------
+ F01      | NOT_DETECTED | idle in transaction 0 session (ต้อง >= 10) · ค้างนานสุด 0.0 วิ (ต้อง >= 2)
+ F03      | CANNOT_CHECK | ไม่มีตาราง 'qf_f03_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ F05      | NOT_DETECTED | lock ที่ granted=false 0 แถว (ต้อง >= 2) · session ที่ถูกบล็อก 0 (ต้อง >= 2)
+ F10      | CANNOT_CHECK | ไม่มีตาราง 'qf_f10_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ I01      | CANNOT_CHECK | ไม่มี vector index บน 'qf_corpus' เลย — ตรวจ opclass ไม่ได้
+ I02      | NOT_DETECTED | recall@10 ที่วัดสดจาก 20 query = 0.8000 (เกณฑ์ 0.50)
+ I03      | NOT_DETECTED | ShareLock ที่ได้รับแล้ว 0 แถว · การเขียนที่รออยู่ 0 แถว (ต้อง >= 1 และ >= 1)
+ I04      | CANNOT_CHECK | ไม่มี vector index บน qf_corpus — ไม่มีอะไรให้เทียบว่าถูกสร้างใหม่หรือยัง
+ I05      | DETECTED     | maintenance_work_mem = 64 MB รับได้ประมาณ 28352 tuples แต่ตารางมี 100000 แถว → build จะ spill และช้าลงราว 3 เท่า
+ Q02      | DETECTED     | จาก 18 query ที่ใช้ vector operator · ขาด ORDER BY หรือ LIMIT 2 · เรียง DESC 1 → index ใช้ไม่ได้ (ตรวจ ORDER BY ที่ห่อด้วยนิพจน์ไม่ได้ ต้องดู plan)
+ Q04      | CANNOT_CHECK | ไม่มี ivfflat index บน qf_corpus ที่ระบุ lists — เทียบกับ sqrt(lists) ไม่ได้
+ Q06      | DETECTED     | hnsw.ef_search = 40 แต่โค้ดใช้ LIMIT ได้ถึง 100 → คืนผลได้ไม่เกิน 40 แถว ขาดไป 60
+ V07      | CANNOT_CHECK | หาตาราง 'qf_v07' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+(13 rows)
+
+
+--- สรุป ---
+ detected | not_detected | cannot_check | total 
+----------+--------------+--------------+-------
+        3 |            4 |            6 |    13
+(1 row)
+
+
+หมายเหตุ: cannot_check ไม่ใช่ผ่าน และไม่ใช่ไม่พบ (กฎเหล็กข้อ 10)
+
+=== สร้างใหม่แบบผิด: build ตอนมีแค่ 5 กลุ่มจาก 50 แล้วค่อยเติมให้ครบ ===
+DROP INDEX
+DELETE 92000
+ rows_at_build | clusters_at_build 
+---------------+-------------------
+          8000 |                 4
+(1 row)
+
+CREATE INDEX
+INSERT 0 92000
+ANALYZE
+ rows_now | clusters_now 
+----------+--------------
+   100000 |           50
+(1 row)
+
+
+=== สถานะ 3: index build บนตัวอย่างเอียง -> DETECTED ===
+    ข้อมูลในตารางเหมือนสถานะ 2 ทุกแถว ต่างแค่ตอนที่ build index
+LOAD
+ set_config 
+------------
+ ALL
+(1 row)
+
+DROP TABLE
+CREATE TABLE
+psql:/sql/score.sql:732: NOTICE:  table "i02_probe_q" does not exist, skipping
+psql:/sql/score.sql:732: NOTICE:  table "i02_probe_truth" does not exist, skipping
+DO
+
+============================================================
+ผลการนับคะแนน
+============================================================
+ fault_id |   verdict    |                                                              detail                                                               
+----------+--------------+-----------------------------------------------------------------------------------------------------------------------------------
+ F01      | NOT_DETECTED | idle in transaction 0 session (ต้อง >= 10) · ค้างนานสุด 0.0 วิ (ต้อง >= 2)
+ F03      | CANNOT_CHECK | ไม่มีตาราง 'qf_f03_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ F05      | NOT_DETECTED | lock ที่ granted=false 0 แถว (ต้อง >= 2) · session ที่ถูกบล็อก 0 (ต้อง >= 2)
+ F10      | CANNOT_CHECK | ไม่มีตาราง 'qf_f10_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ I01      | CANNOT_CHECK | ไม่มี vector index บน 'qf_corpus' เลย — ตรวจ opclass ไม่ได้
+ I02      | DETECTED     | recall@10 ที่วัดสดจาก 20 query = 0.2300 ต่ำกว่าเกณฑ์ 0.50 → index คืนผลแย่กว่าที่ index ซึ่ง build บนข้อมูลครบควรทำได้มาก
+ I03      | NOT_DETECTED | ShareLock ที่ได้รับแล้ว 0 แถว · การเขียนที่รออยู่ 0 แถว (ต้อง >= 1 และ >= 1)
+ I04      | CANNOT_CHECK | ไม่มี vector index บน qf_corpus — ไม่มีอะไรให้เทียบว่าถูกสร้างใหม่หรือยัง
+ I05      | DETECTED     | maintenance_work_mem = 64 MB รับได้ประมาณ 28352 tuples แต่ตารางมี 100000 แถว → build จะ spill และช้าลงราว 3 เท่า
+ Q02      | DETECTED     | จาก 19 query ที่ใช้ vector operator · ขาด ORDER BY หรือ LIMIT 2 · เรียง DESC 1 → index ใช้ไม่ได้ (ตรวจ ORDER BY ที่ห่อด้วยนิพจน์ไม่ได้ ต้องดู plan)
+ Q04      | CANNOT_CHECK | ไม่มี ivfflat index บน qf_corpus ที่ระบุ lists — เทียบกับ sqrt(lists) ไม่ได้
+ Q06      | DETECTED     | hnsw.ef_search = 40 แต่โค้ดใช้ LIMIT ได้ถึง 100 → คืนผลได้ไม่เกิน 40 แถว ขาดไป 60
+ V07      | CANNOT_CHECK | หาตาราง 'qf_v07' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+(13 rows)
+
+
+--- สรุป ---
+ detected | not_detected | cannot_check | total 
+----------+--------------+--------------+-------
+        4 |            3 |            6 |    13
+(1 row)
+
+
+หมายเหตุ: cannot_check ไม่ใช่ผ่าน และไม่ใช่ไม่พบ (กฎเหล็กข้อ 10)
+
+=== เก็บกวาด ===
+DROP INDEX
+DROP TABLE
+RESET
+RESET
+ vector_index_ค้าง 
+------------------
+                0
+(1 row)
+
+ corpus_rows |        corpus_fingerprint        
+-------------+----------------------------------
+        5000 | 5a32cba54ea2be4ed022fe8bfedae9b0
+(1 row)
+
+exit: 0
+
+############ รอบที่ 2 — การทดลอง 4 เงื่อนไข x 5 รอบ ############
+Timing is off.
+LOAD
+DROP INDEX
+psql:/sql/i02_index_built_too_early.sql:38: NOTICE:  index "qf_i02_idx" does not exist, skipping
+DROP TABLE
+psql:/sql/i02_index_built_too_early.sql:39: NOTICE:  table "qf_i02" does not exist, skipping
+DROP TABLE
+DROP TABLE
+psql:/sql/i02_index_built_too_early.sql:42: NOTICE:  table "qf_i02_guard" does not exist, skipping
+DROP TABLE
+SELECT 1
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+=== สภาพแวดล้อม ===
+ mwm  | corpus_rows | lists_ที่ใช้ 
+------+-------------+-----------
+ 64MB |      100000 |       100
+(1 row)
+
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+SET
+
+=== รอบ 1 ===
+psql:/sql/i02_index_built_too_early.sql:185: NOTICE:  index "qf_i02_idx" does not exist, skipping
+psql:/sql/i02_index_built_too_early.sql:185: NOTICE:  ivfflat index created with little data
+DETAIL:  This will cause low recall.
+HINT:  Drop the index until the table has more data.
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+
+=== รอบ 2 ===
+psql:/sql/i02_index_built_too_early.sql:192: NOTICE:  ivfflat index created with little data
+DETAIL:  This will cause low recall.
+HINT:  Drop the index until the table has more data.
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+
+=== รอบ 3 ===
+psql:/sql/i02_index_built_too_early.sql:199: NOTICE:  ivfflat index created with little data
+DETAIL:  This will cause low recall.
+HINT:  Drop the index until the table has more data.
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+
+=== รอบ 4 ===
+psql:/sql/i02_index_built_too_early.sql:206: NOTICE:  ivfflat index created with little data
+DETAIL:  This will cause low recall.
+HINT:  Drop the index until the table has more data.
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+
+=== รอบ 5 ===
+psql:/sql/i02_index_built_too_early.sql:213: NOTICE:  ivfflat index created with little data
+DETAIL:  This will cause low recall.
+HINT:  Drop the index until the table has more data.
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+
+=== ข้อมูลปลายทางเหมือนกันทุกเงื่อนไขจริงไหม (ต้องเหมือน ไม่งั้นเทียบไม่ได้) ===
+ จำนวนแถวที่ต่างกัน | fingerprint_ที่ต่างกัน |  แถว   
+----------------+--------------------+--------
+              1 |                  1 | 100000
+(1 row)
+
+
+=== recall ต่อเงื่อนไข ข้าม 5 รอบ ===
+      cond       | แถวตอน_build | pgvector_เตือน | recall_เฉลี่ย |  ต่ำสุด  |  สูงสุด  | ช่วงแกว่ง 
+-----------------+--------------+---------------+-------------+--------+--------+---------
+ A_build_at_50   |           50 | t             |      1.0000 | 1.0000 | 1.0000 |  0.0000
+ B_build_at_1000 |         1000 | f             |      0.8834 | 0.8630 | 0.8990 |  0.0360
+ C_build_at_full |       100000 | f             |      0.7705 | 0.7335 | 0.8045 |  0.0710
+ D_skewed_5of50  |         1000 | f             |      0.2252 | 0.1915 | 0.2485 |  0.0570
+(4 rows)
+
+
+=== เทียบเป็นคู่ในรอบเดียวกัน (ตัดผลของ build randomness ออก) ===
+    บวก = เงื่อนไขนั้นดีกว่า C ในรอบเดียวกัน
+ รอบ | a_ลบ_c | b_ลบ_c | d_ลบ_c  
+-----+--------+--------+---------
+   1 | 0.2300 | 0.1225 | -0.5785
+   2 | 0.2665 | 0.1655 | -0.4850
+   3 | 0.2105 | 0.0735 | -0.5500
+   4 | 0.2450 | 0.1195 | -0.5375
+   5 | 0.1955 | 0.0835 | -0.5755
+(5 rows)
+
+
+=== buffers · เวลา build · ขนาด index ===
+      cond       | buffers_เฉลี่ย | build_ms_เฉลี่ย | ขนาด_index 
+-----------------+--------------+---------------+------------
+ A_build_at_50   |          433 |           6.6 | 157 MB
+ B_build_at_1000 |          320 |          33.8 | 157 MB
+ C_build_at_full |          299 |        2056.4 | 157 MB
+ D_skewed_5of50  |          405 |          35.7 | 157 MB
+(4 rows)
+
+
+=== ราย query — เงื่อนไขไหนให้คำตอบต่างจาก C บ้าง (รอบ 1) ===
+      cond       | query_ที่ต่างจาก_c | query_ทั้งหมด 
+-----------------+-----------------+-------------
+ A_build_at_50   |             121 |         200
+ B_build_at_1000 |             141 |         200
+ D_skewed_5of50  |             194 |         200
+(3 rows)
+
+
+=== assertion ===
+psql:/sql/i02_index_built_too_early.sql:386: NOTICE:  [1/6] OK ข้อมูลปลายทางเหมือนกันทุกเงื่อนไข — fingerprint เดียว 100,000 แถว
+psql:/sql/i02_index_built_too_early.sql:386: NOTICE:  [2/6] OK ครบ 4 เงื่อนไข x 5 รอบ
+psql:/sql/i02_index_built_too_early.sql:386: NOTICE:  [3/6] OK A เข้าเกณฑ์เตือนครบ 5 รอบ · B ไม่เข้าเกณฑ์เลย (เงียบสนิท)
+psql:/sql/i02_index_built_too_early.sql:386: NOTICE:  [4/6] OK คำตอบต่างจริง — A ต่างจาก C 549 · B ต่างจาก C 661 · D ต่างจาก C 961 (จาก 1,000 คู่)
+psql:/sql/i02_index_built_too_early.sql:386: NOTICE:  [5/6] OK D (ตัวอย่างเอียง 5 จาก 50 กลุ่ม) แย่กว่า C ครบทั้ง 5 รอบ
+psql:/sql/i02_index_built_too_early.sql:386: NOTICE:  [6/6] OK qf_corpus ไม่ถูกแตะ
+psql:/sql/i02_index_built_too_early.sql:386: NOTICE:  
+psql:/sql/i02_index_built_too_early.sql:386: NOTICE:  recall เฉลี่ยข้าม 5 รอบ: A(50)=1.0000  B(1000)=0.8834  C(ครบ)=0.7705  D(เอียง)=0.2252
+psql:/sql/i02_index_built_too_early.sql:386: NOTICE:  pgvector เตือนเฉพาะ A ซึ่งได้ recall 1.0000 · และเงียบสนิทกับ D ซึ่งได้ 0.2252
+psql:/sql/i02_index_built_too_early.sql:386: NOTICE:  -> ⭐ กลับด้านจาก HINT ของ pgvector ที่เขียนว่า This will cause low recall
+DO
+
+=== เก็บกวาด: ทิ้ง index กับตารางทดสอบ เก็บตารางผลไว้ให้ตัวตรวจอ่าน ===
+DROP INDEX
+DROP TABLE
+DROP FUNCTION
+DROP FUNCTION
+DROP FUNCTION
+DROP FUNCTION
+RESET
+ vector_index_ค้าง 
+------------------
+                0
+(1 row)
+
+exit: 0
+
+############ รอบที่ 2 — พิสูจน์ตัวตรวจ 3 สถานะ ############
+LOAD
+SET
+SET
+psql:/sql/i02_checker_states.sql:19: NOTICE:  index "qf_i02_idx" does not exist, skipping
+DROP INDEX
+DROP TABLE
+CREATE TABLE
+=== สถานะ 1: มีตารางแต่ยังไม่มี ivfflat index -> CANNOT_CHECK ===
+    (กฎเหล็กข้อ 10 — ไม่มีอะไรให้เทียบ ไม่ใช่ "ผ่าน")
+INSERT 0 100000
+LOAD
+ set_config 
+------------
+ ALL
+(1 row)
+
+psql:/sql/score.sql:33: NOTICE:  table "score_result" does not exist, skipping
+DROP TABLE
+CREATE TABLE
+DO
+
+============================================================
+ผลการนับคะแนน
+============================================================
+ fault_id |   verdict    |                                                              detail                                                               
+----------+--------------+-----------------------------------------------------------------------------------------------------------------------------------
+ F01      | NOT_DETECTED | idle in transaction 0 session (ต้อง >= 10) · ค้างนานสุด 0.0 วิ (ต้อง >= 2)
+ F03      | CANNOT_CHECK | ไม่มีตาราง 'qf_f03_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ F05      | NOT_DETECTED | lock ที่ granted=false 0 แถว (ต้อง >= 2) · session ที่ถูกบล็อก 0 (ต้อง >= 2)
+ F10      | CANNOT_CHECK | ไม่มีตาราง 'qf_f10_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ I01      | CANNOT_CHECK | ไม่มี vector index บน 'qf_corpus' เลย — ตรวจ opclass ไม่ได้
+ I02      | CANNOT_CHECK | ไม่มี ivfflat index บน qf_i02 — ไม่มีอะไรให้เทียบกับ exact search
+ I03      | NOT_DETECTED | ShareLock ที่ได้รับแล้ว 0 แถว · การเขียนที่รออยู่ 0 แถว (ต้อง >= 1 และ >= 1)
+ I04      | CANNOT_CHECK | ไม่มี vector index บน qf_corpus — ไม่มีอะไรให้เทียบว่าถูกสร้างใหม่หรือยัง
+ I05      | DETECTED     | maintenance_work_mem = 64 MB รับได้ประมาณ 28352 tuples แต่ตารางมี 100000 แถว → build จะ spill และช้าลงราว 3 เท่า
+ Q02      | DETECTED     | จาก 20 query ที่ใช้ vector operator · ขาด ORDER BY หรือ LIMIT 2 · เรียง DESC 1 → index ใช้ไม่ได้ (ตรวจ ORDER BY ที่ห่อด้วยนิพจน์ไม่ได้ ต้องดู plan)
+ Q04      | CANNOT_CHECK | ไม่มี ivfflat index บน qf_corpus ที่ระบุ lists — เทียบกับ sqrt(lists) ไม่ได้
+ Q06      | DETECTED     | hnsw.ef_search = 40 แต่โค้ดใช้ LIMIT ได้ถึง 100 → คืนผลได้ไม่เกิน 40 แถว ขาดไป 60
+ V07      | CANNOT_CHECK | หาตาราง 'qf_v07' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+(13 rows)
+
+
+--- สรุป ---
+ detected | not_detected | cannot_check | total 
+----------+--------------+--------------+-------
+        3 |            3 |            7 |    13
+(1 row)
+
+
+หมายเหตุ: cannot_check ไม่ใช่ผ่าน และไม่ใช่ไม่พบ (กฎเหล็กข้อ 10)
+
+=== สร้าง index บนข้อมูลครบ (วิธีที่ถูก) ===
+CREATE INDEX
+
+=== สถานะ 2: index build บนข้อมูลครบ -> NOT_DETECTED ===
+    recall ควรอยู่ราว 0.72-0.81 ซึ่งคือฐานปกติของ probes=1 (Q04 · I04)
+LOAD
+ set_config 
+------------
+ ALL
+(1 row)
+
+DROP TABLE
+CREATE TABLE
+psql:/sql/score.sql:732: NOTICE:  table "i02_probe_q" does not exist, skipping
+psql:/sql/score.sql:732: NOTICE:  table "i02_probe_truth" does not exist, skipping
+DO
+
+============================================================
+ผลการนับคะแนน
+============================================================
+ fault_id |   verdict    |                                                              detail                                                               
+----------+--------------+-----------------------------------------------------------------------------------------------------------------------------------
+ F01      | NOT_DETECTED | idle in transaction 0 session (ต้อง >= 10) · ค้างนานสุด 0.0 วิ (ต้อง >= 2)
+ F03      | CANNOT_CHECK | ไม่มีตาราง 'qf_f03_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ F05      | NOT_DETECTED | lock ที่ granted=false 0 แถว (ต้อง >= 2) · session ที่ถูกบล็อก 0 (ต้อง >= 2)
+ F10      | CANNOT_CHECK | ไม่มีตาราง 'qf_f10_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ I01      | CANNOT_CHECK | ไม่มี vector index บน 'qf_corpus' เลย — ตรวจ opclass ไม่ได้
+ I02      | NOT_DETECTED | recall@10 ที่วัดสดจาก 20 query = 0.8150 (เกณฑ์ 0.50)
+ I03      | NOT_DETECTED | ShareLock ที่ได้รับแล้ว 0 แถว · การเขียนที่รออยู่ 0 แถว (ต้อง >= 1 และ >= 1)
+ I04      | CANNOT_CHECK | ไม่มี vector index บน qf_corpus — ไม่มีอะไรให้เทียบว่าถูกสร้างใหม่หรือยัง
+ I05      | DETECTED     | maintenance_work_mem = 64 MB รับได้ประมาณ 28352 tuples แต่ตารางมี 100000 แถว → build จะ spill และช้าลงราว 3 เท่า
+ Q02      | DETECTED     | จาก 21 query ที่ใช้ vector operator · ขาด ORDER BY หรือ LIMIT 2 · เรียง DESC 1 → index ใช้ไม่ได้ (ตรวจ ORDER BY ที่ห่อด้วยนิพจน์ไม่ได้ ต้องดู plan)
+ Q04      | CANNOT_CHECK | ไม่มี ivfflat index บน qf_corpus ที่ระบุ lists — เทียบกับ sqrt(lists) ไม่ได้
+ Q06      | DETECTED     | hnsw.ef_search = 40 แต่โค้ดใช้ LIMIT ได้ถึง 100 → คืนผลได้ไม่เกิน 40 แถว ขาดไป 60
+ V07      | CANNOT_CHECK | หาตาราง 'qf_v07' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+(13 rows)
+
+
+--- สรุป ---
+ detected | not_detected | cannot_check | total 
+----------+--------------+--------------+-------
+        3 |            4 |            6 |    13
+(1 row)
+
+
+หมายเหตุ: cannot_check ไม่ใช่ผ่าน และไม่ใช่ไม่พบ (กฎเหล็กข้อ 10)
+
+=== สร้างใหม่แบบผิด: build ตอนมีแค่ 5 กลุ่มจาก 50 แล้วค่อยเติมให้ครบ ===
+DROP INDEX
+DELETE 92000
+ rows_at_build | clusters_at_build 
+---------------+-------------------
+          8000 |                 4
+(1 row)
+
+CREATE INDEX
+INSERT 0 92000
+ANALYZE
+ rows_now | clusters_now 
+----------+--------------
+   100000 |           50
+(1 row)
+
+
+=== สถานะ 3: index build บนตัวอย่างเอียง -> DETECTED ===
+    ข้อมูลในตารางเหมือนสถานะ 2 ทุกแถว ต่างแค่ตอนที่ build index
+LOAD
+ set_config 
+------------
+ ALL
+(1 row)
+
+DROP TABLE
+CREATE TABLE
+psql:/sql/score.sql:732: NOTICE:  table "i02_probe_q" does not exist, skipping
+psql:/sql/score.sql:732: NOTICE:  table "i02_probe_truth" does not exist, skipping
+DO
+
+============================================================
+ผลการนับคะแนน
+============================================================
+ fault_id |   verdict    |                                                              detail                                                               
+----------+--------------+-----------------------------------------------------------------------------------------------------------------------------------
+ F01      | NOT_DETECTED | idle in transaction 0 session (ต้อง >= 10) · ค้างนานสุด 0.0 วิ (ต้อง >= 2)
+ F03      | CANNOT_CHECK | ไม่มีตาราง 'qf_f03_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ F05      | NOT_DETECTED | lock ที่ granted=false 0 แถว (ต้อง >= 2) · session ที่ถูกบล็อก 0 (ต้อง >= 2)
+ F10      | CANNOT_CHECK | ไม่มีตาราง 'qf_f10_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ I01      | CANNOT_CHECK | ไม่มี vector index บน 'qf_corpus' เลย — ตรวจ opclass ไม่ได้
+ I02      | DETECTED     | recall@10 ที่วัดสดจาก 20 query = 0.2750 ต่ำกว่าเกณฑ์ 0.50 → index คืนผลแย่กว่าที่ index ซึ่ง build บนข้อมูลครบควรทำได้มาก
+ I03      | NOT_DETECTED | ShareLock ที่ได้รับแล้ว 0 แถว · การเขียนที่รออยู่ 0 แถว (ต้อง >= 1 และ >= 1)
+ I04      | CANNOT_CHECK | ไม่มี vector index บน qf_corpus — ไม่มีอะไรให้เทียบว่าถูกสร้างใหม่หรือยัง
+ I05      | DETECTED     | maintenance_work_mem = 64 MB รับได้ประมาณ 28352 tuples แต่ตารางมี 100000 แถว → build จะ spill และช้าลงราว 3 เท่า
+ Q02      | DETECTED     | จาก 22 query ที่ใช้ vector operator · ขาด ORDER BY หรือ LIMIT 2 · เรียง DESC 1 → index ใช้ไม่ได้ (ตรวจ ORDER BY ที่ห่อด้วยนิพจน์ไม่ได้ ต้องดู plan)
+ Q04      | CANNOT_CHECK | ไม่มี ivfflat index บน qf_corpus ที่ระบุ lists — เทียบกับ sqrt(lists) ไม่ได้
+ Q06      | DETECTED     | hnsw.ef_search = 40 แต่โค้ดใช้ LIMIT ได้ถึง 100 → คืนผลได้ไม่เกิน 40 แถว ขาดไป 60
+ V07      | CANNOT_CHECK | หาตาราง 'qf_v07' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+(13 rows)
+
+
+--- สรุป ---
+ detected | not_detected | cannot_check | total 
+----------+--------------+--------------+-------
+        4 |            3 |            6 |    13
+(1 row)
+
+
+หมายเหตุ: cannot_check ไม่ใช่ผ่าน และไม่ใช่ไม่พบ (กฎเหล็กข้อ 10)
+
+=== เก็บกวาด ===
+DROP INDEX
+DROP TABLE
+RESET
+RESET
+ vector_index_ค้าง 
+------------------
+                0
+(1 row)
+
+ corpus_rows |        corpus_fingerprint        
+-------------+----------------------------------
+        5000 | 5a32cba54ea2be4ed022fe8bfedae9b0
+(1 row)
+
+exit: 0
+
+############ รอบที่ 3 — การทดลอง 4 เงื่อนไข x 5 รอบ ############
+Timing is off.
+LOAD
+DROP INDEX
+psql:/sql/i02_index_built_too_early.sql:38: NOTICE:  index "qf_i02_idx" does not exist, skipping
+psql:/sql/i02_index_built_too_early.sql:39: NOTICE:  table "qf_i02" does not exist, skipping
+DROP TABLE
+DROP TABLE
+DROP TABLE
+psql:/sql/i02_index_built_too_early.sql:42: NOTICE:  table "qf_i02_guard" does not exist, skipping
+DROP TABLE
+SELECT 1
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+=== สภาพแวดล้อม ===
+ mwm  | corpus_rows | lists_ที่ใช้ 
+------+-------------+-----------
+ 64MB |      100000 |       100
+(1 row)
+
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+SET
+
+=== รอบ 1 ===
+psql:/sql/i02_index_built_too_early.sql:185: NOTICE:  index "qf_i02_idx" does not exist, skipping
+psql:/sql/i02_index_built_too_early.sql:185: NOTICE:  ivfflat index created with little data
+DETAIL:  This will cause low recall.
+HINT:  Drop the index until the table has more data.
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+
+=== รอบ 2 ===
+psql:/sql/i02_index_built_too_early.sql:192: NOTICE:  ivfflat index created with little data
+DETAIL:  This will cause low recall.
+HINT:  Drop the index until the table has more data.
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+
+=== รอบ 3 ===
+psql:/sql/i02_index_built_too_early.sql:199: NOTICE:  ivfflat index created with little data
+DETAIL:  This will cause low recall.
+HINT:  Drop the index until the table has more data.
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+
+=== รอบ 4 ===
+psql:/sql/i02_index_built_too_early.sql:206: NOTICE:  ivfflat index created with little data
+DETAIL:  This will cause low recall.
+HINT:  Drop the index until the table has more data.
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+
+=== รอบ 5 ===
+psql:/sql/i02_index_built_too_early.sql:213: NOTICE:  ivfflat index created with little data
+DETAIL:  This will cause low recall.
+HINT:  Drop the index until the table has more data.
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+ qf_i02_measure 
+----------------
+ 
+(1 row)
+
+
+=== ข้อมูลปลายทางเหมือนกันทุกเงื่อนไขจริงไหม (ต้องเหมือน ไม่งั้นเทียบไม่ได้) ===
+ จำนวนแถวที่ต่างกัน | fingerprint_ที่ต่างกัน |  แถว   
+----------------+--------------------+--------
+              1 |                  1 | 100000
+(1 row)
+
+
+=== recall ต่อเงื่อนไข ข้าม 5 รอบ ===
+      cond       | แถวตอน_build | pgvector_เตือน | recall_เฉลี่ย |  ต่ำสุด  |  สูงสุด  | ช่วงแกว่ง 
+-----------------+--------------+---------------+-------------+--------+--------+---------
+ A_build_at_50   |           50 | t             |      1.0000 | 1.0000 | 1.0000 |  0.0000
+ B_build_at_1000 |         1000 | f             |      0.8871 | 0.8565 | 0.9145 |  0.0580
+ C_build_at_full |       100000 | f             |      0.7806 | 0.7320 | 0.8160 |  0.0840
+ D_skewed_5of50  |         1000 | f             |      0.2334 | 0.2120 | 0.2585 |  0.0465
+(4 rows)
+
+
+=== เทียบเป็นคู่ในรอบเดียวกัน (ตัดผลของ build randomness ออก) ===
+    บวก = เงื่อนไขนั้นดีกว่า C ในรอบเดียวกัน
+ รอบ | a_ลบ_c | b_ลบ_c | d_ลบ_c  
+-----+--------+--------+---------
+   1 | 0.2680 | 0.1825 | -0.4760
+   2 | 0.2060 | 0.0885 | -0.5760
+   3 | 0.1840 | 0.0550 | -0.6040
+   4 | 0.1975 | 0.0540 | -0.5800
+   5 | 0.2415 | 0.1525 | -0.5000
+(5 rows)
+
+
+=== buffers · เวลา build · ขนาด index ===
+      cond       | buffers_เฉลี่ย | build_ms_เฉลี่ย | ขนาด_index 
+-----------------+--------------+---------------+------------
+ A_build_at_50   |          433 |           6.2 | 157 MB
+ B_build_at_1000 |          431 |          31.4 | 157 MB
+ C_build_at_full |          322 |        2382.7 | 157 MB
+ D_skewed_5of50  |          466 |          31.2 | 157 MB
+(4 rows)
+
+
+=== ราย query — เงื่อนไขไหนให้คำตอบต่างจาก C บ้าง (รอบ 1) ===
+      cond       | query_ที่ต่างจาก_c | query_ทั้งหมด 
+-----------------+-----------------+-------------
+ A_build_at_50   |             114 |         200
+ B_build_at_1000 |             133 |         200
+ D_skewed_5of50  |             193 |         200
+(3 rows)
+
+
+=== assertion ===
+psql:/sql/i02_index_built_too_early.sql:386: NOTICE:  [1/6] OK ข้อมูลปลายทางเหมือนกันทุกเงื่อนไข — fingerprint เดียว 100,000 แถว
+psql:/sql/i02_index_built_too_early.sql:386: NOTICE:  [2/6] OK ครบ 4 เงื่อนไข x 5 รอบ
+psql:/sql/i02_index_built_too_early.sql:386: NOTICE:  [3/6] OK A เข้าเกณฑ์เตือนครบ 5 รอบ · B ไม่เข้าเกณฑ์เลย (เงียบสนิท)
+psql:/sql/i02_index_built_too_early.sql:386: NOTICE:  [4/6] OK คำตอบต่างจริง — A ต่างจาก C 507 · B ต่างจาก C 646 · D ต่างจาก C 968 (จาก 1,000 คู่)
+psql:/sql/i02_index_built_too_early.sql:386: NOTICE:  [5/6] OK D (ตัวอย่างเอียง 5 จาก 50 กลุ่ม) แย่กว่า C ครบทั้ง 5 รอบ
+psql:/sql/i02_index_built_too_early.sql:386: NOTICE:  [6/6] OK qf_corpus ไม่ถูกแตะ
+psql:/sql/i02_index_built_too_early.sql:386: NOTICE:  
+psql:/sql/i02_index_built_too_early.sql:386: NOTICE:  recall เฉลี่ยข้าม 5 รอบ: A(50)=1.0000  B(1000)=0.8871  C(ครบ)=0.7806  D(เอียง)=0.2334
+psql:/sql/i02_index_built_too_early.sql:386: NOTICE:  pgvector เตือนเฉพาะ A ซึ่งได้ recall 1.0000 · และเงียบสนิทกับ D ซึ่งได้ 0.2334
+psql:/sql/i02_index_built_too_early.sql:386: NOTICE:  -> ⭐ กลับด้านจาก HINT ของ pgvector ที่เขียนว่า This will cause low recall
+DO
+
+=== เก็บกวาด: ทิ้ง index กับตารางทดสอบ เก็บตารางผลไว้ให้ตัวตรวจอ่าน ===
+DROP INDEX
+DROP TABLE
+DROP FUNCTION
+DROP FUNCTION
+DROP FUNCTION
+DROP FUNCTION
+RESET
+ vector_index_ค้าง 
+------------------
+                0
+(1 row)
+
+exit: 0
+
+############ รอบที่ 3 — พิสูจน์ตัวตรวจ 3 สถานะ ############
+LOAD
+SET
+SET
+DROP INDEX
+psql:/sql/i02_checker_states.sql:19: NOTICE:  index "qf_i02_idx" does not exist, skipping
+DROP TABLE
+CREATE TABLE
+=== สถานะ 1: มีตารางแต่ยังไม่มี ivfflat index -> CANNOT_CHECK ===
+    (กฎเหล็กข้อ 10 — ไม่มีอะไรให้เทียบ ไม่ใช่ "ผ่าน")
+INSERT 0 100000
+LOAD
+ set_config 
+------------
+ ALL
+(1 row)
+
+DROP TABLE
+psql:/sql/score.sql:33: NOTICE:  table "score_result" does not exist, skipping
+CREATE TABLE
+DO
+
+============================================================
+ผลการนับคะแนน
+============================================================
+ fault_id |   verdict    |                                                              detail                                                               
+----------+--------------+-----------------------------------------------------------------------------------------------------------------------------------
+ F01      | NOT_DETECTED | idle in transaction 0 session (ต้อง >= 10) · ค้างนานสุด 0.0 วิ (ต้อง >= 2)
+ F03      | CANNOT_CHECK | ไม่มีตาราง 'qf_f03_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ F05      | NOT_DETECTED | lock ที่ granted=false 0 แถว (ต้อง >= 2) · session ที่ถูกบล็อก 0 (ต้อง >= 2)
+ F10      | CANNOT_CHECK | ไม่มีตาราง 'qf_f10_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ I01      | CANNOT_CHECK | ไม่มี vector index บน 'qf_corpus' เลย — ตรวจ opclass ไม่ได้
+ I02      | CANNOT_CHECK | ไม่มี ivfflat index บน qf_i02 — ไม่มีอะไรให้เทียบกับ exact search
+ I03      | NOT_DETECTED | ShareLock ที่ได้รับแล้ว 0 แถว · การเขียนที่รออยู่ 0 แถว (ต้อง >= 1 และ >= 1)
+ I04      | CANNOT_CHECK | ไม่มี vector index บน qf_corpus — ไม่มีอะไรให้เทียบว่าถูกสร้างใหม่หรือยัง
+ I05      | DETECTED     | maintenance_work_mem = 64 MB รับได้ประมาณ 28352 tuples แต่ตารางมี 100000 แถว → build จะ spill และช้าลงราว 3 เท่า
+ Q02      | DETECTED     | จาก 23 query ที่ใช้ vector operator · ขาด ORDER BY หรือ LIMIT 2 · เรียง DESC 1 → index ใช้ไม่ได้ (ตรวจ ORDER BY ที่ห่อด้วยนิพจน์ไม่ได้ ต้องดู plan)
+ Q04      | CANNOT_CHECK | ไม่มี ivfflat index บน qf_corpus ที่ระบุ lists — เทียบกับ sqrt(lists) ไม่ได้
+ Q06      | DETECTED     | hnsw.ef_search = 40 แต่โค้ดใช้ LIMIT ได้ถึง 100 → คืนผลได้ไม่เกิน 40 แถว ขาดไป 60
+ V07      | CANNOT_CHECK | หาตาราง 'qf_v07' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+(13 rows)
+
+
+--- สรุป ---
+ detected | not_detected | cannot_check | total 
+----------+--------------+--------------+-------
+        3 |            3 |            7 |    13
+(1 row)
+
+
+หมายเหตุ: cannot_check ไม่ใช่ผ่าน และไม่ใช่ไม่พบ (กฎเหล็กข้อ 10)
+
+=== สร้าง index บนข้อมูลครบ (วิธีที่ถูก) ===
+CREATE INDEX
+
+=== สถานะ 2: index build บนข้อมูลครบ -> NOT_DETECTED ===
+    recall ควรอยู่ราว 0.72-0.81 ซึ่งคือฐานปกติของ probes=1 (Q04 · I04)
+LOAD
+ set_config 
+------------
+ ALL
+(1 row)
+
+DROP TABLE
+CREATE TABLE
+psql:/sql/score.sql:732: NOTICE:  table "i02_probe_q" does not exist, skipping
+psql:/sql/score.sql:732: NOTICE:  table "i02_probe_truth" does not exist, skipping
+DO
+
+============================================================
+ผลการนับคะแนน
+============================================================
+ fault_id |   verdict    |                                                              detail                                                               
+----------+--------------+-----------------------------------------------------------------------------------------------------------------------------------
+ F01      | NOT_DETECTED | idle in transaction 0 session (ต้อง >= 10) · ค้างนานสุด 0.0 วิ (ต้อง >= 2)
+ F03      | CANNOT_CHECK | ไม่มีตาราง 'qf_f03_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ F05      | NOT_DETECTED | lock ที่ granted=false 0 แถว (ต้อง >= 2) · session ที่ถูกบล็อก 0 (ต้อง >= 2)
+ F10      | CANNOT_CHECK | ไม่มีตาราง 'qf_f10_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ I01      | CANNOT_CHECK | ไม่มี vector index บน 'qf_corpus' เลย — ตรวจ opclass ไม่ได้
+ I02      | NOT_DETECTED | recall@10 ที่วัดสดจาก 20 query = 0.7900 (เกณฑ์ 0.50)
+ I03      | NOT_DETECTED | ShareLock ที่ได้รับแล้ว 0 แถว · การเขียนที่รออยู่ 0 แถว (ต้อง >= 1 และ >= 1)
+ I04      | CANNOT_CHECK | ไม่มี vector index บน qf_corpus — ไม่มีอะไรให้เทียบว่าถูกสร้างใหม่หรือยัง
+ I05      | DETECTED     | maintenance_work_mem = 64 MB รับได้ประมาณ 28352 tuples แต่ตารางมี 100000 แถว → build จะ spill และช้าลงราว 3 เท่า
+ Q02      | DETECTED     | จาก 24 query ที่ใช้ vector operator · ขาด ORDER BY หรือ LIMIT 2 · เรียง DESC 1 → index ใช้ไม่ได้ (ตรวจ ORDER BY ที่ห่อด้วยนิพจน์ไม่ได้ ต้องดู plan)
+ Q04      | CANNOT_CHECK | ไม่มี ivfflat index บน qf_corpus ที่ระบุ lists — เทียบกับ sqrt(lists) ไม่ได้
+ Q06      | DETECTED     | hnsw.ef_search = 40 แต่โค้ดใช้ LIMIT ได้ถึง 100 → คืนผลได้ไม่เกิน 40 แถว ขาดไป 60
+ V07      | CANNOT_CHECK | หาตาราง 'qf_v07' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+(13 rows)
+
+
+--- สรุป ---
+ detected | not_detected | cannot_check | total 
+----------+--------------+--------------+-------
+        3 |            4 |            6 |    13
+(1 row)
+
+
+หมายเหตุ: cannot_check ไม่ใช่ผ่าน และไม่ใช่ไม่พบ (กฎเหล็กข้อ 10)
+
+=== สร้างใหม่แบบผิด: build ตอนมีแค่ 5 กลุ่มจาก 50 แล้วค่อยเติมให้ครบ ===
+DROP INDEX
+DELETE 92000
+ rows_at_build | clusters_at_build 
+---------------+-------------------
+          8000 |                 4
+(1 row)
+
+CREATE INDEX
+INSERT 0 92000
+ANALYZE
+ rows_now | clusters_now 
+----------+--------------
+   100000 |           50
+(1 row)
+
+
+=== สถานะ 3: index build บนตัวอย่างเอียง -> DETECTED ===
+    ข้อมูลในตารางเหมือนสถานะ 2 ทุกแถว ต่างแค่ตอนที่ build index
+LOAD
+ set_config 
+------------
+ ALL
+(1 row)
+
+DROP TABLE
+CREATE TABLE
+psql:/sql/score.sql:732: NOTICE:  table "i02_probe_q" does not exist, skipping
+psql:/sql/score.sql:732: NOTICE:  table "i02_probe_truth" does not exist, skipping
+DO
+
+============================================================
+ผลการนับคะแนน
+============================================================
+ fault_id |   verdict    |                                                              detail                                                               
+----------+--------------+-----------------------------------------------------------------------------------------------------------------------------------
+ F01      | NOT_DETECTED | idle in transaction 0 session (ต้อง >= 10) · ค้างนานสุด 0.0 วิ (ต้อง >= 2)
+ F03      | CANNOT_CHECK | ไม่มีตาราง 'qf_f03_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ F05      | NOT_DETECTED | lock ที่ granted=false 0 แถว (ต้อง >= 2) · session ที่ถูกบล็อก 0 (ต้อง >= 2)
+ F10      | CANNOT_CHECK | ไม่มีตาราง 'qf_f10_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ I01      | CANNOT_CHECK | ไม่มี vector index บน 'qf_corpus' เลย — ตรวจ opclass ไม่ได้
+ I02      | DETECTED     | recall@10 ที่วัดสดจาก 20 query = 0.2700 ต่ำกว่าเกณฑ์ 0.50 → index คืนผลแย่กว่าที่ index ซึ่ง build บนข้อมูลครบควรทำได้มาก
+ I03      | NOT_DETECTED | ShareLock ที่ได้รับแล้ว 0 แถว · การเขียนที่รออยู่ 0 แถว (ต้อง >= 1 และ >= 1)
+ I04      | CANNOT_CHECK | ไม่มี vector index บน qf_corpus — ไม่มีอะไรให้เทียบว่าถูกสร้างใหม่หรือยัง
+ I05      | DETECTED     | maintenance_work_mem = 64 MB รับได้ประมาณ 28352 tuples แต่ตารางมี 100000 แถว → build จะ spill และช้าลงราว 3 เท่า
+ Q02      | DETECTED     | จาก 25 query ที่ใช้ vector operator · ขาด ORDER BY หรือ LIMIT 2 · เรียง DESC 1 → index ใช้ไม่ได้ (ตรวจ ORDER BY ที่ห่อด้วยนิพจน์ไม่ได้ ต้องดู plan)
+ Q04      | CANNOT_CHECK | ไม่มี ivfflat index บน qf_corpus ที่ระบุ lists — เทียบกับ sqrt(lists) ไม่ได้
+ Q06      | DETECTED     | hnsw.ef_search = 40 แต่โค้ดใช้ LIMIT ได้ถึง 100 → คืนผลได้ไม่เกิน 40 แถว ขาดไป 60
+ V07      | CANNOT_CHECK | หาตาราง 'qf_v07' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+(13 rows)
+
+
+--- สรุป ---
+ detected | not_detected | cannot_check | total 
+----------+--------------+--------------+-------
+        4 |            3 |            6 |    13
+(1 row)
+
+
+หมายเหตุ: cannot_check ไม่ใช่ผ่าน และไม่ใช่ไม่พบ (กฎเหล็กข้อ 10)
+
+=== เก็บกวาด ===
+DROP INDEX
+DROP TABLE
+RESET
+RESET
+ vector_index_ค้าง 
+------------------
+                0
+(1 row)
+
+ corpus_rows |        corpus_fingerprint        
+-------------+----------------------------------
+        5000 | 5a32cba54ea2be4ed022fe8bfedae9b0
+(1 row)
+
+exit: 0
+
+จบ: 2026-07-27 22:48:58
+>>> DONE

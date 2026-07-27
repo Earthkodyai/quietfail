@@ -92,6 +92,10 @@ DECLARE
     cur_name   text;
     rec_recall numeric;
     rec_when   text;
+    vec_col    text;
+    n_sample   int;
+    min_rec    numeric;
+    got_recall numeric;
 BEGIN
     FOR f IN
         SELECT name FROM pg_ls_dir('/groundtruth') AS name
@@ -609,6 +613,114 @@ BEGIN
                     format('index %s (%s) ยังเป็น build เดียวกับที่วัด recall = %s เมื่อ %s '
                            '(relfilenode %s)',
                            cur_name, cur_am, rec_recall, rec_when, cur_node), NULL);
+            END IF;
+
+        -- ---- ตัวตรวจของ I02: วัด recall สดๆ เทียบ index กับ exact search ----
+        --
+        -- I02 ตรวจจาก catalog ไม่ได้เลย — พิสูจน์แล้วใน probe:
+        --   `pg_class.reltuples` ของ index เก็บจำนวนแถวตอน build ไว้จริง
+        --   **แต่ ANALYZE เขียนทับเป็นจำนวนแถวปัจจุบัน** และ autovacuum ทำเองเสมอ
+        --   → ร่องรอยว่า "build ตอนข้อมูลน้อย" หายไปภายในไม่กี่นาที
+        --
+        -- และจำนวนแถวตอน build ไม่ใช่ตัวแปรที่สำคัญด้วยซ้ำ — build ที่ 50 แถว
+        -- ได้ recall 1.0000 ส่วน build ที่ 1,000 แถวจาก 5 กลุ่ม ได้ 0.2278
+        -- **ตัวแปรจริงคือตัวอย่างตอน build เป็นตัวแทนของข้อมูลสุดท้ายหรือไม่**
+        -- ซึ่งไม่มีอยู่ใน catalog ที่ไหนเลย
+        --
+        -- จึงวัดผลลัพธ์ตรงๆ: เทียบสิ่งที่ index คืน กับสิ่งที่ exact search คืน
+        -- บน query ตัวอย่าง โดยใช้ `enable_indexscan = off` ตามที่เอกสารแนะนำ
+        -- (ห้ามใช้ DROP INDEX หาเฉลย — CLAUDE.md ระบุไว้)
+        ELSIF fid = 'I02' THEN
+            rel      := exp ->> 'target_table';
+            vec_col  := exp ->> 'vector_column';
+            n_sample := coalesce((exp ->> 'sample_queries')::int, 20);
+            min_rec  := (exp ->> 'min_recall')::numeric;
+
+            IF to_regclass(rel) IS NULL THEN
+                INSERT INTO score_result VALUES (fid, 'CANNOT_CHECK',
+                    format('หาตาราง %L ไม่เจอ — ตัวฉีดยังไม่ได้รัน', rel), NULL);
+                CONTINUE;
+            END IF;
+
+            SELECT count(*) INTO n_idx_total
+            FROM pg_index i
+            JOIN pg_class c ON c.oid = i.indexrelid
+            JOIN pg_class t ON t.oid = i.indrelid
+            JOIN pg_am am   ON am.oid = c.relam
+            WHERE t.relname = rel AND am.amname = 'ivfflat';
+
+            -- กฎเหล็กข้อ 10: ไม่มี ivfflat index = วัด recall ของ index ไม่ได้
+            IF n_idx_total = 0 THEN
+                INSERT INTO score_result VALUES (fid, 'CANNOT_CHECK',
+                    format('ไม่มี ivfflat index บน %s — ไม่มีอะไรให้เทียบกับ exact search', rel),
+                    NULL);
+                CONTINUE;
+            END IF;
+
+            EXECUTE format('SELECT count(*) FROM %I', rel) INTO n_rows;
+            IF n_rows < 1000 THEN
+                INSERT INTO score_result VALUES (fid, 'CANNOT_CHECK',
+                    format('%s มีแค่ %s แถว — น้อยเกินกว่าจะวัด recall ให้มีความหมาย',
+                           rel, n_rows), NULL);
+                CONTINUE;
+            END IF;
+
+            -- สุ่มตัวอย่าง query แบบกำหนดได้ (ไม่ใช้ random() จะได้ผลซ้ำได้)
+            -- เอาแถวจากตารางเองเป็นโจทย์ ไม่ต้องมีชุด query สำเร็จรูป
+            -- จึงใช้กับตารางไหนก็ได้ ไม่ผูกกับ qf_queries ของโปรเจคนี้
+            DROP TABLE IF EXISTS i02_probe_q;
+            DROP TABLE IF EXISTS i02_probe_truth;
+
+            EXECUTE format(
+                'CREATE TEMP TABLE i02_probe_q AS '
+                'SELECT row_number() OVER (ORDER BY id) AS qid, %I AS v '
+                'FROM %I ORDER BY id LIMIT %s',
+                vec_col, rel, n_sample);
+
+            -- ⚠️ ต้องปิด index scan **ก่อน**หาเฉลย ไม่งั้นทั้งสองฝั่งใช้ index
+            -- แล้วจะได้ recall = 1.0000 เสมอ ซึ่งคือตัวตรวจที่ไม่มีวันตอบบวก
+            -- (วิธีนี้คือที่เอกสาร pgvector แนะนำเอง — ห้ามใช้ DROP INDEX)
+            PERFORM set_config('enable_indexscan', 'off', true);
+            PERFORM set_config('enable_bitmapscan', 'off', true);
+
+            EXECUTE format(
+                'CREATE TEMP TABLE i02_probe_truth AS '
+                'SELECT q.qid, (SELECT array_agg(e.id) FROM ('
+                '   SELECT t.id FROM %I t ORDER BY t.%I <=> q.v LIMIT 10) e) AS ids '
+                'FROM i02_probe_q q', rel, vec_col);
+
+            PERFORM set_config('enable_indexscan', 'on', true);
+            PERFORM set_config('enable_bitmapscan', 'on', true);
+
+            EXECUTE format(
+                'SELECT round(avg(hit), 4) FROM ('
+                '  SELECT (SELECT count(*) FROM unnest(tr.ids) AS tid '
+                '          WHERE tid = ANY (SELECT s.id FROM %I s '
+                '                           ORDER BY s.%I <=> q.v LIMIT 10)'
+                '         )::numeric / 10 AS hit '
+                '  FROM i02_probe_truth tr JOIN i02_probe_q q ON q.qid = tr.qid) y',
+                rel, vec_col)
+            INTO got_recall;
+
+            DROP TABLE IF EXISTS i02_probe_q;
+            DROP TABLE IF EXISTS i02_probe_truth;
+
+            IF got_recall IS NULL THEN
+                INSERT INTO score_result VALUES (fid, 'CANNOT_CHECK',
+                    'วัด recall ไม่ได้ — query ตัวอย่างไม่คืนผล', NULL);
+                CONTINUE;
+            END IF;
+
+            IF got_recall < min_rec THEN
+                INSERT INTO score_result VALUES (fid, 'DETECTED',
+                    format('recall@10 ที่วัดสดจาก %s query = %s ต่ำกว่าเกณฑ์ %s '
+                           '→ index คืนผลแย่กว่าที่ index ซึ่ง build บนข้อมูลครบควรทำได้มาก',
+                           n_sample, got_recall, min_rec),
+                    doc ->> 'correct_diagnosis');
+            ELSE
+                INSERT INTO score_result VALUES (fid, 'NOT_DETECTED',
+                    format('recall@10 ที่วัดสดจาก %s query = %s (เกณฑ์ %s)',
+                           n_sample, got_recall, min_rec), NULL);
             END IF;
 
         ELSE

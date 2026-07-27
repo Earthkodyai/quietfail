@@ -70,7 +70,7 @@ I01 I02 I03 I04 I05   Q01 Q02 Q03 Q04 Q06   V07 L02      = 12
 | **Q06** LIMIT > ef_search | ✅ ยืนยัน | FAQ อธิบายว่าจำนวนผลถูกจำกัดด้วยขนาด candidate list ซึ่งเริ่มต้นที่ 40 |
 | **Q02** เขียน WHERE แทน ORDER BY | ✅ ยืนยัน | Troubleshooting ระบุว่า query ต้องมี `ORDER BY` + `LIMIT` และ `ORDER BY` ต้องเป็นผลของ distance operator โดยตรง เรียงจากน้อยไปมาก |
 | **I01** opclass ไม่ตรง operator | ✅ ยืนยัน | ต้องสร้าง index แยกต่อหนึ่ง distance function — `vector_l2_ops`, `vector_ip_ops`, `vector_cosine_ops`, `vector_l1_ops` |
-| **I02** สร้าง index ตอนข้อมูลน้อย | ✅ ยืนยัน | กุญแจข้อ 1 ของ recall ที่ดีใน IVFFlat คือสร้าง index **หลัง**ตารางมีข้อมูลแล้ว · FAQ แนะนำให้ `DROP INDEX` ทิ้งจนกว่าข้อมูลจะพอ |
+| **I02** สร้าง index ก่อนข้อมูลเป็นตัวแทน | ✅ ยืนยันว่ามีจริง · ⚠️ **แต่คำเตือนออกผิดที่** | เอกสารบอกว่ากุญแจข้อ 1 คือสร้าง index **หลัง**ตารางมีข้อมูล และ 0.4.2 เพิ่ม NOTICE · **วัดแล้วพบว่า NOTICE ออกเมื่อ `rows < lists` เท่านั้น** จึงเตือนกรณีที่ได้ recall 1.0000 และเงียบกับกรณีที่ผลหายไป 77% (E33) |
 | **I05** maintenance_work_mem ต่ำ | ✅ ยืนยัน + มีข้อความ NOTICE | ดูข้อความจริงข้างล่าง |
 | **I03** CREATE INDEX ล็อกตาราง | ✅ ยืนยัน | เอกสารแนะนำให้ใช้ `CREATE INDEX CONCURRENTLY` ใน production เพื่อไม่บล็อกการเขียน |
 | **L02** dead tuple ทำ recall ตก | ✅ ยืนยัน | FAQ ระบุว่าผลลัพธ์อาจน้อยลงได้เพราะ dead tuples · และ vacuum ของ HNSW ใช้เวลานาน |
