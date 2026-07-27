@@ -555,6 +555,59 @@ F03b : ERROR:  canceling statement due to statement timeout
 
 ---
 
+## E25 — ตัวตรวจ "planner ใช้ index ไหม" ของผมเอง ตอบผิดทุกครั้ง (2026-07-27)
+
+ตอนทำ I01 เขียนตัวตรวจว่า plan มีคำว่า `Index Scan` ไหม แล้ว assertion ตกทันที
+`ข้อ 1 ตก: opclass ผิดแต่ planner ยังใช้ index`
+
+**แต่ catalog ยืนยันชัดว่ามันใช้ไม่ได้:**
+```
+vector_l2_ops     รองรับ  <->(vector,vector)
+vector_cosine_ops รองรับ  <=>(vector,vector)
+```
+`<=>` ไม่อยู่ใน `vector_l2_ops` เลย → planner ใช้ index l2 กับ `<=>` ไม่ได้แน่นอน
+
+**ต้นเหตุมีสองชั้น ซ้อนกัน**
+
+**ชั้นที่ 1 — query ที่เอาไป EXPLAIN มี index scan ของตารางอื่นปนอยู่**
+```sql
+ORDER BY embedding <=> (SELECT embedding FROM qf_queries WHERE id = 1)
+```
+subquery นั้นใช้ **primary key ของ `qf_queries`** ซึ่งเป็น `Index Scan`
+ตัวตรวจที่ค้นคำว่า "Index Scan" ทั้ง plan จึงเจอมันทุกครั้ง
+→ **ตอบว่า "ใช้ index" แม้ในกรณีที่ไม่ได้ใช้**
+
+**ชั้นที่ 2 — พอแก้เป็นอ่าน JSON ก็ยังดูตื้นไป**
+ดูเฉพาะลูกโดยตรงของ `Plan` แต่แผนของ Seq Scan คือ
+`Limit → Sort → Seq Scan` — `qf_corpus` อยู่ลึกสองชั้น หาไม่เจอ
+แล้ว fallback ไปคืน `Limit` ซึ่ง "บังเอิญ" ไม่มีคำว่า Index จึงตอบถูกโดยบังเอิญ
+
+**แก้:** ใช้ `EXPLAIN` แบบ TEXT แล้ว match บรรทัดที่สแกน `qf_corpus` ตรงๆ
+```
+regexp_match(plan_txt, '([A-Z][A-Za-z ]*Scan)[^
+]* on qf_corpus')
+```
+พร้อม **exception ถ้าหา node ไม่เจอ** — กฎเหล็กข้อ 10 หาไม่เจอ = ตรวจไม่ได้ ห้ามเดา
+
+**บั๊กที่สาม ในวันเดียวกัน:** assertion ข้อ 3 เช็ค
+`count(*) = 2 FROM pg_opclass WHERE opcname IN (...)` แล้วตก
+เพราะ opclass ชื่อเดียวกัน**มีทั้งของ hnsw และ ivfflat** จึงได้ 4 ไม่ใช่ 2
+→ แก้เป็น `count(DISTINCT opcname)`
+
+**บทเรียนที่ตรงกับวิทยานิพนธ์:** ตัวตรวจที่ค้นคำในข้อความ (string matching)
+เป็นตัวตรวจที่**ให้ false positive ได้เงียบๆ** — มันเจอสิ่งที่มองหา
+แต่เจอในที่ที่ไม่เกี่ยวข้อง ตัวเลขที่ได้จึงดูสมเหตุสมผลเสมอ
+`quietfail-check` ต้องอ่านโครงสร้าง (catalog / plan node ที่ระบุตาราง)
+ไม่ใช่ค้นคำใน output
+
+**ผลกระทบต่อผลเก่า:** `qf_q01_measure` ใน Q01 ใช้ query ที่มี subquery แบบเดียวกัน
+แต่ใช้มันคำนวณ **buffers** เท่านั้น ไม่ได้ใช้ตัดสินว่า index ถูกใช้ไหม
+buffers ของ query ตัวแทนจึงรวม page ของ `qf_queries` pkey ไปด้วยไม่กี่ block
+(exact 20,002 · HNSW 979) — **ไม่กระทบตัวเลข recall และ speedup**
+ซึ่งมาจากลูป 200 query กับ `qf_recall_at()` คนละทางกัน จึงไม่รันใหม่
+
+---
+
 ## D16 — เฟส 2.5 ตอบอะไรได้ และตอบอะไรไม่ได้ (2026-07-27)
 
 **คำถามที่เฟส 2.5 ตั้งไว้:** "recall collapse เป็นบั๊กของ pgvector หรือเป็นธรรมชาติของ ANN"

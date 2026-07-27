@@ -59,6 +59,9 @@ DECLARE
     n_f03b    int;
     blk_f03   boolean;
     blk_f03b  boolean;
+    want_opc  text;
+    n_idx_total int;
+    n_idx_bad   int;
 BEGIN
     FOR f IN
         SELECT name FROM pg_ls_dir('/groundtruth') AS name
@@ -227,6 +230,48 @@ BEGIN
                 INSERT INTO score_result VALUES (fid, 'NOT_DETECTED',
                     format('ก่อน %sx · หลัง %sx · buffers ลด %sx — ไม่ครบเกณฑ์',
                            round(err_b,1), round(err_a,1), round(buf_r,1)), NULL);
+            END IF;
+
+        -- ---- ตัวตรวจของ I01: static ล้วน อ่าน catalog อย่างเดียว ----
+        --
+        -- ต่างจาก F01/F03/F05 ตรงที่ **ไม่ต้องมีข้อมูล ไม่ต้องรัน query เลย**
+        -- นี่คือกลุ่ม "ยืนยันได้ -> fail build ทันที" ตาม PROJECT.md ข้อ 8
+        ELSIF fid = 'I01' THEN
+            rel      := exp ->> 'target_table';
+            want_opc := exp ->> 'required_opclass';
+
+            IF to_regclass(rel) IS NULL THEN
+                INSERT INTO score_result VALUES (fid, 'CANNOT_CHECK',
+                    format('หาตาราง %L ไม่เจอ', rel), NULL);
+                CONTINUE;
+            END IF;
+
+            -- กฎเหล็กข้อ 10: ไม่มี vector index เลย = ตรวจไม่ได้ ไม่ใช่ "ไม่พบ fault"
+            -- เพราะโค้ดที่ตั้งใจใช้ ANN แต่ยังไม่มี index ก็เป็นปัญหาคนละแบบ
+            SELECT count(*), count(*) FILTER (WHERE opc <> want_opc)
+              INTO n_idx_total, n_idx_bad
+            FROM (
+                SELECT opcl.opcname AS opc
+                FROM pg_index i
+                JOIN pg_class c    ON c.oid = i.indexrelid
+                JOIN pg_class t    ON t.oid = i.indrelid
+                JOIN pg_am am      ON am.oid = c.relam
+                JOIN pg_opclass opcl ON opcl.oid = i.indclass[0]
+                WHERE t.relname = rel AND am.amname IN ('hnsw','ivfflat')
+            ) z;
+
+            IF n_idx_total = 0 THEN
+                INSERT INTO score_result VALUES (fid, 'CANNOT_CHECK',
+                    format('ไม่มี vector index บน %L เลย — ตรวจ opclass ไม่ได้', rel), NULL);
+            ELSIF n_idx_bad > 0 THEN
+                INSERT INTO score_result VALUES (fid, 'DETECTED',
+                    format('มี vector index %s ตัวบน %s · opclass ไม่ตรงกับ operator %s ที่โค้ดใช้ %s ตัว (ต้องเป็น %s)',
+                           n_idx_total, rel, doc ->> 'declared_query_operator', n_idx_bad, want_opc),
+                    doc ->> 'correct_diagnosis');
+            ELSE
+                INSERT INTO score_result VALUES (fid, 'NOT_DETECTED',
+                    format('vector index ทั้ง %s ตัวบน %s ใช้ opclass %s ถูกต้อง',
+                           n_idx_total, rel, want_opc), NULL);
             END IF;
 
         ELSE

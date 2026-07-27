@@ -1,0 +1,51 @@
+{
+  "fault_id": "I01",
+  "group": "B_index_never_used",
+  "name": "opclass_does_not_match_query_operator",
+
+  "true_cause": "index_opclass_operator_mismatch",
+  "true_cause_th": "สร้าง index ด้วย vector_l2_ops แต่ query ใช้ <=> (cosine) → planner ใช้ index นั้นไม่ได้เลย",
+
+  "surface_symptom": "ช้าเหมือนไม่มี index ทั้งที่ \\di เห็น index อยู่ และ build ไปแล้ว",
+  "surface_symptom_note_th": "ไม่มี error ไม่มี warning · และ **recall ยังสมบูรณ์ 1.0** เพราะตกกลับไปเป็น exact search → ตรวจจากคุณภาพผลลัพธ์ไม่ได้เลย",
+
+  "misleading_fixes": [
+    "เพิ่ม m / ef_construction แล้ว rebuild",
+    "เพิ่ม RAM หรือ maintenance_work_mem",
+    "สรุปว่า HNSW ใช้ไม่ได้กับข้อมูลชุดนี้",
+    "ย้ายไป vector database เจ้าอื่น"
+  ],
+
+  "correct_diagnosis": "อ่าน opclass ของ index จาก pg_index แล้วเทียบกับ operator ที่โค้ดใช้ — ตรวจได้จาก catalog โดยไม่ต้องรัน query เลย",
+
+  "correct_fix_th": "สร้าง index ใหม่ด้วย opclass ที่ตรงกับ operator: <=> ต้องใช้ vector_cosine_ops · <-> ต้องใช้ vector_l2_ops · <#> ต้องใช้ vector_ip_ops",
+
+  "declared_query_operator": "<=>",
+  "required_opclass": "vector_cosine_ops",
+  "target_table": "qf_corpus",
+
+  "evidence_query": "SELECT c.relname AS index_name, am.amname AS index_type, opc.opcname AS opclass FROM pg_index i JOIN pg_class c ON c.oid = i.indexrelid JOIN pg_class t ON t.oid = i.indrelid JOIN pg_am am ON am.oid = c.relam JOIN pg_opclass opc ON opc.oid = i.indclass[0] WHERE t.relname = 'qf_corpus' AND am.amname IN ('hnsw','ivfflat')",
+
+  "evidence_expectation": {
+    "target_table": "qf_corpus",
+    "required_opclass": "vector_cosine_ops",
+    "detect_when": "มี vector index บนตารางนี้ที่ opclass ไม่ใช่ required_opclass"
+  },
+
+  "static_check_note_th": "ข้อนี้ตรวจได้แบบ static ล้วน ไม่ต้องมีข้อมูล ไม่ต้องรัน query → PROJECT.md ข้อ 8 จัดให้อยู่กลุ่ม 'ยืนยันได้ → fail build ทันที'",
+
+  "reproduce": "sql/i01_opclass_mismatch.sql",
+  "config_profile": "fragile",
+
+  "mirror_of_th": "I01 คือภาพสะท้อนกลับด้านของ Q01 — Q01 ใช้ index แล้วเร็วขึ้นแต่ recall ตก · I01 ไม่ใช้ index เลย recall จึงสมบูรณ์แต่ไม่เร็วขึ้น และเสียค่า build กับพื้นที่ไปเต็มราคา",
+
+  "verified_on": {
+    "postgres_version": "17.10 (Debian 17.10-1.pgdg12+1)",
+    "pgvector_version": "0.8.5",
+    "image_tag": "pgvector/pgvector:0.8.5-pg17",
+    "config_profile": "fragile",
+    "date": "2026-07-27",
+    "corpus_rows": 100000,
+    "note": "รอ 3 รอบติดด้วย ivfflat + 1 รอบด้วย hnsw — เติมตัวเลขหลังรันจริง"
+  }
+}
