@@ -1,0 +1,66 @@
+{
+  "fault_id": "Q06",
+  "group": "D_silently_incomplete",
+  "name": "limit_exceeds_ef_search_returns_fewer_rows",
+
+  "true_cause": "candidate_list_smaller_than_requested_limit",
+  "true_cause_th": "HNSW คืนผลได้ไม่เกินขนาด candidate list ซึ่ง hnsw.ef_search กำหนดไว้ ค่าเริ่มต้นคือ 40",
+
+  "surface_symptom": "ขอ 100 อันดับแรก ได้กลับมา 40 แถว โดยไม่มี error และไม่มี warning",
+
+  "differs_from_q01_th": "Q01 ได้ครบ k แถวแต่บางแถวไม่ใช่คำตอบที่ถูก · Q06 ได้ไม่ครบ k ตั้งแต่แรก สิ่งที่ได้มาถูกแต่มาไม่ครบ — คนละชนิดกัน ต้องเขียนแยก",
+
+  "misleading_fixes": [
+    "เขียนโค้ดวนขอเพิ่มทีละหน้า",
+    "สรุปว่าข้อมูลในฐานมีไม่พอ",
+    "เพิ่ม LIMIT ให้มากขึ้นอีก (ยิ่งไม่ช่วย เพราะเพดานอยู่ที่ ef_search)",
+    "ตั้ง ef_search = LIMIT แล้วคิดว่าแก้ครบ (แก้แค่จำนวน ไม่ได้แก้คุณภาพ)"
+  ],
+
+  "correct_diagnosis": "เทียบ hnsw.ef_search กับ LIMIT ที่โค้ดใช้จริง — ถ้า ef_search < LIMIT จะไม่มีทางได้ผลครบ ตรวจได้จาก GUC โดยไม่ต้องรัน query",
+
+  "correct_fix_th": "ตั้ง hnsw.ef_search ให้ >= LIMIT ที่มากที่สุดที่โค้ดใช้ · แต่ต้องรู้ว่านี่แก้แค่ 'จำนวน' ไม่ได้แก้ 'คุณภาพ' ซึ่งเป็นเรื่องของ Q01",
+
+  "declared_max_limit": 100,
+
+  "evidence_query": "SELECT current_setting('hnsw.ef_search')::int AS ef_search",
+
+  "evidence_expectation": {
+    "guc": "hnsw.ef_search",
+    "declared_max_limit": 100,
+    "detect_when": "hnsw.ef_search < declared_max_limit → คืนผลได้ไม่เกิน ef_search แถว"
+  },
+
+  "static_check_note_th": "ตรวจได้แบบ static ล้วน อ่าน GUC เทียบกับ LIMIT ที่ประกาศไว้ · ต้อง LOAD 'vector' ก่อนเสมอ ไม่งั้น pg_settings คืน 0 rows แล้วรายงานว่าผ่านทั้งที่ไม่ได้ตรวจ (กฎเหล็กข้อ 9 · D12)",
+
+  "measured_2026_07_27": {
+    "corpus_rows": 100000,
+    "dim": 384,
+    "queries": 200,
+    "cliff_note_th": "หน้าผาอยู่ที่ k = ef_search + 1 พอดีเป๊ะ ไม่ใช่ใกล้เคียง",
+    "rows_returned_at_ef40": {"10": 10, "20": 20, "39": 39, "40": 40, "41": 40, "60": 40, "100": 40},
+    "errors_raised": 0,
+    "recall_100_by_ef": {"40": 0.3864, "100": 0.9057, "200": 0.9658},
+    "rows_returned_k100_by_ef": {"40": 40, "100": 100, "200": 100},
+    "worst_recall_by_ef": {"40": 0.0000, "100": 0.0100, "200": 0.0100},
+    "perfect_queries_by_ef": {"40": 0, "100": 0, "200": 27},
+    "key_caveat_th": "ที่ ef_search=100 ได้ครบ 100 แถวแล้ว แต่ recall แค่ 0.9057 และแม้ที่ 200 ยังมี query ที่ได้ถูก 1 จาก 100 → แก้ Q06 ไม่ได้แก้ Q01 ต้องแก้แยกกัน"
+  },
+
+  "pgvector_specific_th": "เฟส 2.5 และชั้น 3 ยืนยันว่าเป็นของ pgvector เฉพาะตัว — Qdrant ที่ hnsw_ef=40 กับ limit=100 ยังได้ 100 แถว recall 0.9895 · Milvus ตั้ง ef = limit โดยนิยาม · Weaviate ปรับอัตโนมัติ · OpenSearch engine lucene บังคับ ef = k (ดู D16)",
+
+  "reproduce": "sql/q06_limit_exceeds_ef.sql",
+  "config_profile": "fragile",
+
+  "verified_on": {
+    "postgres_version": "17.10 (Debian 17.10-1.pgdg12+1)",
+    "pgvector_version": "0.8.5",
+    "image_tag": "pgvector/pgvector:0.8.5-pg17",
+    "config_profile": "fragile",
+    "date": "2026-07-27",
+    "consecutive_successful_runs": 3,
+    "recall_100_at_ef40_by_run": [0.3842, 0.3821, 0.3864],
+    "checker_states_verified": "ef=40 DETECTED · ef=100 NOT_DETECTED · ef=200 NOT_DETECTED — 3 รอบติด",
+    "note": "assertion ผ่าน 5/5 ทุกรอบ · หน้าผาอยู่ที่ k = ef_search + 1 พอดีทุกรอบ · ไม่มี error สักกรณี"
+  }
+}

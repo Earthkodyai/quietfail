@@ -1,0 +1,162 @@
+============================================================
+Q06 - LIMIT beyond ef_search: ask for 100, get 40, no error
+============================================================
+PostgreSQL 17.10 (Debian 17.10-1.pgdg12+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 12.2.0-14+deb12u1) 12.2.0, 64-bit
+2026-07-27 13:51:53.549656+07
+image_tag : pgvector/pgvector:0.8.5-pg17 · profile: fragile · corpus 100k x 384
+
+############################ RUN 1 ############################
+psql:/sql/q06_limit_exceeds_ef.sql:36: NOTICE:  ด่านตรวจผ่าน
+=== ส่วนที่ 1: ef_search = 40 (ค่าเริ่มต้น) · ขอ k แถว ได้กี่แถว ===
+ ef_search | requested_k | ได้น้อยสุด | ได้มากสุด |     ผล     | มี error ไหม 
+-----------+-------------+---------+---------+------------+-------------
+        40 |          10 |      10 |      10 | ครบ        | f
+        40 |          20 |      20 |      20 | ครบ        | f
+        40 |          39 |      39 |      39 | ครบ        | f
+        40 |          40 |      40 |      40 | ครบ        | f
+        40 |          41 |      40 |      40 | ขาด 1 แถว  | f
+        40 |          60 |      40 |      40 | ขาด 20 แถว | f
+        40 |         100 |      40 |      40 | ขาด 60 แถว | f
+(7 rows)
+=== ส่วนที่ 2: ขอ 100 แถวเสมอ · เปลี่ยน ef_search ===
+ ef_search | requested_k | ได้น้อยสุด | ได้มากสุด 
+-----------+-------------+---------+---------
+        40 |         100 |      40 |      40
+       100 |         100 |     100 |     100
+       200 |         100 |     100 |     100
+(3 rows)
+=== ส่วนที่ 3: recall@100 เทียบกับเฉลย exact ===
+ ef_search |  k  | recall@100 |  แย่สุด  | ครบ 100/100 กี่ query 
+-----------+-----+------------+--------+---------------------
+        40 | 100 |     0.3842 | 0.0000 |                   0
+       100 | 100 |     0.8983 | 0.0000 |                   0
+       200 | 100 |     0.9521 | 0.0000 |                  23
+(3 rows)
+psql:/sql/q06_limit_exceeds_ef.sql:203: NOTICE:  [1/5] OK ขอ 100 ที่ ef_search=40 ได้แค่ 40 แถว
+psql:/sql/q06_limit_exceeds_ef.sql:203: NOTICE:        เพดานเท่ากับ ef_search พอดี → ยืนยันว่า candidate list คือตัวจำกัด
+psql:/sql/q06_limit_exceeds_ef.sql:203: NOTICE:  [2/5] OK ขอ 40 ที่ ef_search=40 ได้ครบ 40 แถว → พังเฉพาะตอน k > ef
+psql:/sql/q06_limit_exceeds_ef.sql:203: NOTICE:  [3/5] OK ที่ ef_search=200 ขอ 100 ได้ครบ 100 แถว → ทางแก้ใช้ได้จริง
+psql:/sql/q06_limit_exceeds_ef.sql:203: NOTICE:  [4/5] OK ไม่มี error เลยสักกรณี → เงียบสนิทตามนิยาม
+psql:/sql/q06_limit_exceeds_ef.sql:203: NOTICE:  [5/5] OK recall@100 ดีขึ้นจาก 0.3842 เป็น 0.9521 เมื่อเพิ่ม ef_search
+psql:/sql/q06_limit_exceeds_ef.sql:203: NOTICE:  assertion ผ่านครบ 5 ข้อ
+=== ขอ 100 ได้ 40 · ไม่มี error · ไม่มี warning ===
+=== Q01 = ผลที่ได้ผิด · Q06 = ผลหายไปเลยตั้งแต่ต้น ===
+=== และตรวจได้แบบ static: เทียบ hnsw.ef_search กับ LIMIT ที่โค้ดใช้ ===
+exit: 0
+---- ตัวตรวจ static 3 ค่า ----
+ Q06      | DETECTED | hnsw.ef_search = 40 แต่โค้ดใช้ LIMIT ได้ถึง 100 → คืนผลได้ไม่เกิน 40 แถว ขาดไป 60
+ Q06      | DETECTED | hnsw.ef_search = 40 แต่โค้ดใช้ LIMIT ได้ถึง 100 → คืนผลได้ไม่เกิน 40 แถว ขาดไป 60
+ Q06      | DETECTED | hnsw.ef_search = 40 แต่โค้ดใช้ LIMIT ได้ถึง 100 → คืนผลได้ไม่เกิน 40 แถว ขาดไป 60
+
+############################ RUN 2 ############################
+psql:/sql/q06_limit_exceeds_ef.sql:36: NOTICE:  ด่านตรวจผ่าน
+=== ส่วนที่ 1: ef_search = 40 (ค่าเริ่มต้น) · ขอ k แถว ได้กี่แถว ===
+ ef_search | requested_k | ได้น้อยสุด | ได้มากสุด |     ผล     | มี error ไหม 
+-----------+-------------+---------+---------+------------+-------------
+        40 |          10 |      10 |      10 | ครบ        | f
+        40 |          20 |      20 |      20 | ครบ        | f
+        40 |          39 |      39 |      39 | ครบ        | f
+        40 |          40 |      40 |      40 | ครบ        | f
+        40 |          41 |      40 |      40 | ขาด 1 แถว  | f
+        40 |          60 |      40 |      40 | ขาด 20 แถว | f
+        40 |         100 |      40 |      40 | ขาด 60 แถว | f
+(7 rows)
+=== ส่วนที่ 2: ขอ 100 แถวเสมอ · เปลี่ยน ef_search ===
+ ef_search | requested_k | ได้น้อยสุด | ได้มากสุด 
+-----------+-------------+---------+---------
+        40 |         100 |      40 |      40
+       100 |         100 |     100 |     100
+       200 |         100 |     100 |     100
+(3 rows)
+=== ส่วนที่ 3: recall@100 เทียบกับเฉลย exact ===
+ ef_search |  k  | recall@100 |  แย่สุด  | ครบ 100/100 กี่ query 
+-----------+-----+------------+--------+---------------------
+        40 | 100 |     0.3821 | 0.0000 |                   0
+       100 | 100 |     0.9126 | 0.0000 |                   0
+       200 | 100 |     0.9720 | 0.0000 |                  22
+(3 rows)
+psql:/sql/q06_limit_exceeds_ef.sql:203: NOTICE:  [1/5] OK ขอ 100 ที่ ef_search=40 ได้แค่ 40 แถว
+psql:/sql/q06_limit_exceeds_ef.sql:203: NOTICE:        เพดานเท่ากับ ef_search พอดี → ยืนยันว่า candidate list คือตัวจำกัด
+psql:/sql/q06_limit_exceeds_ef.sql:203: NOTICE:  [2/5] OK ขอ 40 ที่ ef_search=40 ได้ครบ 40 แถว → พังเฉพาะตอน k > ef
+psql:/sql/q06_limit_exceeds_ef.sql:203: NOTICE:  [3/5] OK ที่ ef_search=200 ขอ 100 ได้ครบ 100 แถว → ทางแก้ใช้ได้จริง
+psql:/sql/q06_limit_exceeds_ef.sql:203: NOTICE:  [4/5] OK ไม่มี error เลยสักกรณี → เงียบสนิทตามนิยาม
+psql:/sql/q06_limit_exceeds_ef.sql:203: NOTICE:  [5/5] OK recall@100 ดีขึ้นจาก 0.3821 เป็น 0.9720 เมื่อเพิ่ม ef_search
+psql:/sql/q06_limit_exceeds_ef.sql:203: NOTICE:  assertion ผ่านครบ 5 ข้อ
+=== ขอ 100 ได้ 40 · ไม่มี error · ไม่มี warning ===
+=== Q01 = ผลที่ได้ผิด · Q06 = ผลหายไปเลยตั้งแต่ต้น ===
+=== และตรวจได้แบบ static: เทียบ hnsw.ef_search กับ LIMIT ที่โค้ดใช้ ===
+exit: 0
+---- ตัวตรวจ static 3 ค่า ----
+ Q06      | DETECTED | hnsw.ef_search = 40 แต่โค้ดใช้ LIMIT ได้ถึง 100 → คืนผลได้ไม่เกิน 40 แถว ขาดไป 60
+ Q06      | DETECTED | hnsw.ef_search = 40 แต่โค้ดใช้ LIMIT ได้ถึง 100 → คืนผลได้ไม่เกิน 40 แถว ขาดไป 60
+ Q06      | DETECTED | hnsw.ef_search = 40 แต่โค้ดใช้ LIMIT ได้ถึง 100 → คืนผลได้ไม่เกิน 40 แถว ขาดไป 60
+
+############################ RUN 3 ############################
+psql:/sql/q06_limit_exceeds_ef.sql:36: NOTICE:  ด่านตรวจผ่าน
+=== ส่วนที่ 1: ef_search = 40 (ค่าเริ่มต้น) · ขอ k แถว ได้กี่แถว ===
+ ef_search | requested_k | ได้น้อยสุด | ได้มากสุด |     ผล     | มี error ไหม 
+-----------+-------------+---------+---------+------------+-------------
+        40 |          10 |      10 |      10 | ครบ        | f
+        40 |          20 |      20 |      20 | ครบ        | f
+        40 |          39 |      39 |      39 | ครบ        | f
+        40 |          40 |      40 |      40 | ครบ        | f
+        40 |          41 |      40 |      40 | ขาด 1 แถว  | f
+        40 |          60 |      40 |      40 | ขาด 20 แถว | f
+        40 |         100 |      40 |      40 | ขาด 60 แถว | f
+(7 rows)
+=== ส่วนที่ 2: ขอ 100 แถวเสมอ · เปลี่ยน ef_search ===
+ ef_search | requested_k | ได้น้อยสุด | ได้มากสุด 
+-----------+-------------+---------+---------
+        40 |         100 |      40 |      40
+       100 |         100 |     100 |     100
+       200 |         100 |     100 |     100
+(3 rows)
+=== ส่วนที่ 3: recall@100 เทียบกับเฉลย exact ===
+ ef_search |  k  | recall@100 |  แย่สุด  | ครบ 100/100 กี่ query 
+-----------+-----+------------+--------+---------------------
+        40 | 100 |     0.3881 | 0.0000 |                   0
+       100 | 100 |     0.9120 | 0.0000 |                   0
+       200 | 100 |     0.9560 | 0.0000 |                  22
+(3 rows)
+psql:/sql/q06_limit_exceeds_ef.sql:203: NOTICE:  [1/5] OK ขอ 100 ที่ ef_search=40 ได้แค่ 40 แถว
+psql:/sql/q06_limit_exceeds_ef.sql:203: NOTICE:        เพดานเท่ากับ ef_search พอดี → ยืนยันว่า candidate list คือตัวจำกัด
+psql:/sql/q06_limit_exceeds_ef.sql:203: NOTICE:  [2/5] OK ขอ 40 ที่ ef_search=40 ได้ครบ 40 แถว → พังเฉพาะตอน k > ef
+psql:/sql/q06_limit_exceeds_ef.sql:203: NOTICE:  [3/5] OK ที่ ef_search=200 ขอ 100 ได้ครบ 100 แถว → ทางแก้ใช้ได้จริง
+psql:/sql/q06_limit_exceeds_ef.sql:203: NOTICE:  [4/5] OK ไม่มี error เลยสักกรณี → เงียบสนิทตามนิยาม
+psql:/sql/q06_limit_exceeds_ef.sql:203: NOTICE:  [5/5] OK recall@100 ดีขึ้นจาก 0.3881 เป็น 0.9560 เมื่อเพิ่ม ef_search
+psql:/sql/q06_limit_exceeds_ef.sql:203: NOTICE:  assertion ผ่านครบ 5 ข้อ
+=== ขอ 100 ได้ 40 · ไม่มี error · ไม่มี warning ===
+=== Q01 = ผลที่ได้ผิด · Q06 = ผลหายไปเลยตั้งแต่ต้น ===
+=== และตรวจได้แบบ static: เทียบ hnsw.ef_search กับ LIMIT ที่โค้ดใช้ ===
+exit: 0
+---- ตัวตรวจ static 3 ค่า ----
+ Q06      | DETECTED | hnsw.ef_search = 40 แต่โค้ดใช้ LIMIT ได้ถึง 100 → คืนผลได้ไม่เกิน 40 แถว ขาดไป 60
+ Q06      | DETECTED | hnsw.ef_search = 40 แต่โค้ดใช้ LIMIT ได้ถึง 100 → คืนผลได้ไม่เกิน 40 แถว ขาดไป 60
+ Q06      | DETECTED | hnsw.ef_search = 40 แต่โค้ดใช้ LIMIT ได้ถึง 100 → คืนผลได้ไม่เกิน 40 แถว ขาดไป 60
+
+>>> DONE
+
+############################ ตัวตรวจ static — 3 รอบติด ############################
+(รอบใน RUN 1-3 ขึ้น DETECTED ทั้งหมดเพราะ -c ที่มี LOAD ใน bash quote พัง SET จึงไม่ทำงาน)
+---- CHECKER RUN 1 ----
+--- hnsw.ef_search = :ef (LIMIT ที่ประกาศไว้ = 100) ---
+ Q06      | DETECTED | hnsw.ef_search = 40 แต่โค้ดใช้ LIMIT ได้ถึง 100 → คืนผลได้ไม่เกิน 40 แถว ขาดไป 60
+--- hnsw.ef_search = :ef (LIMIT ที่ประกาศไว้ = 100) ---
+ Q06      | NOT_DETECTED | hnsw.ef_search = 100 ครอบคลุม LIMIT สูงสุดที่ประกาศไว้ (100)
+--- hnsw.ef_search = :ef (LIMIT ที่ประกาศไว้ = 100) ---
+ Q06      | NOT_DETECTED | hnsw.ef_search = 200 ครอบคลุม LIMIT สูงสุดที่ประกาศไว้ (100)
+---- CHECKER RUN 2 ----
+--- hnsw.ef_search = :ef (LIMIT ที่ประกาศไว้ = 100) ---
+ Q06      | DETECTED | hnsw.ef_search = 40 แต่โค้ดใช้ LIMIT ได้ถึง 100 → คืนผลได้ไม่เกิน 40 แถว ขาดไป 60
+--- hnsw.ef_search = :ef (LIMIT ที่ประกาศไว้ = 100) ---
+ Q06      | NOT_DETECTED | hnsw.ef_search = 100 ครอบคลุม LIMIT สูงสุดที่ประกาศไว้ (100)
+--- hnsw.ef_search = :ef (LIMIT ที่ประกาศไว้ = 100) ---
+ Q06      | NOT_DETECTED | hnsw.ef_search = 200 ครอบคลุม LIMIT สูงสุดที่ประกาศไว้ (100)
+---- CHECKER RUN 3 ----
+--- hnsw.ef_search = :ef (LIMIT ที่ประกาศไว้ = 100) ---
+ Q06      | DETECTED | hnsw.ef_search = 40 แต่โค้ดใช้ LIMIT ได้ถึง 100 → คืนผลได้ไม่เกิน 40 แถว ขาดไป 60
+--- hnsw.ef_search = :ef (LIMIT ที่ประกาศไว้ = 100) ---
+ Q06      | NOT_DETECTED | hnsw.ef_search = 100 ครอบคลุม LIMIT สูงสุดที่ประกาศไว้ (100)
+--- hnsw.ef_search = :ef (LIMIT ที่ประกาศไว้ = 100) ---
+ Q06      | NOT_DETECTED | hnsw.ef_search = 200 ครอบคลุม LIMIT สูงสุดที่ประกาศไว้ (100)
+>>> CHECKER DONE

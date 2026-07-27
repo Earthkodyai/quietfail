@@ -73,6 +73,10 @@ DECLARE
     capacity  bigint;
     n_share   int;
     n_waiting int;
+    guc_name  text;
+    max_limit int;
+    ef_now    int;
+    n_guc     int;
 BEGIN
     FOR f IN
         SELECT name FROM pg_ls_dir('/groundtruth') AS name
@@ -365,6 +369,35 @@ BEGIN
                            exp ->> 'blocking_mode', n_share, n_waiting,
                            exp ->> 'min_granted_share_locks', exp ->> 'min_waiting_writes'),
                     NULL);
+            END IF;
+
+        -- ---- ตัวตรวจของ Q06: ef_search เทียบกับ LIMIT ที่โค้ดใช้ ----
+        --
+        -- static ล้วน ไม่ต้องมีข้อมูล ไม่ต้องรัน query
+        -- ⚠️ ต้อง LOAD 'vector' ก่อน ไม่งั้น GUC ไม่โผล่แล้วรายงานว่าผ่าน
+        --    ทั้งที่ไม่ได้ตรวจ (กฎเหล็กข้อ 9 · D12) — script โหลดไว้ที่หัวไฟล์แล้ว
+        ELSIF fid = 'Q06' THEN
+            guc_name  := exp ->> 'guc';
+            max_limit := (exp ->> 'declared_max_limit')::int;
+
+            SELECT count(*) INTO n_guc FROM pg_settings WHERE name = guc_name;
+            IF n_guc = 0 THEN
+                INSERT INTO score_result VALUES (fid, 'CANNOT_CHECK',
+                    format('หา GUC %L ไม่เจอ — LOAD ''vector'' แล้วหรือยัง', guc_name), NULL);
+                CONTINUE;
+            END IF;
+
+            ef_now := current_setting(guc_name)::int;
+
+            IF ef_now < max_limit THEN
+                INSERT INTO score_result VALUES (fid, 'DETECTED',
+                    format('%s = %s แต่โค้ดใช้ LIMIT ได้ถึง %s → คืนผลได้ไม่เกิน %s แถว ขาดไป %s',
+                           guc_name, ef_now, max_limit, ef_now, max_limit - ef_now),
+                    doc ->> 'correct_diagnosis');
+            ELSE
+                INSERT INTO score_result VALUES (fid, 'NOT_DETECTED',
+                    format('%s = %s ครอบคลุม LIMIT สูงสุดที่ประกาศไว้ (%s)',
+                           guc_name, ef_now, max_limit), NULL);
             END IF;
 
         ELSE
