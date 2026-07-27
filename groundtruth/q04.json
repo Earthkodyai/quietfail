@@ -1,0 +1,128 @@
+{
+  "fault_id": "Q04",
+  "group": "D_silently_incomplete",
+  "name": "shipped_defaults_never_measured",
+  "true_cause": "default_search_effort_below_documented_recommendation",
+  "true_cause_th": "ค่าเริ่มต้นของ pgvector ต่ำกว่าที่เอกสารของตัวเองแนะนำ — ivfflat.probes = 1 แต่เอกสารแนะนำ sqrt(lists)",
+  "surface_symptom": "recall ต่ำตั้งแต่วันแรก ไม่มีใครรู้เพราะไม่เคยวัด",
+  "differs_from_q01_th": "Q01 ถามว่า 'index ทำผลหายไปเท่าไหร่' = ปัญหาของ ANN · Q04 ถามว่า 'ที่หายไปนั้นเกิดจากค่าที่ไม่มีใครแตะกี่ %' = ปัญหาของค่าที่ผู้พัฒนาเลือกให้",
+  "misleading_fixes": [
+    "เปลี่ยน embedding model",
+    "เพิ่มข้อมูลให้มากขึ้น",
+    "สรุปว่า ANN ใช้ไม่ได้จริง",
+    "เพิ่ม lists โดยไม่แตะ probes"
+  ],
+  "correct_diagnosis": "อ่าน lists จาก reloptions ของ ivfflat index แล้วเทียบกับ ivfflat.probes ที่ตั้งอยู่ — ถ้า probes < sqrt(lists) แปลว่าต่ำกว่าที่เอกสารแนะนำ",
+  "correct_fix_th": "วัด recall บนข้อมูลของตัวเองแล้วเลือกค่าที่คุ้มที่สุด — ทั้งค่าเริ่มต้นและคำแนะนำในเอกสารต่างก็ไม่ใช่คำตอบที่ถูกเสมอไป",
+  "evidence_query": "SELECT c.relname, c.reloptions, current_setting('ivfflat.probes') AS probes FROM pg_class c JOIN pg_am am ON am.oid = c.relam WHERE am.amname = 'ivfflat'",
+  "evidence_expectation": {
+    "target_table": "qf_corpus",
+    "guc": "ivfflat.probes",
+    "formula": "sqrt(lists)",
+    "detect_when": "probes < sqrt(lists) ของ ivfflat index ที่มีอยู่"
+  },
+  "measured_2026_07_27": {
+    "corpus_rows": 100000,
+    "dim": 384,
+    "lists": 100,
+    "doc_recommended_probes": 10,
+    "ivfflat_by_probes": {
+      "1": {
+        "recall_10": 0.737,
+        "worst": 0.0,
+        "perfect": 78,
+        "ms": 277.1,
+        "note": "ค่าเริ่มต้น"
+      },
+      "2": {
+        "recall_10": 0.9525,
+        "worst": 0.4,
+        "perfect": 163,
+        "ms": 308.4
+      },
+      "5": {
+        "recall_10": 1.0,
+        "worst": 1.0,
+        "perfect": 200,
+        "ms": 495.0,
+        "note": "จุดคุ้มที่สุดที่วัดได้"
+      },
+      "10": {
+        "recall_10": 1.0,
+        "worst": 1.0,
+        "perfect": 200,
+        "ms": 1100.9,
+        "note": "เอกสารแนะนำ"
+      },
+      "20": {
+        "recall_10": 1.0,
+        "worst": 1.0,
+        "perfect": 200,
+        "ms": 1979.0
+      },
+      "50": {
+        "recall_10": 1.0,
+        "worst": 1.0,
+        "perfect": 200,
+        "ms": 5854.0
+      },
+      "100": {
+        "recall_10": 1.0,
+        "worst": 1.0,
+        "perfect": 200,
+        "ms": 11146.2,
+        "note": "ทุกกลุ่ม = exact"
+      }
+    },
+    "hnsw_by_ef_search": {
+      "40": {
+        "recall_10": 0.851,
+        "worst": 0.0,
+        "perfect": 51,
+        "ms": 201.9,
+        "note": "ค่าเริ่มต้น"
+      },
+      "80": {
+        "recall_10": 0.9405,
+        "worst": 0.0,
+        "perfect": 132,
+        "ms": 241.0
+      },
+      "160": {
+        "recall_10": 0.9795,
+        "worst": 0.0,
+        "perfect": 171,
+        "ms": 510.7
+      },
+      "320": {
+        "recall_10": 0.986,
+        "worst": 0.0,
+        "perfect": 183,
+        "ms": 389.1
+      }
+    },
+    "key_finding_th": "probes=5 ได้ recall สมบูรณ์แล้ว ส่วนเอกสารแนะนำ 10 ซึ่งช้ากว่า 2.2 เท่าโดยไม่ได้ recall เพิ่มเลย — ทั้งค่าเริ่มต้นและคำแนะนำในเอกสารต่างก็ไม่ใช่คำตอบที่ถูกสำหรับข้อมูลชุดนี้ คำตอบมาจากการวัดเท่านั้น",
+    "hnsw_caveat_th": "แย่สุดต่อ query = 0.0000 ทุกค่าของ ef_search แม้ที่ 320 — เพิ่ม ef_search ช่วยค่าเฉลี่ยแต่ยังมี query ที่ได้ผลถูกศูนย์อัน",
+    "timing_note_th": "ef_search=320 วัดได้ 389 ms เร็วกว่า ef_search=160 ที่ 511 ms เป็นความแกว่งของเวลา ไม่ใช่แนวโน้ม (กฎเหล็กข้อ 7)",
+    "ivfflat_probes1_across_4_builds": [
+      0.737,
+      0.782,
+      0.791,
+      0.8125
+    ],
+    "variance_note_th": "recall ที่ probes=1 แกว่ง 0.7370-0.8125 ข้าม 4 การ build (10%) เพราะ IVFFlat สร้าง k-means ใหม่ทุกครั้ง — สัญญาณของ I04 อีกครั้ง (ดู E27) ห้ามอ้างเป็นผลของ I04 จนกว่าจะทำ I04 จริง · ข้อสรุปเชิงคุณภาพไม่เปลี่ยน: probes=5 ได้ 1.0000 ทุกรอบ ส่วนค่าเริ่มต้นแย่กว่ามากทุกรอบ"
+  },
+  "industry_wide_th": "ไม่ใช่ปัญหาเฉพาะ pgvector — FAISS ตั้ง size_t nprobe = 1; ในซอร์สโค้ด และ OpenSearch ตั้ง nprobes เริ่มต้น 1 เหมือนกัน (ชั้น 3 ใน EVIDENCE.md · D16) ต่างจาก Q06 ซึ่งเป็นของ pgvector เฉพาะตัว",
+  "reproduce": "sql/q04_default_params.sql",
+  "config_profile": "fragile",
+  "verified_on": {
+    "postgres_version": "17.10 (Debian 17.10-1.pgdg12+1)",
+    "pgvector_version": "0.8.5",
+    "image_tag": "pgvector/pgvector:0.8.5-pg17",
+    "config_profile": "fragile",
+    "date": "2026-07-27",
+    "note": "assertion ผ่าน 5/5 ทุกรอบ · probes=5 ได้ recall 1.0000 ทุกรอบ · ค่าเริ่มต้นแย่กว่าทุกรอบ",
+    "consecutive_successful_runs": 3,
+    "checker_states_verified": "CANNOT_CHECK (ไม่มี index) / DETECTED (probes=1) / NOT_DETECTED (probes=10) — 3 รอบติด"
+  }
+}

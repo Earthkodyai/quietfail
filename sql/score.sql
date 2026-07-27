@@ -82,6 +82,9 @@ DECLARE
     n_no_order int;
     n_desc     int;
     n_vec_q    int;
+    n_lists    int;
+    probes_now int;
+    probes_rec int;
 BEGIN
     FOR f IN
         SELECT name FROM pg_ls_dir('/groundtruth') AS name
@@ -485,6 +488,50 @@ BEGIN
                 INSERT INTO score_result VALUES (fid, 'NOT_DETECTED',
                     format('query ที่ใช้ vector operator ทั้ง %s ตัว มี ORDER BY + LIMIT ครบ และไม่ได้เรียง DESC',
                            n_vec_q), NULL);
+            END IF;
+
+        -- ---- ตัวตรวจของ Q04: probes เทียบกับ sqrt(lists) ที่อ่านจาก catalog ----
+        --
+        -- static ล้วน — อ่าน lists จาก reloptions ของ ivfflat index ที่มีอยู่จริง
+        -- ไม่ต้องเดาว่าใครตั้ง lists เท่าไหร่ ไม่ต้องรัน query
+        ELSIF fid = 'Q04' THEN
+            rel := exp ->> 'target_table';
+
+            IF to_regclass(rel) IS NULL THEN
+                INSERT INTO score_result VALUES (fid, 'CANNOT_CHECK',
+                    format('หาตาราง %L ไม่เจอ', rel), NULL);
+                CONTINUE;
+            END IF;
+
+            SELECT max((regexp_match(array_to_string(c.reloptions, ','), 'lists=([0-9]+)'))[1]::int)
+              INTO n_lists
+            FROM pg_index i
+            JOIN pg_class c ON c.oid = i.indexrelid
+            JOIN pg_class t ON t.oid = i.indrelid
+            JOIN pg_am am   ON am.oid = c.relam
+            WHERE t.relname = rel AND am.amname = 'ivfflat';
+
+            -- กฎเหล็กข้อ 10: ไม่มี ivfflat index = ตรวจสูตรนี้ไม่ได้ ไม่ใช่ "ผ่าน"
+            IF n_lists IS NULL THEN
+                INSERT INTO score_result VALUES (fid, 'CANNOT_CHECK',
+                    format('ไม่มี ivfflat index บน %s ที่ระบุ lists — เทียบกับ sqrt(lists) ไม่ได้', rel),
+                    NULL);
+                CONTINUE;
+            END IF;
+
+            probes_now := current_setting('ivfflat.probes')::int;
+            probes_rec := ceil(sqrt(n_lists))::int;
+
+            IF probes_now < probes_rec THEN
+                INSERT INTO score_result VALUES (fid, 'DETECTED',
+                    format('ivfflat.probes = %s แต่ index ตั้ง lists = %s → เอกสารแนะนำ sqrt(lists) = %s '
+                           '· ต่ำกว่าคำแนะนำ %s เท่า',
+                           probes_now, n_lists, probes_rec, round(probes_rec::numeric / probes_now, 1)),
+                    doc ->> 'correct_diagnosis');
+            ELSE
+                INSERT INTO score_result VALUES (fid, 'NOT_DETECTED',
+                    format('ivfflat.probes = %s >= sqrt(lists) = %s (lists = %s)',
+                           probes_now, probes_rec, n_lists), NULL);
             END IF;
 
         ELSE

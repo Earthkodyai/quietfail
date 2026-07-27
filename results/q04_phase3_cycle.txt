@@ -1,0 +1,150 @@
+============================================================
+Q04 - shipped defaults, never measured
+============================================================
+PostgreSQL 17.10 (Debian 17.10-1.pgdg12+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 12.2.0-14+deb12u1) 12.2.0, 64-bit
+2026-07-27 14:45:16.182195+07
+image_tag : pgvector/pgvector:0.8.5-pg17 · profile: fragile · corpus 100k x 384
+doc formula: lists = rows/1000 = 100 -> probes = sqrt(lists) = 10 · default = 1
+
+############################ RUN 1 ############################
+psql:/sql/q04_default_params.sql:45: NOTICE:  ด่านตรวจผ่าน
+=== IVFFlat lists = 100 (ตามสูตร rows/1000) · ไล่ค่า probes ===
+----------------
+----------------
+----------------
+----------------
+----------------
+----------------
+----------------
+=== HNSW · ไล่ค่า ef_search (วัดที่ k=10 เพื่อแยกจาก Q06) ===
+----------------
+----------------
+----------------
+----------------
+=== ผล: ค่า default แลกอะไรไปบ้าง ===
+  index  |   พารามิเตอร์    | ค่า  |   หมายเหตุ   | recall@10 |  แย่สุด  | ครบ 10/10 | 200 query (ms) 
+---------+----------------+-----+-------------+-----------+--------+-----------+----------------
+ hnsw    | hnsw.ef_search |  40 | ค่าเริ่มต้น     |    0.8695 | 0.0000 |        55 |          204.1
+ hnsw    | hnsw.ef_search |  80 |             |    0.9505 | 0.0000 |       131 |          233.7
+ hnsw    | hnsw.ef_search | 160 |             |    0.9835 | 0.8000 |       169 |          333.2
+ hnsw    | hnsw.ef_search | 320 |             |    0.9930 | 0.8000 |       187 |          350.6
+ ivfflat | ivfflat.probes |   1 | ค่าเริ่มต้น     |    0.7820 | 0.0000 |        90 |          199.1
+ ivfflat | ivfflat.probes |   2 |             |    0.9625 | 0.2000 |       171 |          290.2
+ ivfflat | ivfflat.probes |   5 |             |    1.0000 | 1.0000 |       200 |          664.9
+ ivfflat | ivfflat.probes |  10 | เอกสารแนะนำ |    1.0000 | 1.0000 |       200 |         1050.1
+ ivfflat | ivfflat.probes |  20 |             |    1.0000 | 1.0000 |       200 |         2168.0
+ ivfflat | ivfflat.probes |  50 |             |    1.0000 | 1.0000 |       200 |         5705.8
+ ivfflat | ivfflat.probes | 100 |             |    1.0000 | 1.0000 |       200 |        10712.7
+(11 rows)
+psql:/sql/q04_default_params.sql:195: NOTICE:  [1/5] OK probes=1 (ค่าเริ่มต้น) recall 0.7820 · probes=10 (เอกสารแนะนำ) recall 1.0000
+psql:/sql/q04_default_params.sql:195: NOTICE:  [2/5] OK probes=100 (สแกนทุกกลุ่ม) recall 1.0000 → ตัวแปรคือ probes จริง
+psql:/sql/q04_default_params.sql:195: NOTICE:  [3/5] OK ef_search=40 (ค่าเริ่มต้น) recall 0.8695 · ef_search=320 recall 0.9930
+psql:/sql/q04_default_params.sql:195: NOTICE:  [4/5] OK การแลกมีจริง: probes=1 ใช้ 199.1 ms · probes=100 ใช้ 10712.7 ms (ช้าลง 53.8 เท่า)
+psql:/sql/q04_default_params.sql:195: NOTICE:  [5/5] OK วัดได้ครบทุกค่า ไม่มี error → ค่าที่แย่ก็ยังทำงานได้ปกติ
+psql:/sql/q04_default_params.sql:195: NOTICE:  assertion ผ่านครบ 5 ข้อ
+=== ค่าเริ่มต้นต่ำกว่าที่เอกสารของผู้พัฒนาเองแนะนำ 10 เท่า ===
+=== และไม่มีอะไรเตือน เพราะไม่มีใครวัด recall ตอน deploy ===
+exit: 0
+---- ตัวตรวจ static 3 สถานะ ----
+--- สถานะ 1: ไม่มี ivfflat index -> ต้องได้ CANNOT_CHECK ---
+ Q04      | CANNOT_CHECK | ไม่มี ivfflat index บน qf_corpus ที่ระบุ lists — เทียบกับ sqrt(lists) ไม่ได้
+--- สถานะ 2: มี index lists=100 · probes=1 (ค่าเริ่มต้น) -> ต้องได้ DETECTED ---
+ Q04      | DETECTED | ivfflat.probes = 1 แต่ index ตั้ง lists = 100 → เอกสารแนะนำ sqrt(lists) = 10 · ต่ำกว่าคำแนะนำ 10.0 เท่า
+--- สถานะ 3: ตั้ง probes = 10 ตามสูตร -> ต้องพลิกเป็น NOT_DETECTED ---
+ Q04      | NOT_DETECTED | ivfflat.probes = 10 >= sqrt(lists) = 10 (lists = 100)
+
+############################ RUN 2 ############################
+psql:/sql/q04_default_params.sql:45: NOTICE:  ด่านตรวจผ่าน
+=== IVFFlat lists = 100 (ตามสูตร rows/1000) · ไล่ค่า probes ===
+----------------
+----------------
+----------------
+----------------
+----------------
+----------------
+----------------
+=== HNSW · ไล่ค่า ef_search (วัดที่ k=10 เพื่อแยกจาก Q06) ===
+----------------
+----------------
+----------------
+----------------
+=== ผล: ค่า default แลกอะไรไปบ้าง ===
+  index  |   พารามิเตอร์    | ค่า  |   หมายเหตุ   | recall@10 |  แย่สุด  | ครบ 10/10 | 200 query (ms) 
+---------+----------------+-----+-------------+-----------+--------+-----------+----------------
+ hnsw    | hnsw.ef_search |  40 | ค่าเริ่มต้น     |    0.8570 | 0.0000 |        47 |          206.2
+ hnsw    | hnsw.ef_search |  80 |             |    0.9410 | 0.0000 |       124 |          222.1
+ hnsw    | hnsw.ef_search | 160 |             |    0.9725 | 0.0000 |       164 |          299.2
+ hnsw    | hnsw.ef_search | 320 |             |    0.9840 | 0.0000 |       177 |          363.2
+ ivfflat | ivfflat.probes |   1 | ค่าเริ่มต้น     |    0.7910 | 0.0000 |        91 |          210.8
+ ivfflat | ivfflat.probes |   2 |             |    0.9705 | 0.1000 |       175 |          222.4
+ ivfflat | ivfflat.probes |   5 |             |    1.0000 | 1.0000 |       200 |          510.9
+ ivfflat | ivfflat.probes |  10 | เอกสารแนะนำ |    1.0000 | 1.0000 |       200 |          986.7
+ ivfflat | ivfflat.probes |  20 |             |    1.0000 | 1.0000 |       200 |         1973.5
+ ivfflat | ivfflat.probes |  50 |             |    1.0000 | 1.0000 |       200 |         5326.9
+ ivfflat | ivfflat.probes | 100 |             |    1.0000 | 1.0000 |       200 |        11250.9
+(11 rows)
+psql:/sql/q04_default_params.sql:195: NOTICE:  [1/5] OK probes=1 (ค่าเริ่มต้น) recall 0.7910 · probes=10 (เอกสารแนะนำ) recall 1.0000
+psql:/sql/q04_default_params.sql:195: NOTICE:  [2/5] OK probes=100 (สแกนทุกกลุ่ม) recall 1.0000 → ตัวแปรคือ probes จริง
+psql:/sql/q04_default_params.sql:195: NOTICE:  [3/5] OK ef_search=40 (ค่าเริ่มต้น) recall 0.8570 · ef_search=320 recall 0.9840
+psql:/sql/q04_default_params.sql:195: NOTICE:  [4/5] OK การแลกมีจริง: probes=1 ใช้ 210.8 ms · probes=100 ใช้ 11250.9 ms (ช้าลง 53.4 เท่า)
+psql:/sql/q04_default_params.sql:195: NOTICE:  [5/5] OK วัดได้ครบทุกค่า ไม่มี error → ค่าที่แย่ก็ยังทำงานได้ปกติ
+psql:/sql/q04_default_params.sql:195: NOTICE:  assertion ผ่านครบ 5 ข้อ
+=== ค่าเริ่มต้นต่ำกว่าที่เอกสารของผู้พัฒนาเองแนะนำ 10 เท่า ===
+=== และไม่มีอะไรเตือน เพราะไม่มีใครวัด recall ตอน deploy ===
+exit: 0
+---- ตัวตรวจ static 3 สถานะ ----
+--- สถานะ 1: ไม่มี ivfflat index -> ต้องได้ CANNOT_CHECK ---
+ Q04      | CANNOT_CHECK | ไม่มี ivfflat index บน qf_corpus ที่ระบุ lists — เทียบกับ sqrt(lists) ไม่ได้
+--- สถานะ 2: มี index lists=100 · probes=1 (ค่าเริ่มต้น) -> ต้องได้ DETECTED ---
+ Q04      | DETECTED | ivfflat.probes = 1 แต่ index ตั้ง lists = 100 → เอกสารแนะนำ sqrt(lists) = 10 · ต่ำกว่าคำแนะนำ 10.0 เท่า
+--- สถานะ 3: ตั้ง probes = 10 ตามสูตร -> ต้องพลิกเป็น NOT_DETECTED ---
+ Q04      | NOT_DETECTED | ivfflat.probes = 10 >= sqrt(lists) = 10 (lists = 100)
+
+############################ RUN 3 ############################
+psql:/sql/q04_default_params.sql:45: NOTICE:  ด่านตรวจผ่าน
+=== IVFFlat lists = 100 (ตามสูตร rows/1000) · ไล่ค่า probes ===
+----------------
+----------------
+----------------
+----------------
+----------------
+----------------
+----------------
+=== HNSW · ไล่ค่า ef_search (วัดที่ k=10 เพื่อแยกจาก Q06) ===
+----------------
+----------------
+----------------
+----------------
+=== ผล: ค่า default แลกอะไรไปบ้าง ===
+  index  |   พารามิเตอร์    | ค่า  |   หมายเหตุ   | recall@10 |  แย่สุด  | ครบ 10/10 | 200 query (ms) 
+---------+----------------+-----+-------------+-----------+--------+-----------+----------------
+ hnsw    | hnsw.ef_search |  40 | ค่าเริ่มต้น     |    0.8345 | 0.0000 |        46 |          268.6
+ hnsw    | hnsw.ef_search |  80 |             |    0.9250 | 0.0000 |       120 |          232.0
+ hnsw    | hnsw.ef_search | 160 |             |    0.9530 | 0.0000 |       162 |          293.5
+ hnsw    | hnsw.ef_search | 320 |             |    0.9755 | 0.0000 |       178 |          386.2
+ ivfflat | ivfflat.probes |   1 | ค่าเริ่มต้น     |    0.8125 | 0.0000 |       106 |          207.9
+ ivfflat | ivfflat.probes |   2 |             |    0.9775 | 0.4000 |       180 |          231.5
+ ivfflat | ivfflat.probes |   5 |             |    1.0000 | 1.0000 |       200 |          459.0
+ ivfflat | ivfflat.probes |  10 | เอกสารแนะนำ |    1.0000 | 1.0000 |       200 |         1119.9
+ ivfflat | ivfflat.probes |  20 |             |    1.0000 | 1.0000 |       200 |         1948.1
+ ivfflat | ivfflat.probes |  50 |             |    1.0000 | 1.0000 |       200 |         5185.7
+ ivfflat | ivfflat.probes | 100 |             |    1.0000 | 1.0000 |       200 |        11606.8
+(11 rows)
+psql:/sql/q04_default_params.sql:195: NOTICE:  [1/5] OK probes=1 (ค่าเริ่มต้น) recall 0.8125 · probes=10 (เอกสารแนะนำ) recall 1.0000
+psql:/sql/q04_default_params.sql:195: NOTICE:  [2/5] OK probes=100 (สแกนทุกกลุ่ม) recall 1.0000 → ตัวแปรคือ probes จริง
+psql:/sql/q04_default_params.sql:195: NOTICE:  [3/5] OK ef_search=40 (ค่าเริ่มต้น) recall 0.8345 · ef_search=320 recall 0.9755
+psql:/sql/q04_default_params.sql:195: NOTICE:  [4/5] OK การแลกมีจริง: probes=1 ใช้ 207.9 ms · probes=100 ใช้ 11606.8 ms (ช้าลง 55.8 เท่า)
+psql:/sql/q04_default_params.sql:195: NOTICE:  [5/5] OK วัดได้ครบทุกค่า ไม่มี error → ค่าที่แย่ก็ยังทำงานได้ปกติ
+psql:/sql/q04_default_params.sql:195: NOTICE:  assertion ผ่านครบ 5 ข้อ
+=== ค่าเริ่มต้นต่ำกว่าที่เอกสารของผู้พัฒนาเองแนะนำ 10 เท่า ===
+=== และไม่มีอะไรเตือน เพราะไม่มีใครวัด recall ตอน deploy ===
+exit: 0
+---- ตัวตรวจ static 3 สถานะ ----
+--- สถานะ 1: ไม่มี ivfflat index -> ต้องได้ CANNOT_CHECK ---
+ Q04      | CANNOT_CHECK | ไม่มี ivfflat index บน qf_corpus ที่ระบุ lists — เทียบกับ sqrt(lists) ไม่ได้
+--- สถานะ 2: มี index lists=100 · probes=1 (ค่าเริ่มต้น) -> ต้องได้ DETECTED ---
+ Q04      | DETECTED | ivfflat.probes = 1 แต่ index ตั้ง lists = 100 → เอกสารแนะนำ sqrt(lists) = 10 · ต่ำกว่าคำแนะนำ 10.0 เท่า
+--- สถานะ 3: ตั้ง probes = 10 ตามสูตร -> ต้องพลิกเป็น NOT_DETECTED ---
+ Q04      | NOT_DETECTED | ivfflat.probes = 10 >= sqrt(lists) = 10 (lists = 100)
+
+>>> DONE

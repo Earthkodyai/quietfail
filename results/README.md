@@ -36,6 +36,7 @@ git add -f results/ชื่อไฟล์.txt
 | `q06_phase3_cycle.txt` | **Q06** — ขอ 100 ได้ 40 · หน้าผาที่ k = ef+1 · ไม่มี error | 2026-07-27 |
 | `v07_phase3_cycle.txt` | **V07** — NULL/zero vector หายจาก index 10 แถวพอดี · ตัวตรวจ 3 สถานะ | 2026-07-27 |
 | `q02_phase3_cycle.txt` | **Q02** — 6 รูปแบบ query · 4 แบบ index ใช้ไม่ได้ · buffers ต่าง 21 เท่า | 2026-07-27 |
+| `q04_phase3_cycle.txt` | **Q04** — probes=1 ได้ recall 0.737 · probes=5 ได้ 1.0 · เอกสารแนะนำ 10 ช้าเกินจำเป็น | 2026-07-27 |
 
 ## การตั้งชื่อ
 
