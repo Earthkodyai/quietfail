@@ -1,0 +1,118 @@
+============================================================
+I01 - opclass mismatch: index built, never used
+============================================================
+PostgreSQL 17.10 (Debian 17.10-1.pgdg12+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 12.2.0-14+deb12u1) 12.2.0, 64-bit
+2026-07-27 11:43:10.471285+07
+image_tag : pgvector/pgvector:0.8.5-pg17 · profile: fragile · corpus 100k
+
+############################ RUN 1 (ivfflat) ############################
+psql:/sql/i01_opclass_mismatch.sql:45: NOTICE:  ด่านตรวจผ่าน
+psql:/sql/i01_opclass_mismatch.sql:237: NOTICE:  [1/4] OK opclass ผิด → ไม่ใช้ index (Seq Scan)
+psql:/sql/i01_opclass_mismatch.sql:237: NOTICE:  [2/4] OK opclass ถูก → ใช้ index (Index Scan)
+psql:/sql/i01_opclass_mismatch.sql:237: NOTICE:  [3/4] OK catalog อ่าน opclass ได้ → ตรวจแบบ static ได้จริง
+psql:/sql/i01_opclass_mismatch.sql:237: NOTICE:  [4/4] OK opclass ผิดช้าพอๆ กับไม่มี index (11107.6 ms vs 11954.4 ms)
+psql:/sql/i01_opclass_mismatch.sql:237: NOTICE:  assertion ผ่านครบ 4 ข้อ
+ A no index      | -                 | f          | Seq Scan   |            | -      |        11107.6 |   20000 |    1.0000
+ B wrong opclass | vector_l2_ops     | f          | Seq Scan   |     1762.0 | 157 MB |        11954.4 |   20000 |    1.0000
+ C right opclass | vector_cosine_ops | t          | Index Scan |     1377.5 | 157 MB |          174.1 |     431 |    0.7780
+injector exit: 0
+---- static checker: opclass ผิด ----
+ I01      | CANNOT_CHECK | ไม่มี vector index บน 'qf_corpus' เลย — ตรวจ opclass ไม่ได้
+---- static checker: opclass ถูก ----
+ I01      | CANNOT_CHECK | ไม่มี vector index บน 'qf_corpus' เลย — ตรวจ opclass ไม่ได้
+---- static checker: ไม่มี index ----
+ I01      | CANNOT_CHECK | ไม่มี vector index บน 'qf_corpus' เลย — ตรวจ opclass ไม่ได้
+
+############################ RUN 2 (ivfflat) ############################
+psql:/sql/i01_opclass_mismatch.sql:45: NOTICE:  ด่านตรวจผ่าน
+psql:/sql/i01_opclass_mismatch.sql:237: NOTICE:  [1/4] OK opclass ผิด → ไม่ใช้ index (Seq Scan)
+psql:/sql/i01_opclass_mismatch.sql:237: NOTICE:  [2/4] OK opclass ถูก → ใช้ index (Index Scan)
+psql:/sql/i01_opclass_mismatch.sql:237: NOTICE:  [3/4] OK catalog อ่าน opclass ได้ → ตรวจแบบ static ได้จริง
+psql:/sql/i01_opclass_mismatch.sql:237: NOTICE:  [4/4] OK opclass ผิดช้าพอๆ กับไม่มี index (10996.4 ms vs 11861.4 ms)
+psql:/sql/i01_opclass_mismatch.sql:237: NOTICE:  assertion ผ่านครบ 4 ข้อ
+ A no index      | -                 | f          | Seq Scan   |            | -      |        10996.4 |   20000 |    1.0000
+ B wrong opclass | vector_l2_ops     | f          | Seq Scan   |     1908.5 | 157 MB |        11861.4 |   20000 |    1.0000
+ C right opclass | vector_cosine_ops | t          | Index Scan |     1498.4 | 157 MB |          185.4 |     361 |    0.8020
+injector exit: 0
+---- static checker: opclass ผิด ----
+ I01      | CANNOT_CHECK | ไม่มี vector index บน 'qf_corpus' เลย — ตรวจ opclass ไม่ได้
+---- static checker: opclass ถูก ----
+ I01      | CANNOT_CHECK | ไม่มี vector index บน 'qf_corpus' เลย — ตรวจ opclass ไม่ได้
+---- static checker: ไม่มี index ----
+ I01      | CANNOT_CHECK | ไม่มี vector index บน 'qf_corpus' เลย — ตรวจ opclass ไม่ได้
+
+############################ RUN 3 (ivfflat) ############################
+psql:/sql/i01_opclass_mismatch.sql:45: NOTICE:  ด่านตรวจผ่าน
+psql:/sql/i01_opclass_mismatch.sql:237: NOTICE:  [1/4] OK opclass ผิด → ไม่ใช้ index (Seq Scan)
+psql:/sql/i01_opclass_mismatch.sql:237: NOTICE:  [2/4] OK opclass ถูก → ใช้ index (Index Scan)
+psql:/sql/i01_opclass_mismatch.sql:237: NOTICE:  [3/4] OK catalog อ่าน opclass ได้ → ตรวจแบบ static ได้จริง
+psql:/sql/i01_opclass_mismatch.sql:237: NOTICE:  [4/4] OK opclass ผิดช้าพอๆ กับไม่มี index (10774.1 ms vs 11024.8 ms)
+psql:/sql/i01_opclass_mismatch.sql:237: NOTICE:  assertion ผ่านครบ 4 ข้อ
+ A no index      | -                 | f          | Seq Scan   |            | -      |        10774.1 |   20000 |    1.0000
+ B wrong opclass | vector_l2_ops     | f          | Seq Scan   |     1431.9 | 157 MB |        11024.8 |   20000 |    1.0000
+ C right opclass | vector_cosine_ops | t          | Index Scan |     1640.2 | 157 MB |          172.7 |     160 |    0.7415
+injector exit: 0
+---- static checker: opclass ผิด ----
+ I01      | CANNOT_CHECK | ไม่มี vector index บน 'qf_corpus' เลย — ตรวจ opclass ไม่ได้
+---- static checker: opclass ถูก ----
+ I01      | CANNOT_CHECK | ไม่มี vector index บน 'qf_corpus' เลย — ตรวจ opclass ไม่ได้
+---- static checker: ไม่มี index ----
+ I01      | CANNOT_CHECK | ไม่มี vector index บน 'qf_corpus' เลย — ตรวจ opclass ไม่ได้
+
+############################ HNSW (ตัวเลขหลัก) ############################
+psql:/sql/i01_opclass_mismatch.sql:45: NOTICE:  ด่านตรวจผ่าน
+psql:/sql/i01_opclass_mismatch.sql:149: NOTICE:  hnsw graph no longer fits into maintenance_work_mem after 28364 tuples
+psql:/sql/i01_opclass_mismatch.sql:183: NOTICE:  hnsw graph no longer fits into maintenance_work_mem after 28372 tuples
+psql:/sql/i01_opclass_mismatch.sql:237: NOTICE:  [1/4] OK opclass ผิด → ไม่ใช้ index (Seq Scan)
+psql:/sql/i01_opclass_mismatch.sql:237: NOTICE:  [2/4] OK opclass ถูก → ใช้ index (Index Scan)
+psql:/sql/i01_opclass_mismatch.sql:237: NOTICE:  [3/4] OK catalog อ่าน opclass ได้ → ตรวจแบบ static ได้จริง
+psql:/sql/i01_opclass_mismatch.sql:237: NOTICE:  [4/4] OK opclass ผิดช้าพอๆ กับไม่มี index (10987.7 ms vs 10501.8 ms)
+psql:/sql/i01_opclass_mismatch.sql:237: NOTICE:  assertion ผ่านครบ 4 ข้อ
+      phase      |      opclass      | index_used | plan_node  | build (ms) |  ขนาด  | 200 query (ms) | buffers | recall@10 
+ A no index      | -                 | f          | Seq Scan   |            | -      |        10987.7 |   20000 |    1.0000
+ B wrong opclass | vector_l2_ops     | f          | Seq Scan   |    55455.6 | 195 MB |        10501.8 |   20000 |    1.0000
+ C right opclass | vector_cosine_ops | t          | Index Scan |    65091.1 | 195 MB |          235.0 |     949 |    0.8435
+>>> DONE
+
+############################ ตัวตรวจ static — 3 รอบติด ############################
+(รอบก่อนหน้าใน RUN 1-3 ขึ้น CANNOT_CHECK ทั้งหมดเพราะ quoting ของ harness พัง — ดู E26)
+---- CHECKER RUN 1 ----
+--- สถานะ 1: ไม่มี vector index เลย -> ต้องได้ CANNOT_CHECK ---
+ I01      | CANNOT_CHECK | ไม่มี vector index บน 'qf_corpus' เลย — ตรวจ opclass ไม่ได้
+--- สถานะ 2: opclass ผิด -> ต้องได้ DETECTED ---
+psql:/sql/score.sql:36: ERROR:  relation "score_result" already exists
+---- CHECKER RUN 2 ----
+--- สถานะ 1: ไม่มี vector index เลย -> ต้องได้ CANNOT_CHECK ---
+ I01      | DETECTED | มี vector index 1 ตัวบน qf_corpus · opclass ไม่ตรงกับ operator <=> ที่โค้ดใช้ 1 ตัว (ต้องเป็น vector_cosine_ops)
+--- สถานะ 2: opclass ผิด -> ต้องได้ DETECTED ---
+psql:/sql/i01_checker_states.sql:29: ERROR:  relation "qf_i01_state" already exists
+---- CHECKER RUN 3 ----
+--- สถานะ 1: ไม่มี vector index เลย -> ต้องได้ CANNOT_CHECK ---
+ I01      | DETECTED | มี vector index 1 ตัวบน qf_corpus · opclass ไม่ตรงกับ operator <=> ที่โค้ดใช้ 1 ตัว (ต้องเป็น vector_cosine_ops)
+--- สถานะ 2: opclass ผิด -> ต้องได้ DETECTED ---
+psql:/sql/i01_checker_states.sql:29: ERROR:  relation "qf_i01_state" already exists
+>>> CHECKER DONE
+
+############################ ตัวตรวจ static — 3 รอบติด (แก้ harness แล้ว) ############################
+---- CHECKER RUN 1 ----
+--- สถานะ 1: ไม่มี vector index เลย -> ต้องได้ CANNOT_CHECK ---
+ I01      | CANNOT_CHECK | ไม่มี vector index บน 'qf_corpus' เลย — ตรวจ opclass ไม่ได้
+--- สถานะ 2: opclass ผิด -> ต้องได้ DETECTED ---
+ I01      | DETECTED | มี vector index 1 ตัวบน qf_corpus · opclass ไม่ตรงกับ operator <=> ที่โค้ดใช้ 1 ตัว (ต้องเป็น vector_cosine_ops)
+--- สถานะ 3: opclass ถูก -> ต้องได้ NOT_DETECTED ---
+ I01      | NOT_DETECTED | vector index ทั้ง 1 ตัวบน qf_corpus ใช้ opclass vector_cosine_ops ถูกต้อง
+---- CHECKER RUN 2 ----
+--- สถานะ 1: ไม่มี vector index เลย -> ต้องได้ CANNOT_CHECK ---
+ I01      | CANNOT_CHECK | ไม่มี vector index บน 'qf_corpus' เลย — ตรวจ opclass ไม่ได้
+--- สถานะ 2: opclass ผิด -> ต้องได้ DETECTED ---
+ I01      | DETECTED | มี vector index 1 ตัวบน qf_corpus · opclass ไม่ตรงกับ operator <=> ที่โค้ดใช้ 1 ตัว (ต้องเป็น vector_cosine_ops)
+--- สถานะ 3: opclass ถูก -> ต้องได้ NOT_DETECTED ---
+ I01      | NOT_DETECTED | vector index ทั้ง 1 ตัวบน qf_corpus ใช้ opclass vector_cosine_ops ถูกต้อง
+---- CHECKER RUN 3 ----
+--- สถานะ 1: ไม่มี vector index เลย -> ต้องได้ CANNOT_CHECK ---
+ I01      | CANNOT_CHECK | ไม่มี vector index บน 'qf_corpus' เลย — ตรวจ opclass ไม่ได้
+--- สถานะ 2: opclass ผิด -> ต้องได้ DETECTED ---
+ I01      | DETECTED | มี vector index 1 ตัวบน qf_corpus · opclass ไม่ตรงกับ operator <=> ที่โค้ดใช้ 1 ตัว (ต้องเป็น vector_cosine_ops)
+--- สถานะ 3: opclass ถูก -> ต้องได้ NOT_DETECTED ---
+ I01      | NOT_DETECTED | vector index ทั้ง 1 ตัวบน qf_corpus ใช้ opclass vector_cosine_ops ถูกต้อง
+>>> CHECKER DONE

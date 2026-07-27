@@ -46,6 +46,11 @@
     "config_profile": "fragile",
     "date": "2026-07-27",
     "corpus_rows": 100000,
-    "note": "รอ 3 รอบติดด้วย ivfflat + 1 รอบด้วย hnsw — เติมตัวเลขหลังรันจริง"
+    "consecutive_successful_runs": 3,
+    "index_types_tested": ["ivfflat", "hnsw"],
+    "hnsw_wrong_opclass": {"plan": "Seq Scan", "build_ms": 55455.6, "size": "195 MB", "buffers": 20000, "recall_10": 1.0},
+    "hnsw_right_opclass": {"plan": "Index Scan", "build_ms": 65091.1, "size": "195 MB", "buffers": 949, "recall_10": 0.8435},
+    "checker_states_verified": "CANNOT_CHECK / DETECTED / NOT_DETECTED — 3 รอบติด",
+    "note": "opclass ผิดจ่ายค่า build เต็มราคาแล้วได้ plan เดิม buffers เดิม · recall สมบูรณ์ 1.0 จึงตรวจจากคุณภาพผลลัพธ์ไม่ได้"
   }
 }

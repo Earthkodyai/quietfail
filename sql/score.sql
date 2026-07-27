@@ -28,6 +28,9 @@ LOAD 'vector';
 
 SELECT set_config('qf.fault', :'fault', false);
 
+-- ต้องลบก่อนสร้าง ไม่งั้นเรียกซ้ำในเซสชันเดียวจะได้
+-- ERROR: relation "score_result" already exists แล้วสคริปต์ที่เรียกมันตายกลางคัน
+DROP TABLE IF EXISTS score_result;
 CREATE TEMP TABLE score_result (
     fault_id     text,
     verdict      text,     -- DETECTED / NOT_DETECTED / CANNOT_CHECK
