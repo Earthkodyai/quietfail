@@ -1,0 +1,101 @@
+============================================================
+Q02 - wrong query shape: the index exists and is never used
+============================================================
+PostgreSQL 17.10 (Debian 17.10-1.pgdg12+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 12.2.0-14+deb12u1) 12.2.0, 64-bit
+2026-07-27 14:27:54.690861+07
+image_tag : pgvector/pgvector:0.8.5-pg17 · profile: fragile · corpus 100k
+
+############################ RUN 1 ############################
+psql:/sql/q02_wrong_query_shape.sql:37: NOTICE:  ด่านตรวจผ่าน
+=== ไล่ทดสอบรูปแบบ query ===
+=== ผล: รูปแบบไหนใช้ index ได้บ้าง ===
+       รูปแบบ        |              เขียนแบบ               | index | plan node  | ได้กี่แถว |  ms  | buffers | error 
+--------------------+------------------------------------+-------+------------+--------+------+---------+-------
+ A ถูกต้อง            | ORDER BY <=> ASC + LIMIT           | ใช้    | Index Scan |     10 |  1.5 |     963 | f
+ B WHERE อย่างเดียว   | WHERE <=> < 0.5                    | ไม่ใช้  | Seq Scan   |   2000 | 35.2 |   20005 | f
+ C WHERE + ORDER BY | WHERE <=> < 0.5 + ORDER BY + LIMIT | ใช้    | Index Scan |     10 |  0.7 |     963 | f
+ D เรียง DESC        | ORDER BY <=> DESC + LIMIT          | ไม่ใช้  | Seq Scan   |     10 | 46.2 |   20005 | f
+ E ห่อด้วยนิพจน์        | ORDER BY (<=> ) + 0                | ไม่ใช้  | Seq Scan   |     10 | 53.5 |   20005 | f
+ F ไม่มี LIMIT        | ORDER BY <=> ASC ไม่มี LIMIT         | ไม่ใช้  | Seq Scan   | 100000 | 80.8 |   20005 | f
+(6 rows)
+psql:/sql/q02_wrong_query_shape.sql:211: NOTICE:  [1/5] OK รูปแบบที่เอกสารกำหนด ใช้ index จริง (Index Scan)
+psql:/sql/q02_wrong_query_shape.sql:211: NOTICE:  [2/5] OK WHERE threshold อย่างเดียว ไม่ใช้ index (Seq Scan)
+psql:/sql/q02_wrong_query_shape.sql:211: NOTICE:  [3/5] OK มี 4 รูปแบบที่เขียนผิดแล้ว index ใช้ไม่ได้
+psql:/sql/q02_wrong_query_shape.sql:211: NOTICE:  [4/5] OK buffers ต่างกัน 20.8 เท่า (ถูก 963 · ผิด 20005)
+psql:/sql/q02_wrong_query_shape.sql:211: NOTICE:  [5/5] OK ไม่มี error เลยสักรูปแบบ → ทุกแบบ "ทำงานได้" เหมือนกันหมด
+psql:/sql/q02_wrong_query_shape.sql:211: NOTICE:  assertion ผ่านครบ 5 ข้อ
+=== index ถูกต้องทุกอย่าง · ผิดที่วิธีเขียน query เท่านั้น ===
+=== ทุกรูปแบบคืนผลลัพธ์ได้ ไม่มี error — ต่างกันแค่เร็วช้าและถูกผิด ===
+=== I01 แก้ที่ index · Q02 แก้ที่ query — อาการเหมือนกันเป๊ะ ===
+exit: 0
+---- ตัวตรวจ 3 สถานะ ----
+--- สถานะ 1: ยังไม่มี query ที่ใช้ vector operator -> CANNOT_CHECK ---
+ Q02      | CANNOT_CHECK | ไม่พบ query ที่ใช้ vector operator ใน pg_stat_statements — ยังไม่มีอะไรให้ตรวจ
+--- สถานะ 2: รันเฉพาะรูปแบบที่ถูกต้อง -> NOT_DETECTED ---
+ Q02      | NOT_DETECTED | query ที่ใช้ vector operator ทั้ง 1 ตัว มี ORDER BY + LIMIT ครบ และไม่ได้เรียง DESC
+--- สถานะ 3: รันรูปแบบที่เขียนผิดเพิ่ม -> DETECTED ---
+ Q02      | DETECTED | จาก 2 query ที่ใช้ vector operator · ขาด ORDER BY หรือ LIMIT 1 · เรียง DESC 0 → index ใช้ไม่ได้ (ตรวจ ORDER BY ที่ห่อด้วยนิพจน์ไม่ได้ ต้องดู plan)
+
+############################ RUN 2 ############################
+psql:/sql/q02_wrong_query_shape.sql:37: NOTICE:  ด่านตรวจผ่าน
+=== ไล่ทดสอบรูปแบบ query ===
+=== ผล: รูปแบบไหนใช้ index ได้บ้าง ===
+       รูปแบบ        |              เขียนแบบ               | index | plan node  | ได้กี่แถว |  ms  | buffers | error 
+--------------------+------------------------------------+-------+------------+--------+------+---------+-------
+ A ถูกต้อง            | ORDER BY <=> ASC + LIMIT           | ใช้    | Index Scan |     10 |  2.0 |     982 | f
+ B WHERE อย่างเดียว   | WHERE <=> < 0.5                    | ไม่ใช้  | Seq Scan   |   2000 | 37.1 |   20005 | f
+ C WHERE + ORDER BY | WHERE <=> < 0.5 + ORDER BY + LIMIT | ใช้    | Index Scan |     10 |  0.7 |     982 | f
+ D เรียง DESC        | ORDER BY <=> DESC + LIMIT          | ไม่ใช้  | Seq Scan   |     10 | 46.8 |   20005 | f
+ E ห่อด้วยนิพจน์        | ORDER BY (<=> ) + 0                | ไม่ใช้  | Seq Scan   |     10 | 54.2 |   20005 | f
+ F ไม่มี LIMIT        | ORDER BY <=> ASC ไม่มี LIMIT         | ไม่ใช้  | Seq Scan   | 100000 | 96.3 |   20005 | f
+(6 rows)
+psql:/sql/q02_wrong_query_shape.sql:211: NOTICE:  [1/5] OK รูปแบบที่เอกสารกำหนด ใช้ index จริง (Index Scan)
+psql:/sql/q02_wrong_query_shape.sql:211: NOTICE:  [2/5] OK WHERE threshold อย่างเดียว ไม่ใช้ index (Seq Scan)
+psql:/sql/q02_wrong_query_shape.sql:211: NOTICE:  [3/5] OK มี 4 รูปแบบที่เขียนผิดแล้ว index ใช้ไม่ได้
+psql:/sql/q02_wrong_query_shape.sql:211: NOTICE:  [4/5] OK buffers ต่างกัน 20.4 เท่า (ถูก 982 · ผิด 20005)
+psql:/sql/q02_wrong_query_shape.sql:211: NOTICE:  [5/5] OK ไม่มี error เลยสักรูปแบบ → ทุกแบบ "ทำงานได้" เหมือนกันหมด
+psql:/sql/q02_wrong_query_shape.sql:211: NOTICE:  assertion ผ่านครบ 5 ข้อ
+=== index ถูกต้องทุกอย่าง · ผิดที่วิธีเขียน query เท่านั้น ===
+=== ทุกรูปแบบคืนผลลัพธ์ได้ ไม่มี error — ต่างกันแค่เร็วช้าและถูกผิด ===
+=== I01 แก้ที่ index · Q02 แก้ที่ query — อาการเหมือนกันเป๊ะ ===
+exit: 0
+---- ตัวตรวจ 3 สถานะ ----
+--- สถานะ 1: ยังไม่มี query ที่ใช้ vector operator -> CANNOT_CHECK ---
+ Q02      | CANNOT_CHECK | ไม่พบ query ที่ใช้ vector operator ใน pg_stat_statements — ยังไม่มีอะไรให้ตรวจ
+--- สถานะ 2: รันเฉพาะรูปแบบที่ถูกต้อง -> NOT_DETECTED ---
+ Q02      | NOT_DETECTED | query ที่ใช้ vector operator ทั้ง 1 ตัว มี ORDER BY + LIMIT ครบ และไม่ได้เรียง DESC
+--- สถานะ 3: รันรูปแบบที่เขียนผิดเพิ่ม -> DETECTED ---
+ Q02      | DETECTED | จาก 2 query ที่ใช้ vector operator · ขาด ORDER BY หรือ LIMIT 1 · เรียง DESC 0 → index ใช้ไม่ได้ (ตรวจ ORDER BY ที่ห่อด้วยนิพจน์ไม่ได้ ต้องดู plan)
+
+############################ RUN 3 ############################
+psql:/sql/q02_wrong_query_shape.sql:37: NOTICE:  ด่านตรวจผ่าน
+=== ไล่ทดสอบรูปแบบ query ===
+=== ผล: รูปแบบไหนใช้ index ได้บ้าง ===
+       รูปแบบ        |              เขียนแบบ               | index | plan node  | ได้กี่แถว |  ms  | buffers | error 
+--------------------+------------------------------------+-------+------------+--------+------+---------+-------
+ A ถูกต้อง            | ORDER BY <=> ASC + LIMIT           | ใช้    | Index Scan |     10 |  1.2 |     949 | f
+ B WHERE อย่างเดียว   | WHERE <=> < 0.5                    | ไม่ใช้  | Seq Scan   |   2000 | 35.7 |   20005 | f
+ C WHERE + ORDER BY | WHERE <=> < 0.5 + ORDER BY + LIMIT | ใช้    | Index Scan |     10 |  0.6 |     949 | f
+ D เรียง DESC        | ORDER BY <=> DESC + LIMIT          | ไม่ใช้  | Seq Scan   |     10 | 46.7 |   20005 | f
+ E ห่อด้วยนิพจน์        | ORDER BY (<=> ) + 0                | ไม่ใช้  | Seq Scan   |     10 | 47.0 |   20005 | f
+ F ไม่มี LIMIT        | ORDER BY <=> ASC ไม่มี LIMIT         | ไม่ใช้  | Seq Scan   | 100000 | 86.5 |   20005 | f
+(6 rows)
+psql:/sql/q02_wrong_query_shape.sql:211: NOTICE:  [1/5] OK รูปแบบที่เอกสารกำหนด ใช้ index จริง (Index Scan)
+psql:/sql/q02_wrong_query_shape.sql:211: NOTICE:  [2/5] OK WHERE threshold อย่างเดียว ไม่ใช้ index (Seq Scan)
+psql:/sql/q02_wrong_query_shape.sql:211: NOTICE:  [3/5] OK มี 4 รูปแบบที่เขียนผิดแล้ว index ใช้ไม่ได้
+psql:/sql/q02_wrong_query_shape.sql:211: NOTICE:  [4/5] OK buffers ต่างกัน 21.1 เท่า (ถูก 949 · ผิด 20005)
+psql:/sql/q02_wrong_query_shape.sql:211: NOTICE:  [5/5] OK ไม่มี error เลยสักรูปแบบ → ทุกแบบ "ทำงานได้" เหมือนกันหมด
+psql:/sql/q02_wrong_query_shape.sql:211: NOTICE:  assertion ผ่านครบ 5 ข้อ
+=== index ถูกต้องทุกอย่าง · ผิดที่วิธีเขียน query เท่านั้น ===
+=== ทุกรูปแบบคืนผลลัพธ์ได้ ไม่มี error — ต่างกันแค่เร็วช้าและถูกผิด ===
+=== I01 แก้ที่ index · Q02 แก้ที่ query — อาการเหมือนกันเป๊ะ ===
+exit: 0
+---- ตัวตรวจ 3 สถานะ ----
+--- สถานะ 1: ยังไม่มี query ที่ใช้ vector operator -> CANNOT_CHECK ---
+ Q02      | CANNOT_CHECK | ไม่พบ query ที่ใช้ vector operator ใน pg_stat_statements — ยังไม่มีอะไรให้ตรวจ
+--- สถานะ 2: รันเฉพาะรูปแบบที่ถูกต้อง -> NOT_DETECTED ---
+ Q02      | NOT_DETECTED | query ที่ใช้ vector operator ทั้ง 1 ตัว มี ORDER BY + LIMIT ครบ และไม่ได้เรียง DESC
+--- สถานะ 3: รันรูปแบบที่เขียนผิดเพิ่ม -> DETECTED ---
+ Q02      | DETECTED | จาก 2 query ที่ใช้ vector operator · ขาด ORDER BY หรือ LIMIT 1 · เรียง DESC 0 → index ใช้ไม่ได้ (ตรวจ ORDER BY ที่ห่อด้วยนิพจน์ไม่ได้ ต้องดู plan)
+
+>>> DONE

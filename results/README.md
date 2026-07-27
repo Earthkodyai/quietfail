@@ -35,6 +35,7 @@ git add -f results/ชื่อไฟล์.txt
 | `i03_phase3_cycle.txt` | **I03** — CREATE INDEX บล็อกการเขียน แต่การอ่านปกติ · ตัวนับพลิก 3 สถานะ | 2026-07-27 |
 | `q06_phase3_cycle.txt` | **Q06** — ขอ 100 ได้ 40 · หน้าผาที่ k = ef+1 · ไม่มี error | 2026-07-27 |
 | `v07_phase3_cycle.txt` | **V07** — NULL/zero vector หายจาก index 10 แถวพอดี · ตัวตรวจ 3 สถานะ | 2026-07-27 |
+| `q02_phase3_cycle.txt` | **Q02** — 6 รูปแบบ query · 4 แบบ index ใช้ไม่ได้ · buffers ต่าง 21 เท่า | 2026-07-27 |
 
 ## การตั้งชื่อ
 

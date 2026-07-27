@@ -79,6 +79,9 @@ DECLARE
     n_guc     int;
     n_null_vec int;
     n_zero_vec int;
+    n_no_order int;
+    n_desc     int;
+    n_vec_q    int;
 BEGIN
     FOR f IN
         SELECT name FROM pg_ls_dir('/groundtruth') AS name
@@ -432,6 +435,56 @@ BEGIN
                 INSERT INTO score_result VALUES (fid, 'NOT_DETECTED',
                     format('ตาราง %s มี %s แถว · ไม่มี NULL หรือ zero vector เลย', rel, n_rows),
                     NULL);
+            END IF;
+
+        -- ---- ตัวตรวจของ Q02: อ่าน query ที่ระบบเคยรันจริงจาก pg_stat_statements ----
+        --
+        -- หลักฐานชนิดใหม่ในโปรเจค: **query ที่ถูกบันทึกไว้** ไม่ใช่ catalog และไม่ใช่สถานะสด
+        -- ตรวจได้โดยไม่ต้องเข้าถึงซอร์สโค้ดของแอป
+        --
+        -- ⚠️ ตรวจได้แค่ชั้น "ขาด ORDER BY หรือ LIMIT" กับ "เรียง DESC"
+        --    รูปแบบที่ห่อ operator ด้วยนิพจน์ (เช่น + 0) ตรวจจากข้อความไม่ได้
+        --    ต้องดู plan → ระบุข้อจำกัดนี้ไว้ตรงๆ ห้ามอ้างว่าครอบคลุมทุกแบบ
+        ELSIF fid = 'Q02' THEN
+            IF NOT EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_stat_statements') THEN
+                INSERT INTO score_result VALUES (fid, 'CANNOT_CHECK',
+                    'ไม่มี extension pg_stat_statements — ตรวจ query ที่เคยรันไม่ได้', NULL);
+                CONTINUE;
+            END IF;
+
+            SELECT
+                -- ⚠️ ต้องมีวงเล็บครอบ NOT ทั้งก้อน
+                --    เขียน "A AND B IS NOT TRUE" จะ parse เป็น "A AND (B IS NOT TRUE)"
+                --    ซึ่งนับกลับหัว แล้วตัวตรวจตอบ NOT_DETECTED ในสถานะที่ควร DETECTED
+                count(*) FILTER (WHERE NOT (qtext ILIKE '%order by%'
+                                            AND qtext ILIKE '%limit%')),
+                count(*) FILTER (WHERE qtext ~* 'order by[^;]*<[=#-]>[^;]*desc'),
+                count(*)
+              INTO n_no_order, n_desc, n_vec_q
+            FROM (
+                -- ⚠️ ห้ามตั้งชื่อ alias ว่า q — ชนกับตัวแปร plpgsql ชื่อ q ที่ประกาศไว้ข้างบน
+                --    PostgreSQL จะตอบ "column reference q is ambiguous"
+                SELECT query AS qtext FROM pg_stat_statements
+                WHERE query ~* '<[=#-]>'
+                  AND query ILIKE 'select%'
+                  AND query NOT ILIKE '%pg_stat_statements%'
+                  AND query NOT ILIKE '%pg_locks%'
+            ) z;
+
+            IF n_vec_q = 0 THEN
+                INSERT INTO score_result VALUES (fid, 'CANNOT_CHECK',
+                    'ไม่พบ query ที่ใช้ vector operator ใน pg_stat_statements — ยังไม่มีอะไรให้ตรวจ',
+                    NULL);
+            ELSIF n_no_order + n_desc > 0 THEN
+                INSERT INTO score_result VALUES (fid, 'DETECTED',
+                    format('จาก %s query ที่ใช้ vector operator · ขาด ORDER BY หรือ LIMIT %s · เรียง DESC %s '
+                           '→ index ใช้ไม่ได้ (ตรวจ ORDER BY ที่ห่อด้วยนิพจน์ไม่ได้ ต้องดู plan)',
+                           n_vec_q, n_no_order, n_desc),
+                    doc ->> 'correct_diagnosis');
+            ELSE
+                INSERT INTO score_result VALUES (fid, 'NOT_DETECTED',
+                    format('query ที่ใช้ vector operator ทั้ง %s ตัว มี ORDER BY + LIMIT ครบ และไม่ได้เรียง DESC',
+                           n_vec_q), NULL);
             END IF;
 
         ELSE

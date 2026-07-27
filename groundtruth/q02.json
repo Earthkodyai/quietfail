@@ -1,0 +1,63 @@
+{
+  "fault_id": "Q02",
+  "group": "B_index_never_used",
+  "name": "query_shape_prevents_index_use",
+
+  "true_cause": "query_does_not_match_required_shape",
+  "true_cause_th": "เอกสารกำหนดรูปแบบ query ไว้ 3 อย่าง ผิดข้อใดข้อหนึ่งก็ใช้ index ไม่ได้: ต้องมี ORDER BY และ LIMIT · ORDER BY ต้องเป็นผลของ distance operator โดยตรง · ต้องเรียงจากน้อยไปมาก",
+
+  "surface_symptom": "ช้าเหมือนไม่มี index ทั้งที่ \\di เห็น index อยู่ และ opclass ถูกต้องทุกอย่าง",
+
+  "differs_from_i01_th": "I01 ผิดที่ **ตอนสร้าง index** (opclass ไม่ตรง operator) · Q02 ผิดที่ **ตอนเขียน query** โดย index ถูกต้องทุกอย่าง — อาการเหมือนกันเป๊ะ แต่แก้คนละที่",
+
+  "misleading_fixes": [
+    "rebuild index",
+    "เปลี่ยน opclass",
+    "จูน m / ef_construction",
+    "เพิ่ม RAM"
+  ],
+
+  "correct_diagnosis": "ดู plan node ที่สแกนตารางเป้าหมาย — ถ้าเป็น Seq Scan ทั้งที่มี index แปลว่า query ผิดรูป · หรืออ่าน query ที่เคยรันจาก pg_stat_statements แล้วหาตัวที่ขาด ORDER BY / LIMIT",
+
+  "correct_fix_th": "เขียนเป็น ORDER BY <distance operator> ASC + LIMIT k โดยไม่ห่อ operator ด้วยนิพจน์ใดๆ · WHERE threshold ใส่เพิ่มได้ ไม่ได้ทำให้ index ใช้ไม่ได้ ตราบใดที่ยังมี ORDER BY + LIMIT",
+
+  "evidence_query": "SELECT count(*) FROM pg_stat_statements WHERE query ~* '<[=#-]>' AND query ILIKE 'select%' AND NOT (query ILIKE '%order by%' AND query ILIKE '%limit%')",
+
+  "evidence_expectation": {
+    "source": "pg_stat_statements",
+    "detect_when": "มี query ที่ใช้ vector operator แต่ขาด ORDER BY หรือ LIMIT หรือเรียง DESC"
+  },
+
+  "checker_limitation_th": "ตัวตรวจอ่านข้อความ query จึงจับได้แค่ชั้น 'ขาด ORDER BY หรือ LIMIT' และ 'เรียง DESC' · รูปแบบที่ห่อ operator ด้วยนิพจน์ เช่น ORDER BY (embedding <=> q) + 0 ตรวจจากข้อความไม่ได้ ต้องดู plan — ระบุข้อจำกัดนี้ไว้ตรงๆ ห้ามอ้างว่าครอบคลุมทุกแบบ (กฎเหล็กข้อ 10)",
+
+  "measured_2026_07_27": {
+    "corpus_rows": 100000,
+    "index": "hnsw vector_cosine_ops",
+    "variants": [
+      {"id": "A", "shape": "ORDER BY <=> ASC + LIMIT 10",            "index_used": true,  "node": "Index Scan", "rows": 10,     "ms": 1.3,  "buffers": 947},
+      {"id": "B", "shape": "WHERE <=> < 0.5 อย่างเดียว",              "index_used": false, "node": "Seq Scan",   "rows": 2000,   "ms": 34.1, "buffers": 20005},
+      {"id": "C", "shape": "WHERE <=> < 0.5 + ORDER BY + LIMIT",     "index_used": true,  "node": "Index Scan", "rows": 10,     "ms": 0.7,  "buffers": 947},
+      {"id": "D", "shape": "ORDER BY <=> DESC + LIMIT",              "index_used": false, "node": "Seq Scan",   "rows": 10,     "ms": 46.4, "buffers": 20005},
+      {"id": "E", "shape": "ORDER BY (<=>) + 0 + LIMIT",             "index_used": false, "node": "Seq Scan",   "rows": 10,     "ms": 46.8, "buffers": 20005},
+      {"id": "F", "shape": "ORDER BY <=> ASC ไม่มี LIMIT",            "index_used": false, "node": "Seq Scan",   "rows": 100000, "ms": 79.8, "buffers": 20005}
+    ],
+    "buffers_ratio": 21.1,
+    "errors_raised": 0,
+    "key_finding_th": "C ใช้ index ได้ → WHERE ไม่ใช่ตัวปัญหา การขาด ORDER BY + LIMIT ต่างหาก · ชื่อ fault ที่ว่า 'เขียน WHERE แทน ORDER BY' จึงชี้เป้าคลาดไปนิด",
+    "cross_link_th": "รูปแบบ E (+ 0) คือสิ่งเดียวกับที่ EVIDENCE.md ระบุว่าต้องใส่ใน ORDER BY ชั้นนอกบน PostgreSQL 17+ เพื่อให้ iterative scan ของ Q03 ทำงาน — ทริกเดียวกันที่แก้ Q03 คือทริกที่ทำให้ index ใช้ไม่ได้ใน Q02"
+  },
+
+  "reproduce": "sql/q02_wrong_query_shape.sql",
+  "config_profile": "fragile",
+
+  "verified_on": {
+    "postgres_version": "17.10 (Debian 17.10-1.pgdg12+1)",
+    "pgvector_version": "0.8.5",
+    "image_tag": "pgvector/pgvector:0.8.5-pg17",
+    "config_profile": "fragile",
+    "date": "2026-07-27",
+    "consecutive_successful_runs": 3,
+    "checker_states_verified": "CANNOT_CHECK (ยังไม่มี query) / NOT_DETECTED (รูปแบบถูก) / DETECTED (รูปแบบผิด) — 3 รอบติด",
+    "note": "assertion ผ่าน 5/5 ทุกรอบ · 4 จาก 6 รูปแบบใช้ index ไม่ได้ · buffers ต่างกัน 21 เท่า · ไม่มี error สักรูปแบบ"
+  }
+}
