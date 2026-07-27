@@ -1,0 +1,46 @@
+# =============================================================
+# เฟส 2.5 — เครื่องมือตัวที่สอง
+#
+# ใช้คู่กับ docker-compose.yml เสมอ:
+#   docker compose -f docker-compose.yml -f docker-compose.qdrant.yml up -d
+#
+# ทำไมต้องมี: ถ้าวัดแค่ pgvector ตัวเดียว คำถามแรกที่จะโดนคือ
+# "นี่มันบั๊กของ pgvector หรือเปล่า" — ดู PROJECT.md ข้อ 5 และ D04
+#
+# Qdrant รันเฉพาะ Q01 ข้อเดียว ไม่ใช่ทั้ง 12 ข้อ
+#
+# ⚠️ ล็อก tag เหมือน pgvector ห้ามใช้ :latest
+#    เหตุผลเดียวกับ D14 — tag ที่ขยับได้ทำให้ผลเทียบกันไม่ได้โดยไม่มีอะไรเตือน
+#
+# runner คือ container เล็กๆ ที่มี python ไว้คุย REST API
+# เพราะ image ของ pgvector ไม่มี curl / python3 / jq เลยสักตัว
+# =============================================================
+services:
+  qdrant:
+    image: qdrant/qdrant:v1.12.4
+    container_name: pgfault-qdrant
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrantdata:/qdrant/storage
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c ':> /dev/tcp/127.0.0.1/6333' || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  runner:
+    image: python:3.12-slim
+    container_name: pgfault-runner
+    depends_on:
+      - qdrant
+    volumes:
+      - ./results:/results
+      - ./sql:/sql:ro
+      - ./scripts:/scripts:ro
+    working_dir: /scripts
+    # อยู่เฉยๆ รอให้เรา exec เข้าไป
+    command: ["sleep", "infinity"]
+
+volumes:
+  qdrantdata:

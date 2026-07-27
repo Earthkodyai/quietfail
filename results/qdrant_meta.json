@@ -1,0 +1,21 @@
+{
+  "qdrant_version": "1.12.4",
+  "points": 100000,
+  "indexed_vectors_count": 100000,
+  "default_config_built_index": true,
+  "hnsw_config": {
+    "m": 16,
+    "ef_construct": 100,
+    "full_scan_threshold": 10000,
+    "max_indexing_threads": 0,
+    "on_disk": false
+  },
+  "indexing_threshold": 1,
+  "upload_seconds": 0.0,
+  "index_build_seconds": 0.0,
+  "search_seconds": {
+    "exact": 4.951,
+    "hnsw": 1.422,
+    "hnsw_ef40": 1.273
+  }
+}

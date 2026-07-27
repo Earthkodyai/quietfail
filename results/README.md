@@ -29,6 +29,7 @@ git add -f results/ชื่อไฟล์.txt
 | `f10_phase1_cycle.txt` | F10 สถิติเก่า → buffers ต่างกัน 323 เท่า 3 รอบติด | 2026-07-27 |
 | `q01_recall_collapse_100k.txt` | **Q01 ตัวชูโรง** — เร็วขึ้น 44.6× recall@10 เหลือ 0.787 | 2026-07-27 |
 | `q01_recall_collapse_500k.txt` | **Q01 ที่ 500k** — HNSW เร็วขึ้น 117× แต่ recall@10 เหลือ 0.589 | 2026-07-27 |
+| `q01_qdrant_cross_engine.txt` | **เฟส 2.5** — Q01 บน Qdrant ด้วยเฉลยชุดเดียวกัน | 2026-07-27 |
 
 ## การตั้งชื่อ
 
