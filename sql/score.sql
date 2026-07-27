@@ -65,6 +65,12 @@ DECLARE
     want_opc  text;
     n_idx_total int;
     n_idx_bad   int;
+    cal_dim   int;
+    tuples_mb int;
+    n_rows    bigint;
+    got_dim   int;
+    mwm_mb    bigint;
+    capacity  bigint;
 BEGIN
     FOR f IN
         SELECT name FROM pg_ls_dir('/groundtruth') AS name
@@ -275,6 +281,53 @@ BEGIN
                 INSERT INTO score_result VALUES (fid, 'NOT_DETECTED',
                     format('vector index ทั้ง %s ตัวบน %s ใช้ opclass %s ถูกต้อง',
                            n_idx_total, rel, want_opc), NULL);
+            END IF;
+
+        -- ---- ตัวตรวจของ I05: ทำนายล่วงหน้าว่า build จะ spill ไหม ----
+        --
+        -- ใช้ค่าความจุที่ **วัดเอง** ไม่ใช่สูตรจากเอกสาร (กฎเหล็กข้อ 2)
+        --   28,359 tuples / 64MB  = 443 tuples/MB
+        --   58,626 tuples / 128MB = 458 tuples/MB
+        -- ใช้ค่าต่ำ 443 เพื่อให้เตือนเร็วกว่าจริงเล็กน้อย
+        --
+        -- ⚠️ ค่านี้ calibrate ที่ **384 มิติเท่านั้น**
+        --    มิติอื่นต้องวัดใหม่ — ถ้าเจอมิติอื่นต้องตอบว่า "ตรวจไม่ได้" ไม่ใช่เดา
+        ELSIF fid = 'I05' THEN
+            rel        := exp ->> 'target_table';
+            cal_dim    := (exp ->> 'calibrated_dim')::int;
+            tuples_mb  := (exp ->> 'tuples_per_mb')::int;
+
+            IF to_regclass(rel) IS NULL THEN
+                INSERT INTO score_result VALUES (fid, 'CANNOT_CHECK',
+                    format('หาตาราง %L ไม่เจอ', rel), NULL);
+                CONTINUE;
+            END IF;
+
+            EXECUTE format('SELECT count(*), max(vector_dims(%I)) FROM %I',
+                           exp ->> 'vector_column', rel)
+            INTO n_rows, got_dim;
+
+            -- กฎเหล็กข้อ 10: มิติไม่ตรงกับที่ calibrate ไว้ = ตรวจไม่ได้ ห้ามเดา
+            IF got_dim IS DISTINCT FROM cal_dim THEN
+                INSERT INTO score_result VALUES (fid, 'CANNOT_CHECK',
+                    format('ตาราง %s มิติ %s แต่ค่าความจุ calibrate ไว้ที่ %s มิติเท่านั้น '
+                           '— ต้องวัดใหม่ก่อนถึงจะตรวจได้', rel, got_dim, cal_dim), NULL);
+                CONTINUE;
+            END IF;
+
+            mwm_mb   := pg_size_bytes(current_setting('maintenance_work_mem')) / 1024 / 1024;
+            capacity := mwm_mb * tuples_mb;
+
+            IF n_rows > capacity THEN
+                INSERT INTO score_result VALUES (fid, 'DETECTED',
+                    format('maintenance_work_mem = %s MB รับได้ประมาณ %s tuples '
+                           'แต่ตารางมี %s แถว → build จะ spill และช้าลงราว 3 เท่า',
+                           mwm_mb, capacity, n_rows),
+                    doc ->> 'correct_diagnosis');
+            ELSE
+                INSERT INTO score_result VALUES (fid, 'NOT_DETECTED',
+                    format('maintenance_work_mem = %s MB รับได้ประมาณ %s tuples · ตารางมี %s แถว',
+                           mwm_mb, capacity, n_rows), NULL);
             END IF;
 
         ELSE

@@ -1,0 +1,64 @@
+{
+  "fault_id": "I05",
+  "group": "C_warned_but_unread",
+  "name": "hnsw_graph_exceeds_maintenance_work_mem",
+
+  "true_cause": "maintenance_work_mem_too_small_for_graph",
+  "true_cause_th": "กราฟ HNSW ใหญ่เกิน maintenance_work_mem → pgvector เปลี่ยนไป build แบบใช้ดิสก์ ซึ่งช้ากว่ามาก",
+
+  "surface_symptom": "CREATE INDEX ใช้เวลานานผิดปกติ · migration ที่ควรเสร็จในนาทีกลายเป็นหลายนาที",
+
+  "is_silent": false,
+  "is_silent_note_th": "ข้อนี้ **ไม่เงียบ** — pgvector พิมพ์ NOTICE บอกตรงๆ พร้อมจำนวน tuple ที่กราฟเริ่มไม่พอดี แต่ NOTICE ออกทาง stderr และแทบไม่มีใครอ่าน log ของ migration ที่ 'ผ่าน' → เป็น 'เตือนแล้วไม่มีใครอ่าน' ไม่ใช่ 'ไม่เตือน' · คนละหมวดกับ Q01/I01 ที่เงียบสนิท",
+
+  "notice_text": "NOTICE:  hnsw graph no longer fits into maintenance_work_mem after <N> tuples",
+
+  "misleading_fixes": [
+    "ลด m หรือ ef_construction (ทำให้ recall แย่ลงด้วย)",
+    "แบ่ง build เป็นก้อน",
+    "สรุปว่า HNSW ช้าเกินใช้จริง แล้วย้ายไป IVFFlat",
+    "เพิ่ม maintenance_work_mem สูงเกินไปจนชน /dev/shm แล้ว build ล้มเหลวทั้งหมด (ดู E28)"
+  ],
+
+  "correct_diagnosis": "อ่าน NOTICE จาก stderr ตอน CREATE INDEX · หรือคำนวณล่วงหน้าจากจำนวนแถวเทียบกับ maintenance_work_mem",
+
+  "correct_fix_th": "เพิ่ม maintenance_work_mem ให้พอกับขนาดกราฟ **แต่ไม่เกินขนาด /dev/shm ของคอนเทนเนอร์** ไม่งั้น parallel build จะล้มเหลว (E28)",
+
+  "evidence_query": "SELECT pg_size_bytes(current_setting('maintenance_work_mem'))/1024/1024 AS mwm_mb, (SELECT count(*) FROM qf_corpus) AS rows",
+
+  "evidence_expectation": {
+    "target_table": "qf_corpus",
+    "vector_column": "embedding",
+    "calibrated_dim": 384,
+    "tuples_per_mb": 443,
+    "detect_when": "จำนวนแถว > maintenance_work_mem(MB) x tuples_per_mb → build จะ spill"
+  },
+
+  "measured_2026_07_27": {
+    "corpus_rows": 100000,
+    "dim": 384,
+    "runs": 3,
+    "by_mwm": {
+      "64MB":  {"notice": true,  "notice_after_tuples": [28353, 28360, 28363], "build_ms": [60701.3, 69990.2, 72669.2], "slower_than_best": [2.97, 3.39, 3.50]},
+      "128MB": {"notice": true,  "notice_after_tuples": [58616, 58630, 58632], "build_ms": [50241.8, 56686.4, 56882.0], "slower_than_best": [2.46, 2.74, 2.74]},
+      "256MB": {"notice": false, "notice_after_tuples": [],                    "build_ms": [20406.8, 20668.3, 20736.4], "slower_than_best": [1.00, 1.00, 1.00]}
+    },
+    "index_size_all_builds": "195 MB",
+    "key_observation_th": "จำนวน tuple ที่ NOTICE บอก **นิ่งระดับ 0.03%** ข้าม 3 รอบ (28353-28363 และ 58616-58632) ขณะที่เวลา build แกว่ง 20% → เป็นค่าเชิงโครงสร้าง ควรใช้ตัวนี้เป็นตัวชี้วัด ไม่ใช่เวลา (กฎเหล็กข้อ 7)",
+    "capacity_th": "28359/64MB = 443 tuples/MB · 58626/128MB = 458 tuples/MB → เกือบเป็นเส้นตรง (หน่วยความจำ 2 เท่า รับได้ 2.07 เท่า) · ใช้ค่าต่ำ 443 ในตัวตรวจเพื่อให้เตือนเร็วกว่าจริงเล็กน้อย",
+    "cost_shape_th": "index ที่ได้เท่ากันเป๊ะ 195 MB ทั้ง 9 build → fault นี้เสีย **เวลา** ไม่ใช่คุณภาพ ต่างจาก Q01 (เสีย recall) และ I01 (เสียทรัพยากรเปล่า)"
+  },
+
+  "reproduce": "faults/i05_maintenance_work_mem.sh",
+  "config_profile": "fragile",
+
+  "verified_on": {
+    "postgres_version": "17.10 (Debian 17.10-1.pgdg12+1)",
+    "pgvector_version": "0.8.5",
+    "image_tag": "pgvector/pgvector:0.8.5-pg17",
+    "config_profile": "fragile",
+    "date": "2026-07-27",
+    "consecutive_successful_runs": 3,
+    "note": "assertion ผ่าน 3/3 ทุกรอบ · NOTICE ปรากฏที่ 64MB และ 128MB · หายที่ 256MB"
+  }
+}
