@@ -45,6 +45,14 @@
     "config_profile": "fragile",
     "date": "2026-07-27",
     "corpus_rows": 100000,
-    "note": "รอผล 3 รอบติด — เติมหลังรันจริง"
+    "consecutive_successful_runs": 3,
+    "scorer_states_verified": "NOT_DETECTED / DETECTED / NOT_DETECTED — 3 รอบติด",
+    "select_ms_during_build": [48, 40, 122],
+    "insert_during_build": "BLOCKED ทุกรอบ",
+    "insert_ms_during_concurrently": [37, 67, 50],
+    "share_locks_granted": 3,
+    "corpus_rows_unchanged": true,
+    "cleanup_note_th": "ต้อง pg_cancel_backend เฉพาะ leader (backend_type = client backend) · ฆ่า parallel worker ทำให้ postmaster รีเซ็ตทั้งคลัสเตอร์ (E29)",
+    "note": "การอ่านไม่ถูกบล็อกเลยทั้ง 3 รอบ — นี่คือเหตุผลที่ staging ที่ทดสอบด้วย read traffic ไม่เห็นอะไรผิด"
   }
 }

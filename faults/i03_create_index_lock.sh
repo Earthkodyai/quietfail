@@ -43,9 +43,16 @@ cleanup() {
   echo
   echo "--- เก็บกวาด ---"
   # บทเรียน E16/E23: ฆ่า client ไม่พอ ต้องหยุดที่ฝั่ง server
-  admin -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity
+  #
+  # ⚠️ แต่ต้องเล็งเฉพาะ leader (backend_type = 'client backend')
+  #    ห้ามแตะ parallel worker — ฆ่า worker ทำให้ leader ตายด้วย exit code 2
+  #    แล้ว postmaster ถือว่า crash แล้วรีเซ็ตทั้งคลัสเตอร์ (ยืนยันจาก log ดู E29)
+  #    และใช้ cancel แทน terminate เพราะยกเลิก build ทั้งชุดได้สะอาดกว่า
+  admin -c "SELECT pg_cancel_backend(pid) FROM pg_stat_activity
             WHERE datname = current_database() AND pid <> pg_backend_pid()
+              AND backend_type = 'client backend'
               AND query LIKE 'CREATE INDEX%qf_i03_idx%'" >/dev/null 2>&1
+  sleep 2
   [[ -n "$BUILD_PID" ]] && kill "$BUILD_PID" 2>/dev/null
   wait 2>/dev/null
   admin -c "DROP INDEX IF EXISTS qf_i03_idx" >/dev/null 2>&1

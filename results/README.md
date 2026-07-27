@@ -32,6 +32,7 @@ git add -f results/ชื่อไฟล์.txt
 | `q01_qdrant_cross_engine.txt` | **เฟส 2.5** — Q01 บน Qdrant ด้วยเฉลยชุดเดียวกัน | 2026-07-27 |
 | `i01_phase3_cycle.txt` | **I01** — opclass ผิด จ่าย 195 MB ได้ศูนย์ · ตัวตรวจ static 3 สถานะ | 2026-07-27 |
 | `i05_phase3_cycle.txt` | **I05** — build ช้าลง 3 เท่า · NOTICE นิ่ง 0.03% · ตัวตรวจทำนายจุด spill ได้ | 2026-07-27 |
+| `i03_phase3_cycle.txt` | **I03** — CREATE INDEX บล็อกการเขียน แต่การอ่านปกติ · ตัวนับพลิก 3 สถานะ | 2026-07-27 |
 
 ## การตั้งชื่อ
 

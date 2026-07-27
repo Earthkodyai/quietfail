@@ -498,7 +498,36 @@ ORDER BY l.granted DESC;
 > ไม่งั้น `qf_corpus` ที่ล็อกไว้จะเปลี่ยนจำนวนแถว แล้ว fingerprint กับเฉลยใช้ไม่ได้
 > สคริปต์ตรวจจำนวนแถวก่อน/หลังทุกครั้ง
 
-**สถานะ:** กำลังทำ
+**สถานะ: ✅ ครบวงจรแล้ว (2026-07-27)**
+
+| | |
+|---|---|
+| ตัวฉีด | `faults/i03_create_index_lock.sh` + `sql/i03_build_index.sql` |
+| ตัวพิสูจน์ตัวนับ | `faults/i03_scorer_states.sh` |
+| ground truth | `groundtruth/i03.json` |
+| ตัวนับคะแนน | `sql/score.sql` — อ่าน **สถานะสดของ `pg_locks`** |
+| รันจริง | **3 รอบติด assertion ผ่าน 4/4 · ตัวนับพิสูจน์ 3 สถานะ อีก 3 รอบติด** |
+| หลักฐาน | `results/i03_phase3_cycle.txt` |
+
+**ผลที่วัดได้ 3 รอบ**
+
+| | ระหว่าง `CREATE INDEX` ธรรมดา | ระหว่าง `CONCURRENTLY` |
+|---|---|---|
+| SELECT | 48 · 40 · 122 ms — **ปกติ** | 35 · 64 · 46 ms |
+| INSERT | **BLOCKED ทุกรอบ** | 37 · 67 · 50 ms |
+| `pg_locks` | `ShareLock` granted 3 แถว (leader + 2 worker) | — |
+| corpus | คงที่ 100,000 ทุกรอบ | คงที่ |
+
+**ตัวนับคะแนนพลิกครบ 3 สถานะ 3 รอบติด**
+```
+ไม่มี build ค้าง        -> NOT_DETECTED
+build ค้าง + เขียนรออยู่ -> DETECTED (ShareLock 3 · เขียนรอ 1)
+หลังเก็บกวาด            -> NOT_DETECTED
+```
+
+> ⚠️ **เก็บกวาดต้องเล็งเฉพาะ leader** (`backend_type = 'client backend'`)
+> และใช้ `pg_cancel_backend()` ไม่ใช่ `pg_terminate_backend()`
+> ฆ่า parallel worker ตรงๆ ทำให้ **postmaster รีเซ็ตทั้งคลัสเตอร์** — ดู **E29**
 
 ---
 

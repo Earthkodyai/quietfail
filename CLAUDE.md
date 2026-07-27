@@ -159,8 +159,14 @@ vector index: ไม่มีค้าง
 เจอมาสองรอบ (E19 ตัวเฝ้าดู F03 · E26 harness ของ I01)
 
 **3. ฆ่า process ฝั่ง client ไม่ได้หยุดงานฝั่ง server**
-ต้อง `pg_terminate_backend()` เสมอ — `DO` block เคยวิ่งต่อ 20 นาทีหลังฆ่า client
+ต้องหยุดที่ฝั่ง server เสมอ — `DO` block เคยวิ่งต่อ 20 นาทีหลังฆ่า client
 แล้วบล็อก `TRUNCATE` จนงานถัดไปได้ corpus ว่าง (E16, E23)
+
+**3ก. 🔴 แต่ห้ามฆ่า parallel worker เด็ดขาด**
+ต้องเล็งเฉพาะ leader (`backend_type = 'client backend'`)
+และใช้ **`pg_cancel_backend()`** ไม่ใช่ `pg_terminate_backend()`
+ฆ่า worker → leader ตาย exit 2 → **postmaster รีเซ็ตทั้งคลัสเตอร์** (E29)
+คำสั่งถัดไปจะล้มด้วย `system is in recovery` ซึ่งไม่ชี้กลับมาที่ต้นเหตุเลย
 
 **4. รอบที่ตายกลางคันทิ้ง state ค้าง** → ใส่ `DROP INDEX IF EXISTS` / `DROP TABLE IF EXISTS`
 ที่**ต้น**สคริปต์เสมอ ไม่งั้นรอบถัดไปตายด้วย error ที่ชี้ไปคนละเรื่อง

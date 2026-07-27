@@ -555,6 +555,57 @@ F03b : ERROR:  canceling statement due to statement timeout
 
 ---
 
+## E29 — 🔴 ฆ่า parallel worker แล้ว PostgreSQL รีเซ็ตทั้งคลัสเตอร์ (2026-07-27)
+
+ตัวเก็บกวาดของ I03 สั่ง `pg_terminate_backend()` ใส่ทุก session ที่ query ตรงกับ
+`CREATE INDEX%qf_i03_idx%` ซึ่งรวม **parallel worker** ของ build ไปด้วย
+
+**log ยืนยันลำดับเหตุการณ์ครบ ไม่ต้องเดา:**
+```
+13:27:26.762 [1905] FATAL: terminating background worker "parallel worker" due to administrator command
+13:27:26.766 [1]    LOG: background worker "parallel worker" (PID 1904) exited with exit code 1
+13:27:26.788 [1]    LOG: server process (PID 1902) exited with exit code 2
+13:27:26.788 [1]    LOG: terminating any other active server processes
+13:27:26.791 [1]    LOG: all server processes terminated; reinitializing
+```
+
+ฆ่า worker → leader (1902) ตายด้วย exit code 2 ซึ่งเป็นการตายผิดปกติ
+→ postmaster ถือว่า crash → **ตัดทุก connection แล้วเข้า recovery ทั้งคลัสเตอร์**
+
+**อาการที่เห็นชี้ไปคนละเรื่องอีกแล้ว:**
+```
+FATAL: the database system is not yet accepting connections
+DETAIL: Consistent recovery state has not been yet reached.
+```
+คำสั่งถัดไปทุกตัวล้มเหลวด้วยข้อความที่ไม่มีอะไรเกี่ยวกับ "คุณฆ่า worker"
+ถ้าไม่ไปอ่าน log จะไล่หาสาเหตุผิดทางแน่นอน
+
+**แก้ 2 ชั้น**
+1. เล็งเฉพาะ **leader** — `backend_type = 'client backend'` ห้ามแตะ `'parallel worker'`
+2. ใช้ **`pg_cancel_backend()`** แทน `pg_terminate_backend()` —
+   cancel ยกเลิก query ทั้งชุดรวม worker อย่างสะอาด ส่วน terminate ฆ่า process
+
+ยืนยันหลังแก้: รันตัวพิสูจน์ 3 สถานะ 3 รอบติด DB ไม่ restart เลยสักครั้ง
+
+### ทำไมข้อนี้สำคัญเกินกว่าจะเป็นบั๊กของ harness
+
+**ข้อมูลไม่หายเพราะโชคดี** — corpus ยังครบ 100,000 แถวหลัง recovery
+เพราะทุกอย่างที่เขียนไปแล้ว commit ครบ ถ้ามี transaction ค้างอยู่ตอนนั้น
+งานทั้งวันอาจหายไป
+
+**และมันคือความเสี่ยงจริงของเครื่องมือ fault injection ทุกตัว**
+เครื่องมือที่ฉีด fault ด้วยการฆ่า process **ทำให้ระบบทั้งระบบล่มได้**
+โดยที่ error ที่เห็นไม่ได้ชี้กลับมาที่เครื่องมือเลย
+→ ต้องเขียนใน README ส่วนข้อจำกัด: QuietFail แตะ backend ของ PostgreSQL
+**ห้ามรันบน production เด็ดขาด** — ไม่ใช่แค่เพราะ config เปราะ แต่เพราะตัวมันเองอันตราย
+
+**เชื่อมกับ E28:** ทั้งสองข้อคือ "ตัวแก้/ตัวเก็บกวาดมี failure mode ของตัวเอง"
+E28 = เพิ่ม `maintenance_work_mem` มากไปแล้ว build ล้ม
+E29 = เก็บกวาดแรงไปแล้วคลัสเตอร์ล่ม
+ทั้งคู่ error ชี้ไปคนละที่กับต้นเหตุ
+
+---
+
 ## E28 — ทางแก้ของ I05 มี failure mode ของตัวเอง และ error ชี้ผิดที่ (2026-07-27)
 
 ตอนทำ I05 ตั้งใจไล่ `maintenance_work_mem` ถึง 1GB เพื่อเป็นกลุ่มควบคุม
