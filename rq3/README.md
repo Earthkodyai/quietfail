@@ -60,8 +60,8 @@ P01 ไม่มีกับดัก · P10 เป็น filter 40% ซึ่�
 **วิธีเก็บคำตอบ**
 
 1. เปิดแชทใหม่กับโมเดลที่จะทดสอบ (ห้ามให้เห็น repo นี้)
-2. วางสคีมาจาก `prompts.json` ช่อง `_schema_shown_to_model`
-3. ถามทีละข้อจากช่อง `th` — **ห้ามใบ้เรื่อง index หรือ tuning**
+2. เปิด **[`prompts_copypaste.md`](prompts_copypaste.md)** — วางบล็อกสคีมาก่อน แล้วถามทีละข้อ
+3. **ห้ามใบ้เรื่อง index หรือ tuning** และห้ามถามย้ำว่า "แน่ใจนะ"
 4. เก็บ SQL ที่ได้เป็น `rq3/answers/<ชื่อโมเดล>/P01.sql` ... `P10.sql`
 5. รัน `python scripts/rq3_score.py rq3/answers/<ชื่อโมเดล>`
 
