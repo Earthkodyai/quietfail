@@ -1,7 +1,7 @@
 ==============================================================================
 QuietFail — ตรวจความพร้อมของ repo
-รันเมื่อ : 2026-07-28 18:48:48
-commit  : ea7c11c  slides: thesis proposal defense deck, one offline fi
+รันเมื่อ : 2026-07-28 19:00:51
+commit  : ba81f21  slides: rewrite for a general audience, data descrip
 baseline: scripts/audit_baseline.json (_updated = 2026-07-27)
 ==============================================================================
 
