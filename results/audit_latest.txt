@@ -1,7 +1,7 @@
 ==============================================================================
 QuietFail — ตรวจความพร้อมของ repo
-รันเมื่อ : 2026-07-28 16:21:56
-commit  : 1447a48  RQ3: quantify how much the answer-block ordering cha
+รันเมื่อ : 2026-07-28 16:29:55
+commit  : 868f0eb  RQ3: the block ordering was the model's, not the col
 baseline: scripts/audit_baseline.json (_updated = 2026-07-27)
 ==============================================================================
 
