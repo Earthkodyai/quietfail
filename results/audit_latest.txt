@@ -1,7 +1,7 @@
 ==============================================================================
 QuietFail — ตรวจความพร้อมของ repo
-รันเมื่อ : 2026-07-28 14:29:27
-commit  : c5cad9e  restructure REPORT.md to thesis form: the tool's own
+รันเมื่อ : 2026-07-28 14:35:53
+commit  : e342497  README: bring the front door up to date with the fin
 baseline: scripts/audit_baseline.json (_updated = 2026-07-27)
 ==============================================================================
 
