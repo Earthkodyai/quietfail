@@ -1,0 +1,124 @@
+{
+  "_comment_th": "โจทย์ RQ3 — ต้องไม่ใบ้เรื่อง index/tuning เลย ถ้าโมเดลเดาได้ว่ากำลังถูกทดสอบเรื่อง index มันจะระวังเป็นพิเศษแล้ววัดไม่ตรง",
+  "_schema_shown_to_model": "CREATE TABLE documents (id int PRIMARY KEY, category text NOT NULL, title text NOT NULL, embedding vector(384));\nCREATE TABLE search_queries (id int PRIMARY KEY, embedding vector(384));\n-- documents มี 100,000 แถว · category: general 44% · product 20% · support 20% · finance 10% · legal 5% · archive 1%",
+  "_how_scored_th": "เอา SQL ที่ได้ไปรันจริงบนฐานข้อมูล แล้ววัดผลเทียบกับ exact search — ไม่ได้ดูรูปแบบ SQL (กฎเหล็กข้อ 6)",
+  "prompts": [
+    {
+      "id": "P01",
+      "th": "เขียน SQL หา 10 เอกสารที่เนื้อหาใกล้เคียงกับ search_queries id = 1 มากที่สุด",
+      "traps": [],
+      "role": "กลุ่มควบคุม — เกณฑ์คือ **ได้ครบ 10 แถว** เท่านั้น ไม่วัด recall เพราะ Q01 พิสูจน์แล้วว่า HNSW ค่าเริ่มต้นไม่มีทางได้ recall 1.0 ต่อให้เขียน SQL ถูกทุกอย่าง · ถ้าข้อนี้ตกแปลว่าโจทย์หรือตัวให้คะแนนมีปัญหา",
+      "check": "rows_and_recall",
+      "expect_rows": 10,
+      "min_recall": 0.0,
+      "note_recall_th": "รายงาน recall ไว้เป็นข้อมูล ไม่ใช่เกณฑ์",
+      "note_th": "เกณฑ์คือความครบของแถว · recall รายงานเป็นข้อมูล"
+    },
+    {
+      "id": "P02",
+      "th": "เขียน SQL หา 10 เอกสารในหมวด archive ที่ใกล้เคียงกับ search_queries id = 1 มากที่สุด",
+      "traps": [
+        "Q03"
+      ],
+      "role": "filter 1% — Q03 วัดแล้วว่าช่วงนี้คืนศูนย์แถวถ้าใช้ค่าเริ่มต้น",
+      "check": "rows_and_recall",
+      "expect_rows": 10,
+      "min_recall": 0.0,
+      "note_th": "เกณฑ์คือความครบของแถว · recall รายงานเป็นข้อมูล"
+    },
+    {
+      "id": "P03",
+      "th": "เขียน SQL หา 100 เอกสารที่ใกล้เคียงกับ search_queries id = 1 มากที่สุด",
+      "traps": [
+        "Q06"
+      ],
+      "role": "k = 100 > ef_search 40 — Q06 วัดแล้วว่าได้คืนแค่ 40 แถว",
+      "check": "rows_and_recall",
+      "expect_rows": 100,
+      "min_recall": 0.0,
+      "note_th": "เกณฑ์คือความครบของแถว · recall รายงานเป็นข้อมูล"
+    },
+    {
+      "id": "P04",
+      "th": "เขียน SQL หา 20 เอกสารในหมวด legal ที่ใกล้เคียงกับ search_queries id = 1 มากที่สุด",
+      "traps": [
+        "Q03"
+      ],
+      "role": "filter 5% — ช่วงที่ Q03 วัดได้ 1 จาก 10",
+      "check": "rows_and_recall",
+      "expect_rows": 20,
+      "min_recall": 0.0,
+      "note_th": "เกณฑ์คือความครบของแถว · recall รายงานเป็นข้อมูล"
+    },
+    {
+      "id": "P05",
+      "th": "เขียน SQL หาเอกสารทั้งหมดที่ระยะ cosine ห่างจาก search_queries id = 1 น้อยกว่า 0.5 โดยเรียงจากใกล้ที่สุด และเอามาแค่ 10 อันดับแรก",
+      "traps": [
+        "Q02"
+      ],
+      "role": "โจทย์พูดถึง threshold ก่อน — Q02 วัดแล้วว่าเขียนเป็น WHERE อย่างเดียวจะไม่ใช้ index",
+      "check": "rows_and_recall",
+      "expect_rows": 10,
+      "min_recall": 0.9,
+      "note_th": "ข้อเดียวที่ใช้ recall เป็นเกณฑ์ — กับดัก Q02 คืน 10 แถวครบแต่ผิดตัวทั้งหมด (recall 0.00)"
+    },
+    {
+      "id": "P06",
+      "th": "การค้นหาบนตาราง documents ช้ามาก ช่วยเขียน SQL ที่ทำให้เร็วขึ้นหน่อย ระบบใช้ cosine distance",
+      "traps": [
+        "I01",
+        "Q04"
+      ],
+      "role": "ให้สร้าง index เอง — I01 ดูว่า opclass ตรง operator ไหม · Q04 ดูว่าตั้ง probes/ef หรือปล่อยค่าเริ่มต้น",
+      "check": "index_created",
+      "expect_opclass": "vector_cosine_ops"
+    },
+    {
+      "id": "P07",
+      "th": "เขียน SQL หา 50 เอกสารในหมวด finance ที่ใกล้เคียงกับ search_queries id = 1 มากที่สุด",
+      "traps": [
+        "Q03",
+        "Q06"
+      ],
+      "role": "ทั้ง filter 10% และ k=50 > ef_search 40 พร้อมกัน",
+      "check": "rows_and_recall",
+      "expect_rows": 50,
+      "min_recall": 0.0,
+      "note_th": "เกณฑ์คือความครบของแถว · recall รายงานเป็นข้อมูล"
+    },
+    {
+      "id": "P08",
+      "th": "เขียน SQL หา 10 เอกสารใกล้เคียงกับ search_queries id = 1 โดย**ต้องได้ครบ 10 แถวเสมอ** ไม่ว่าจะกรองด้วยหมวดไหนก็ตาม ลองใช้หมวด archive เป็นตัวอย่าง",
+      "traps": [
+        "Q03"
+      ],
+      "role": "โจทย์บอกเงื่อนไข 'ต้องครบ' ตรงๆ — วัดว่าโมเดลรู้จัก iterative_scan + work_mem ไหม",
+      "check": "rows_and_recall",
+      "expect_rows": 10,
+      "min_recall": 0.0,
+      "note_th": "เกณฑ์คือความครบของแถว · recall รายงานเป็นข้อมูล"
+    },
+    {
+      "id": "P09",
+      "th": "เขียน SQL ตรวจว่าตาราง documents มีแถวไหนที่ embedding ใช้งานไม่ได้บ้าง",
+      "traps": [
+        "V07"
+      ],
+      "role": "V07 — ต้องจับทั้ง NULL และ zero vector · จับแค่ NULL ถือว่าตก",
+      "check": "null_zero_guard"
+    },
+    {
+      "id": "P10",
+      "th": "เขียน SQL หา 10 เอกสารที่ใกล้เคียงกับ search_queries id = 1 มากที่สุด แต่เอาเฉพาะหมวด support และ product",
+      "traps": [
+        "Q03"
+      ],
+      "role": "filter 40% — ช่วงที่ Q03 วัดแล้วว่ายังปลอดภัย · ใช้ดูว่าตัวให้คะแนนไม่ตัดสินผิดฝั่ง",
+      "check": "rows_and_recall",
+      "expect_rows": 10,
+      "min_recall": 0.0,
+      "note_th": "เกณฑ์คือความครบของแถว · recall รายงานเป็นข้อมูล"
+    }
+  ],
+  "_criterion_th": "เกณฑ์หลักคือ **ความครบของแถว** — ขอ k ได้ k ไหม เหมือนที่ตัวตรวจ Q03/Q06/L02 ใช้ เพราะไม่ต้องรู้เฉลยและตัดสินไม่ผิดฝั่ง · recall รายงานเป็นข้อมูล ไม่ใช่เกณฑ์ ยกเว้น P05 ที่กับดักคืนแถวครบแต่ผิดตัว · เหตุผลที่ไม่ใช้ recall เป็นเกณฑ์ทั่วไป: วัดแล้วพบว่าคำตอบที่จูนเต็มที่ (ef_search=400 + iterative_scan + work_mem 16MB) ยังได้แค่ 0.90 ที่ filter 1% → ตั้ง 1.00 จะตีคำตอบที่ถูกว่าผิด"
+}

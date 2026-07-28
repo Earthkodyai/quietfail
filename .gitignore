@@ -28,3 +28,6 @@ desktop.ini
 # Python bytecode ของ scripts/audit.py
 __pycache__/
 *.pyc
+
+# ไฟล์ชั่วคราวของ rq3_score.py
+sql/_rq3_candidate.sql
