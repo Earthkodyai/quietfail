@@ -102,21 +102,36 @@ def is_harness_error(out):
     return any(m in out for m in HARNESS_ERR)
 
 
+def _strip_comments(stmt):
+    return "\n".join(l for l in stmt.splitlines()
+                     if l.strip() and not l.strip().startswith("--")).strip()
+
+
 def split_prelude(sql_text):
     """
-    แยกคำสั่งนำหน้า (SET / CREATE INDEX / ฯลฯ) ออกจาก SELECT ตัวสุดท้าย
+    แยกคำสั่งนำหน้า ออกจาก **query ที่เป็นคำตอบ**
 
-    จำเป็นเพราะโมเดลมักตอบเป็นหลายคำสั่ง เช่น
-        SET hnsw.ef_search = 400;
-        SELECT ...
-    รุ่นแรกยัดทั้งก้อนใส่ `CREATE TEMP TABLE ... AS` แล้วพัง
-    → ตีคำตอบที่ **ถูกต้อง** ว่าติดกับดัก ซึ่งกลับหัวจากความจริง
+    กติกา: query ที่ให้คะแนนคือ `SELECT`/`WITH` **ตัวแรก**
+           ทุกอย่างก่อนหน้านั้นคือ prelude (SET / CREATE INDEX / ANALYZE)
+           ทุกอย่างหลังจากนั้นทิ้ง
+
+    ทำไมต้องเป็น "ตัวแรก" ไม่ใช่ "ตัวสุดท้าย":
+      คำตอบจริงจากโมเดลวาง `CREATE INDEX` ไว้ **หลัง** SELECT บ่อยมาก
+      (P07 · P10 ของ opus5-high) รุ่นแรกที่เอาคำสั่งสุดท้ายจึงไปให้คะแนน
+      `CREATE INDEX` แทน query แล้วรายงานว่าติดกับดัก
+      และบางข้อมีหลาย SELECT (ทางเลือก A/B) — ตรงกับกติกาเก็บคำตอบที่เขียนไว้เองว่า
+      **เอาอันที่มันแนะนำเป็นหลัก** ไม่ใช่อันที่ดีที่สุด
     """
-    parts = [p.strip() for p in sql_text.split(";")]
-    parts = [p for p in parts if p and not all(
-        l.strip().startswith("--") or not l.strip() for l in p.splitlines())]
+    parts = [_strip_comments(p) for p in sql_text.split(";")]
+    parts = [p for p in parts if p]
     if not parts:
         return "", ""
+    for i, p in enumerate(parts):
+        head = p.lstrip().upper()
+        if head.startswith("SELECT") or head.startswith("WITH"):
+            prelude = ";\n".join(parts[:i]) + (";\n" if i else "")
+            return prelude, p
+    # ไม่มี SELECT เลย — คืนคำสั่งสุดท้ายไว้ให้ไปพังอย่างเปิดเผย ดีกว่าเงียบ
     return ";\n".join(parts[:-1]) + (";\n" if len(parts) > 1 else ""), parts[-1]
 
 

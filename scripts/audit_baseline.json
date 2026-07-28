@@ -150,11 +150,11 @@
     },
     "5": {
       "name": "ชุดโจทย์ AI ตอบ RQ3",
-      "done": false,
+      "done": true,
       "artifacts": [
         "results/rq3_ai_traps.txt"
       ],
-      "note_th": "ถ้าไฟล์นี้โผล่มา แปลว่าทำ RQ3 แล้ว ต้องมาติ๊ก done เป็น true และแก้ตารางใน CLAUDE.md"
+      "note_th": "ทำแล้ว 2026-07-28 · Opus 5 (high) · ติดกับดัก 5 จาก 10 (เงียบ 4)"
     }
   }
 }
