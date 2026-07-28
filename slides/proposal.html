@@ -6,8 +6,8 @@
 <title>QuietFail — สอบเสนอหัวข้อวิทยานิพนธ์</title>
 <style>
   /* ============================================================
-     QuietFail — สไลด์สอบเสนอหัวข้อวิทยานิพนธ์
-     ไฟล์เดียว เปิด offline ได้ · ← → เปลี่ยนหน้า · Ctrl+P พิมพ์แจก
+     QuietFail — สไลด์สอบเสนอหัวข้อวิทยานิพนธ์ (ฉบับอ่านง่าย)
+     ไฟล์เดียว เปิด offline ได้ · ← → หรือคลิก เปลี่ยนหน้า · Ctrl+P พิมพ์แจก
      ทุกตัวเลขมาจาก results/ ของ repo — ห้ามแก้ตัวเลขในไฟล์นี้เดี่ยวๆ
      ============================================================ */
   :root{
@@ -25,59 +25,66 @@
   #deck{position:relative;height:100%;width:100%}
   .slide{
     position:absolute; inset:0; display:none;
-    padding:5.5vh 7vw 9vh;
-    flex-direction:column; justify-content:center; gap:2.6vh;
+    padding:5vh 7vw 8.5vh;
+    flex-direction:column; justify-content:center; gap:2.2vh;
   }
   .slide.active{display:flex}
   .kicker{
-    color:var(--accent); font-weight:700; letter-spacing:.06em;
-    font-size:clamp(13px,1.6vh,18px); text-transform:uppercase;
+    color:var(--accent); font-weight:700; letter-spacing:.05em;
+    font-size:clamp(13px,1.6vh,18px);
   }
-  h1{font-size:clamp(30px,6.4vh,64px); line-height:1.18; font-weight:800}
-  h2{font-size:clamp(24px,4.6vh,46px); line-height:1.22; font-weight:800}
-  p,li{font-size:clamp(16px,2.5vh,25px); line-height:1.55; color:var(--ink)}
+  h1{font-size:clamp(30px,6.2vh,62px); line-height:1.18; font-weight:800}
+  h2{font-size:clamp(23px,4.3vh,44px); line-height:1.25; font-weight:800}
+  p,li{font-size:clamp(16px,2.45vh,24px); line-height:1.62}
   .muted{color:var(--muted)}
   .hot{color:var(--hot); font-weight:800}
   .ok{color:var(--accent); font-weight:800}
   strong{font-weight:800}
-  code,pre{
-    font-family:"Cascadia Code",Consolas,monospace;
-    background:var(--code); border-radius:6px;
-  }
+  code,pre{font-family:"Cascadia Code",Consolas,monospace; background:var(--code); border-radius:6px}
   code{padding:.1em .35em; font-size:.92em}
-  pre{padding:1.6vh 1.4vw; font-size:clamp(13px,2.1vh,21px); line-height:1.5; overflow:auto}
+  pre{padding:1.5vh 1.4vw; font-size:clamp(13px,2vh,20px); line-height:1.5; overflow:auto}
   table{border-collapse:collapse; width:100%; background:var(--card);
         border-radius:10px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,.06)}
-  th,td{padding:1.15vh 1.1vw; font-size:clamp(14px,2.2vh,22px);
+  th,td{padding:1.05vh 1.1vw; font-size:clamp(14px,2.15vh,21px);
         text-align:left; border-bottom:1px solid var(--line)}
-  th{background:var(--accent-soft); color:var(--ink); font-weight:800}
+  th{background:var(--accent-soft); font-weight:800}
   tr:last-child td{border-bottom:none}
   td.n,th.n{text-align:right; font-variant-numeric:tabular-nums}
-  ul{padding-left:1.2em} li{margin:.45vh 0}
-  .cols{display:grid; gap:2vw} .c2{grid-template-columns:1fr 1fr}
-  .card{background:var(--card); border-radius:14px; padding:2.4vh 1.6vw;
+  ul{padding-left:1.25em} li{margin:.5vh 0}
+  .cols{display:grid; gap:1.8vw} .c2{grid-template-columns:1fr 1fr}
+  .card{background:var(--card); border-radius:14px; padding:2.2vh 1.6vw;
         box-shadow:0 1px 4px rgba(0,0,0,.07)}
-  .card h3{font-size:clamp(16px,2.5vh,25px); margin-bottom:.8vh}
-  .big{font-size:clamp(44px,11vh,120px); font-weight:800; line-height:1.05;
+  .card h3{font-size:clamp(16px,2.5vh,24px); margin-bottom:.8vh}
+  .big{font-size:clamp(42px,10.5vh,115px); font-weight:800; line-height:1.05;
        font-variant-numeric:tabular-nums}
   .tag{display:inline-block; background:var(--accent-soft); color:var(--accent);
-       border-radius:999px; padding:.2em .8em; font-weight:700;
-       font-size:clamp(13px,1.9vh,19px); margin-right:.4em}
+       border-radius:999px; padding:.18em .75em; font-weight:700;
+       font-size:clamp(13px,1.85vh,19px); margin:.15em .35em .15em 0}
   .tag.hot{background:var(--hot-soft); color:var(--hot)}
-  .foot{position:absolute; left:7vw; right:7vw; bottom:3vh; display:flex;
+  .foot{position:absolute; left:7vw; right:7vw; bottom:2.8vh; display:flex;
         justify-content:space-between; color:var(--muted);
         font-size:clamp(11px,1.6vh,15px)}
   #bar{position:absolute; top:0; left:0; height:5px; background:var(--accent);
        width:0; transition:width .25s; z-index:5}
-  #pg{position:absolute; right:2.2vw; bottom:2.6vh; color:var(--muted);
+  #pg{position:absolute; right:2.2vw; bottom:2.4vh; color:var(--muted);
       font-size:clamp(12px,1.8vh,16px); font-variant-numeric:tabular-nums}
-  .quote{border-left:5px solid var(--accent); padding:.6vh 1.4vw;
+  .quote{border-left:5px solid var(--accent); padding:1vh 1.4vw;
          background:var(--card); border-radius:0 10px 10px 0;
-         font-size:clamp(16px,2.6vh,26px)}
+         font-size:clamp(16px,2.5vh,25px); line-height:1.6}
+  /* กล่องนิยามศัพท์ — ใช้ทุกครั้งที่ศัพท์เทคนิคโผล่ครั้งแรก */
+  .define{background:var(--card); border:1.5px dashed var(--accent);
+          border-radius:12px; padding:1.6vh 1.5vw}
+  .define p{font-size:clamp(15px,2.25vh,22px)}
+  .define b{color:var(--accent)}
+  /* แถบข้อมูลบนหน้าปก */
+  .datastrip{display:grid; grid-template-columns:repeat(4,1fr); gap:1.2vw; margin-top:1vh}
+  .datastrip .card{text-align:center; padding:1.6vh .8vw}
+  .datastrip .v{font-size:clamp(20px,3.6vh,36px); font-weight:800;
+                font-variant-numeric:tabular-nums; color:var(--accent)}
+  .datastrip .k{font-size:clamp(12px,1.8vh,17px); color:var(--muted)}
   @media print{
     body{overflow:visible; background:#fff}
-    .slide{display:flex !important; position:relative; height:100vh;
-           page-break-after:always}
+    .slide{display:flex !important; position:relative; height:100vh; page-break-after:always}
     #bar,#pg{display:none}
   }
 </style>
@@ -86,243 +93,332 @@
 <div id="bar"></div>
 <div id="deck">
 
-<!-- 1 ─ ปก -->
+<!-- 1 ─ ปก + ข้อมูลอยู่หน้าแรกตามโจทย์ -->
 <section class="slide active">
   <div class="kicker">การสอบเสนอหัวข้อวิทยานิพนธ์</div>
   <h1>QuietFail</h1>
-  <h2 style="font-weight:600;color:var(--muted)">ชุดทดสอบความล้มเหลวเงียบ<br>ของระบบค้นหาแบบเวกเตอร์บน PostgreSQL</h2>
-  <p class="muted" style="margin-top:1.5vh">A fault-injection benchmark for silent failures in PostgreSQL vector search</p>
-  <p><span class="tag">PostgreSQL 17.10</span><span class="tag">pgvector 0.8.5</span><span class="tag">fault injection</span><span class="tag">recall@k</span></p>
+  <h2 style="font-weight:600;color:var(--muted)">เมื่อระบบค้นหาให้คำตอบไม่ครบ<br>โดยไม่มีสัญญาณเตือนอะไรเลย — วัดได้ไหม ป้องกันได้ไหม</h2>
+  <div class="datastrip">
+    <div class="card"><div class="v">100k / 500k</div><div class="k">ข้อมูลทดลอง (รายการ)<br>สร้างขึ้นเองแบบควบคุมได้</div></div>
+    <div class="card"><div class="v">200</div><div class="k">คำถามทดสอบ<br>ทุกข้อมีเฉลยแน่นอน</div></div>
+    <div class="card"><div class="v">12</div><div class="k">รูปแบบความผิดพลาด<br>ที่จงใจสร้างและวัด</div></div>
+    <div class="card"><div class="v">PostgreSQL</div><div class="k">17.10 + pgvector 0.8.5<br>ฐานข้อมูลโอเพนซอร์ส</div></div>
+  </div>
   <div class="foot"><span>QuietFail — สอบเสนอหัวข้อวิทยานิพนธ์</span><span>2026</span></div>
 </section>
 
-<!-- 2 ─ ปัญหา -->
+<!-- 2 ─ พื้นฐานก่อนเริ่ม -->
 <section class="slide">
-  <div class="kicker">ปัญหา</div>
-  <h2>ความล้มเหลวที่ไม่มี error ให้เห็น</h2>
-  <table>
-    <tr><th></th><th>เขียนผิด / ตั้งค่าผิด แล้วเกิดอะไร</th></tr>
-    <tr><td><strong>SQL ปกติ</strong></td><td>ได้ error หรือได้ผลผิดที่สังเกตเห็นได้</td></tr>
-    <tr><td><strong>ANN search</strong></td><td class="hot">ได้ผลลัพธ์ที่ดูสมเหตุสมผลเสมอ — แค่ไม่ใช่ผลที่ถูก</td></tr>
-  </table>
+  <div class="kicker">พื้นฐานก่อนเริ่ม — 1 นาที</div>
+  <h2>"ค้นหาด้วยความหมาย" ทำงานอย่างไร</h2>
+  <div class="define">
+    <p><b>Vector search (การค้นหาแบบเวกเตอร์)</b> คือการค้นหาที่ไม่ได้จับคู่คำตรงตัว
+    แต่แปลงข้อความแต่ละชิ้นเป็น<b>ชุดตัวเลข</b>ก่อน (เรียกว่า embedding) —
+    ข้อความที่<strong>ความหมายคล้ายกัน</strong> จะได้ชุดตัวเลขที่<strong>อยู่ใกล้กัน</strong>
+    การค้นหาจึงกลายเป็นการถามว่า "ตัวเลขชุดไหนอยู่ใกล้คำถามที่สุด 10 อันดับแรก"</p>
+  </div>
   <ul>
-    <li>ไม่มี exception · ไม่มี log · dashboard เขียวทุกช่อง</li>
-    <li>ทีมรู้ตัวเมื่อผู้ใช้บ่นว่า <em>"ค้นแล้วไม่เจอ"</em> — ซึ่งสายไปแล้ว</li>
-    <li>เอกสาร pgvector เขียนเองว่า approximate index <strong>เปลี่ยนคำตอบ</strong> ไม่ใช่แค่เร็วขึ้น</li>
+    <li>เทคนิคนี้อยู่เบื้องหลังแชตบอตที่ตอบจากเอกสารองค์กร (RAG) ระบบแนะนำสินค้า และการค้นหารูป/เพลง</li>
+    <li>ปัญหาคือข้อมูลมีเป็นแสนเป็นล้านรายการ จะเทียบทีละรายการก็ช้าเกินไป</li>
+    <li>ทางแก้มาตรฐานคือสร้าง <strong>index (ดัชนี)</strong> — เปรียบเหมือน<strong>สารบัญ</strong>ที่ช่วยให้ไม่ต้องเปิดอ่านทุกหน้า</li>
+  </ul>
+  <p class="quote">แต่สารบัญชนิดนี้พิเศษ: มัน<strong>เร็วขึ้นมากโดยยอมให้คำตอบผิดได้บ้าง</strong> —
+  และตรงนี้เองคือจุดที่งานวิจัยนี้เข้าไปวัด</p>
+</section>
+
+<!-- 3 ─ ข้อมูลที่ใช้ -->
+<section class="slide">
+  <div class="kicker">ข้อมูลที่ใช้ทดลอง</div>
+  <h2>ข้อมูลคืออะไร มาจากไหน จำนวนเท่าไหร่</h2>
+  <table>
+    <tr><th style="width:26%">คำถาม</th><th>คำตอบ</th></tr>
+    <tr><td><strong>คืออะไร</strong></td><td>ชุดตัวเลขจำลอง (embedding สังเคราะห์) แต่ละรายการเป็นตัวเลข 384 ตัว
+        จัดเป็น 50 กลุ่มความหมาย เลียนแบบโครงสร้างของเอกสารจริง</td></tr>
+    <tr><td><strong>มาจากไหน</strong></td><td><strong>สร้างขึ้นเองด้วยสูตรคณิตศาสตร์ที่ตายตัว</strong> —
+        รันกี่ครั้งก็ได้ข้อมูลชุดเดิมเป๊ะ และมีรหัสตรวจ (fingerprint) กำกับกันการแก้ทีหลัง</td></tr>
+    <tr><td><strong>จำนวนเท่าไหร่</strong></td><td>2 ขนาด: <strong>100,000</strong> และ <strong>500,000 รายการ</strong>
+        พร้อมคำถามทดสอบ <strong>200 ข้อ</strong> ที่ครอบคลุมครบทุกกลุ่ม</td></tr>
+    <tr><td><strong>ทำไมไม่ใช้ข้อมูลจริง</strong></td><td>เพราะงานนี้ต้องรู้<strong>คำตอบที่ถูกต้อง 100%</strong> เพื่อเอาไว้เทียบ —
+        ข้อมูลจริงไม่มีใครบอกได้ว่าคำตอบที่ถูกคืออะไร ข้อมูลสร้างเองจึงเป็นข้อบังคับของวิธีวิจัย ไม่ใช่ทางลัด</td></tr>
+  </table>
+  <p class="muted">การทดสอบกับข้อมูลจริง (embedding จากโมเดลภาษา) อยู่ในแผนงานขั้นถัดไป หลังยืนยันกลไกกับข้อมูลที่ควบคุมได้ก่อน</p>
+</section>
+
+<!-- 4 ─ ปัญหา -->
+<section class="slide">
+  <div class="kicker">ปัญหาที่งานนี้แก้</div>
+  <h2>ฐานข้อมูลปกติ "พังแล้วฟ้อง" — แต่ระบบค้นหาแบบใหม่ "พังแล้วเงียบ"</h2>
+  <table>
+    <tr><th style="width:30%"></th><th>ถ้าเขียนผิดหรือตั้งค่าผิด จะเกิดอะไร</th></tr>
+    <tr><td><strong>ฐานข้อมูลแบบเดิม (SQL)</strong></td><td>ระบบแจ้ง error ทันที หรือให้ผลผิดแบบที่คนสังเกตเห็นได้</td></tr>
+    <tr><td><strong>การค้นหาแบบเวกเตอร์</strong></td><td class="hot">ได้ผลลัพธ์ที่หน้าตาดูปกติทุกอย่าง — แค่ข้างในมีคำตอบที่หายไป</td></tr>
+  </table>
+  <p>ลองนึกถึงบรรณารักษ์ที่ถูกสั่งให้หยิบหนังสือที่เกี่ยวข้อง 10 เล่ม
+  แต่บางวันหยิบมาแค่ 4 เล่ม แล้ว<strong>ไม่เคยบอกใครว่าหยิบมาไม่ครบ</strong> —
+  คนยืมก็ไม่รู้ เพราะไม่รู้ว่าที่ถูกต้องมีกี่เล่มตั้งแต่แรก</p>
+  <ul>
+    <li>ไม่มี error ไม่มีสัญญาณเตือน หน้าจอมอนิเตอร์ทุกตัวขึ้นสีเขียว</li>
+    <li>ทีมงานมักรู้ตัวเมื่อผู้ใช้บ่นว่า "ค้นแล้วไม่เจอ" — ซึ่งสายไปแล้ว</li>
+    <li>เอกสารทางการของ pgvector ยอมรับเองว่า index แบบนี้ <strong>"เปลี่ยนคำตอบ"</strong> ไม่ใช่แค่ทำให้เร็วขึ้น</li>
   </ul>
 </section>
 
-<!-- 3 ─ hook -->
+<!-- 5 ─ hook -->
 <section class="slide">
-  <div class="kicker">ตัวอย่างที่วัดได้จริง — 500,000 แถว · ค่าเริ่มต้นล้วน</div>
+  <div class="kicker">ตัวอย่างจริงจากการทดลองนำร่อง — ข้อมูล 500,000 รายการ ตั้งค่าตามที่ระบบให้มา</div>
   <div class="cols c2">
-    <div class="card"><h3>ความเร็วที่ทีมเห็น</h3>
-      <div class="big ok">117×</div><p class="muted">เร็วขึ้นหลังใส่ HNSW index</p></div>
+    <div class="card"><h3>สิ่งที่ทีมงานเห็นบนหน้าจอ</h3>
+      <div class="big ok">เร็วขึ้น 117 เท่า</div>
+      <p class="muted">หลังใส่ index — กราฟความเร็วสวยขึ้นทันตา</p></div>
     <div class="card"><h3>สิ่งที่ไม่มีใครเห็น</h3>
-      <div class="big hot">2/200</div><p class="muted">query ที่ได้คำตอบถูกครบ 10 อันดับ</p></div>
+      <div class="big hot">2 จาก 200</div>
+      <p class="muted">จำนวนคำถามทดสอบที่ได้คำตอบถูก<strong>ครบทั้ง 10 อันดับ</strong> — อีก 198 ข้อมีคำตอบหายไปอย่างน้อยหนึ่งรายการ</p></div>
   </div>
-  <p class="quote">ระบบเร็วขึ้นพร้อมกับที่มันพังลง — ทีมที่ดูแต่ latency จะเห็นกราฟที่ "ดีขึ้น"</p>
+  <p class="quote">ระบบเร็วขึ้น<strong>พร้อมกับ</strong>ที่คุณภาพพังลง — และเครื่องมือเฝ้าระวังทั่วไปวัดแต่ความเร็ว
+  จึงเห็นภาพว่าระบบ "ดีขึ้นเรื่อยๆ" ในขณะที่คำตอบหายมากขึ้นเรื่อยๆ</p>
 </section>
 
-<!-- 4 ─ คำถามวิจัย -->
+<!-- 6 ─ คำถามวิจัย -->
 <section class="slide">
   <div class="kicker">คำถามวิจัย</div>
-  <h2>3 คำถาม · วัดได้ทุกข้อ</h2>
+  <h2>งานนี้ตอบ 3 คำถาม — วัดเป็นตัวเลขได้ทุกข้อ</h2>
   <table>
-    <tr><th style="width:9%">RQ</th><th>คำถาม</th><th style="width:30%">ตอบด้วยอะไร</th></tr>
-    <tr><td><strong>RQ1</strong></td><td>การตั้งค่า ANN index ผิดแบบ<strong>ไม่มี error</strong> ทำให้ผลลัพธ์ผิดไปกี่ %</td><td>recall@k เทียบ exact search</td></tr>
-    <tr><td><strong>RQ2</strong></td><td>ความผิดพลาดเหล่านี้ตรวจจับอัตโนมัติได้กี่ข้อ จากหลักฐานอะไร</td><td>ตัวตรวจที่พิสูจน์ว่าพลิกสถานะได้ / 12</td></tr>
-    <tr><td><strong>RQ3</strong></td><td>โค้ดที่ AI สร้าง ติดกับดักเหล่านี้บ่อยแค่ไหน</td><td>ชุดโจทย์มาตรฐาน รันจริงบน DB</td></tr>
+    <tr><th style="width:10%">ข้อ</th><th>คำถาม (ภาษาคน)</th><th style="width:32%">วัดด้วยอะไร</th></tr>
+    <tr><td><strong>RQ1</strong></td><td>ตั้งค่าผิดแบบที่ระบบไม่ฟ้อง ทำให้คำตอบหายไป<strong>มากแค่ไหน</strong></td>
+        <td>นับคำตอบที่ได้ เทียบกับเฉลยที่รู้แน่นอน</td></tr>
+    <tr><td><strong>RQ2</strong></td><td>ความผิดพลาดพวกนี้ <strong>ตรวจเจอล่วงหน้า</strong>ด้วยโปรแกรมอัตโนมัติได้กี่แบบ</td>
+        <td>เขียนตัวตรวจจริง แล้วพิสูจน์ว่ามันแยกถูก-ผิดได้</td></tr>
+    <tr><td><strong>RQ3</strong></td><td>โค้ดที่ <strong>AI ช่วยเขียน</strong> ซึ่งทีมพัฒนายุคนี้ใช้กันทั่วไป ตกหลุมพวกนี้บ่อยแค่ไหน</td>
+        <td>ให้ AI เขียนโค้ดจากโจทย์มาตรฐาน แล้วรันจริง</td></tr>
   </table>
-  <p class="muted">RQ1 คือแกน · RQ2 ทำให้เป็นซอฟต์แวร์ไม่ใช่บทความ · RQ3 เชื่อมกับยุคที่โค้ดมาจาก AI</p>
+  <p class="muted">RQ1 คือแกนหลักของงาน · RQ2 ทำให้งานนี้เป็นเครื่องมือที่คนอื่นใช้ได้จริง ไม่ใช่แค่รายงาน ·
+  RQ3 เชื่อมกับยุคที่โค้ดจำนวนมากมาจาก AI</p>
 </section>
 
-<!-- 5 ─ งานที่เกี่ยวข้อง -->
+<!-- 7 ─ งานที่เกี่ยวข้อง -->
 <section class="slide">
   <div class="kicker">งานที่เกี่ยวข้อง</div>
-  <h2>ช่องว่าง: ทุกคนช่วย<em>เลือก</em>เครื่องมือ ไม่มีใคร<em>ตรวจ</em>เครื่องมือที่ deploy แล้ว</h2>
+  <h2>งานที่มีอยู่ช่วย "เลือกซื้อ" — ยังไม่มีใครช่วย "ตรวจสภาพ"</h2>
   <table>
-    <tr><th style="width:24%">งาน</th><th>เขาตอบอะไร</th><th>เราต่างตรงไหน</th></tr>
-    <tr><td><strong>ann-benchmarks</strong></td><td>ตัวไหนเร็วสุดที่ recall เท่านี้ (จูนแล้ว)</td><td>เราวัดระบบ<strong>ที่ตั้งค่าตามจริง</strong> ไม่ใช่ที่จูนแล้ว</td></tr>
-    <tr><td><strong>Jepsen</strong></td><td>DB แบบกระจายละเมิดคำโฆษณาไหม</td><td>วิธีคิดเดียวกัน — เราใช้กับ ANN + ส่งมอบเครื่องมือ</td></tr>
-    <tr><td><strong>SQLancer</strong></td><td>บั๊กใน<strong>ตัว DB</strong></td><td>เราหา<strong>การใช้ผิด</strong>ของทีมที่ deploy</td></tr>
-    <tr><td><strong>RAGAS / BEIR</strong></td><td>คำตอบ RAG ดีไหม</td><td>เราวัดชั้นที่อยู่ใต้เขา: index ทำผลหายกี่ %</td></tr>
+    <tr><th style="width:24%">งานที่มีอยู่</th><th>เขาตอบคำถามว่า</th><th>งานนี้ต่างตรงไหน</th></tr>
+    <tr><td><strong>ann-benchmarks</strong></td><td>เครื่องมือยี่ห้อไหนเร็วที่สุด (ในสภาพที่จูนมาอย่างดี)</td>
+        <td>เราวัดระบบใน<strong>สภาพที่คนใช้จริงตั้งค่า</strong> — ซึ่งมักไม่ได้จูนอะไรเลย</td></tr>
+    <tr><td><strong>Jepsen</strong></td><td>ฐานข้อมูลทำได้ตามที่โฆษณาไหม (จับด้วยการจงใจทำให้พัง)</td>
+        <td>ต้นแบบวิธีคิดของเรา — เรานำวิธีเดียวกันมาใช้กับการค้นหาแบบเวกเตอร์</td></tr>
+    <tr><td><strong>RAGAS / BEIR</strong></td><td>คำตอบของแชตบอตดีไหม</td>
+        <td>เราวัด<strong>ชั้นที่อยู่ใต้ลงไป</strong>: ก่อนถึงมือแชตบอต ข้อมูลหายไปเท่าไหร่แล้ว</td></tr>
   </table>
-  <p class="quote">ann-benchmarks ช่วยคุณ<strong>เลือก</strong> — QuietFail ช่วยคุณ<strong>ตรวจ</strong>ของที่เลือกไปแล้ว ทุก PR</p>
+  <p class="quote">เปรียบง่ายๆ: งานที่มีอยู่คือรีวิวช่วย<strong>เลือกซื้อรถ</strong> —
+  งานนี้คือ<strong>ศูนย์ตรวจสภาพรถ</strong>สำหรับคันที่ซื้อไปแล้วและวิ่งอยู่ทุกวัน</p>
 </section>
 
-<!-- 6 ─ วิธีการ -->
+<!-- 8 ─ วิธีการ -->
 <section class="slide">
-  <div class="kicker">วิธีการ</div>
-  <h2>เฉลยที่เถียงไม่ได้ สองชั้น</h2>
+  <div class="kicker">วิธีการวิจัย</div>
+  <h2>จะรู้ได้อย่างไรว่า "คำตอบที่ถูก" คืออะไร</h2>
+  <p>คำถามนี้คือจุดตายของงานแนวนี้ — งานนี้ตอบด้วยกลไกสองชั้นที่เถียงยาก:</p>
   <div class="cols c2">
-    <div class="card"><h3>1 · Fault injection</h3>
-      <p>จงใจสร้างความล้มเหลวเอง จึงรู้สาเหตุ <strong>100%</strong> ไม่ใช่เดาจากอาการ · ทุก fault มี assertion — ฉีดแล้วไม่เกิด = สคริปต์ต้องล้ม</p></div>
-    <div class="card"><h3>2 · Exact search เป็นเฉลย recall</h3>
-      <pre>BEGIN;
-SET LOCAL enable_indexscan = off;
-SELECT ...   -- คำตอบถูกตามนิยาม
-COMMIT;</pre>
-      <p class="muted">วิธีที่เอกสาร pgvector แนะนำเอง</p></div>
+    <div class="card"><h3>ชั้นที่ 1 — จงใจทำให้พังเอง (fault injection)</h3>
+      <p>ไม่รอให้ความผิดพลาดเกิดเอง แต่<strong>สร้างมันขึ้นมาเองทีละแบบ</strong>
+      จึงรู้สาเหตุแน่นอน 100% ไม่ต้องเดาจากอาการ
+      และทุกแบบมีตัวตรวจกำกับว่า "พังจริงตามที่ตั้งใจ" ก่อนวัดเสมอ</p></div>
+    <div class="card"><h3>ชั้นที่ 2 — เฉลยจากการค้นแบบไม่ใช้ทางลัด</h3>
+      <p>สั่งให้ฐานข้อมูล<strong>ปิด index ชั่วคราว</strong>แล้วเทียบทุกรายการตรงๆ
+      ผลที่ได้คือคำตอบที่ถูกต้องตามนิยาม — ช้ากว่ามาก แต่ใช้เป็น<strong>เฉลย</strong>ให้ทุกการวัด</p></div>
   </div>
-  <p>ฐานวัดล็อกก่อนเก็บผล: corpus 100,000 แถว · 384 มิติ · 200 query · fingerprint กำกับ — <strong>แก้ทีหลังไม่ได้โดยไม่ถูกจับ</strong></p>
+  <p>จากนั้นวัดด้วยค่าที่เรียกว่า <strong>recall</strong> — พูดง่ายๆ คือ
+  <em>"ขอ 10 อันดับแรก ระบบหยิบมาถูกกี่อัน เมื่อเทียบกับเฉลย"</em>
+  ได้ครบถูกหมด = 1.00 · หยิบถูกแค่ 6 อัน = 0.60</p>
 </section>
 
-<!-- 7 ─ ขอบเขต -->
+<!-- 9 ─ ขอบเขต -->
 <section class="slide">
-  <div class="kicker">ขอบเขต</div>
-  <h2>fault 12 ข้อ · 3 ชั้น · 3 ระดับเครื่องมือ</h2>
-  <div class="cols c2">
-    <table>
-      <tr><th>ชั้นของ fault</th><th>ตัวอย่าง</th></tr>
-      <tr><td>ติดตั้ง / สร้าง index</td><td>I01 I02 I03 I04 I05</td></tr>
-      <tr><td>เรียกใช้ (query)</td><td>Q01 Q02 Q03 Q04 Q06</td></tr>
-      <tr><td>คุณภาพข้อมูล / เสื่อมตามเวลา</td><td>V07 · L02</td></tr>
-    </table>
-    <table>
-      <tr><th>ระดับ</th><th>เครื่องมือ</th><th>ทำอะไร</th></tr>
-      <tr><td>วัดลึก</td><td><strong>pgvector</strong></td><td>ครบ 12 ข้อ</td></tr>
-      <tr><td>พิสูจน์ว่าทั่วไป</td><td>Qdrant</td><td>รัน Q01 ซ้ำ</td></tr>
-      <tr><td>จับคู่เอกสาร</td><td>Milvus · Weaviate · OpenSearch · FAISS</td><td>ทบทวนเอกสาร</td></tr>
-    </table>
-  </div>
-  <p class="muted">ชุด fault ล็อกแล้ว — เพิ่มข้อใหม่ต้องตัดข้อเดิม · ตัด Q05 / L01 / V08 พร้อมบันทึกเหตุผล</p>
+  <div class="kicker">ขอบเขตงาน</div>
+  <h2>ความผิดพลาด 12 แบบ ครอบคลุมทั้งวงจรชีวิตของระบบ</h2>
+  <table>
+    <tr><th style="width:30%">ช่วงชีวิตของระบบ</th><th>ตัวอย่างความผิดพลาดที่จงใจสร้าง</th></tr>
+    <tr><td><strong>ตอนติดตั้ง / สร้าง index</strong></td>
+        <td>สร้าง index ตอนข้อมูลยังไม่เป็นตัวแทนของข้อมูลจริง · สร้างใหม่แล้วได้คำตอบไม่เหมือนเดิม</td></tr>
+    <tr><td><strong>ตอนเขียนโค้ดค้นหา</strong></td>
+        <td>เขียนคำสั่งผิดรูปจน index ไม่ถูกใช้ · ขอผลลัพธ์มากกว่าเพดานที่ระบบตั้งไว้ · ใช้ค่าตั้งต้นโดยไม่เคยวัด</td></tr>
+    <tr><td><strong>ตอนใช้งานไปนานๆ</strong></td>
+        <td>ข้อมูลเสีย (ค่าว่าง/ค่าศูนย์) หายจากผลค้นถาวร · แถวที่ถูกลบยังค้างใน index จนผลค้นเป็นศูนย์</td></tr>
+  </table>
+  <p>และเพื่อพิสูจน์ว่าไม่ใช่ปัญหาของยี่ห้อเดียว: รันการวัดหลักซ้ำบนเครื่องมืออีกยี่ห้อ (Qdrant)
+  และเทียบเอกสารทางการของอีก 5 เครื่องมือ</p>
+  <p class="muted">รายการ 12 แบบถูก "ล็อก" ไว้ก่อนเริ่มวัด — จะเพิ่มแบบใหม่ต้องตัดแบบเดิมออก พร้อมบันทึกเหตุผล
+  เพื่อกันการเลือกผลที่เข้าข้างตัวเองภายหลัง</p>
 </section>
 
-<!-- 8 ─ เครื่องมือ -->
+<!-- 10 ─ เครื่องมือ -->
 <section class="slide">
   <div class="kicker">เครื่องมือที่ส่งมอบ</div>
-  <h2>ตัวตรวจต้องตอบ 3 อย่าง — ไม่ใช่ 2</h2>
+  <h2>ตัวตรวจที่ซื่อสัตย์ ต้องตอบได้ 3 แบบ — ไม่ใช่แค่ ผ่าน/ไม่ผ่าน</h2>
   <div class="cols c2">
-    <div class="card"><h3>harness + ตัวนับคะแนน</h3>
-      <p><code>docker compose</code> + ตัวฉีด 15 ข้อ + เฉลย JSON<br>
-      <code>score.sql</code> ตอบต่อ fault:</p>
-      <p style="margin-top:1vh"><span class="tag hot">DETECTED</span><span class="tag">NOT_DETECTED</span><span class="tag" style="background:#eee;color:#555">CANNOT_CHECK</span></p>
-      <p class="muted"><strong>CANNOT_CHECK ≠ ผ่าน</strong> — เครื่องมือที่บอกว่าปลอดภัยทั้งที่ไม่ได้ดู อันตรายกว่าไม่มีเครื่องมือ</p></div>
-    <div class="card"><h3>ตัวตรวจของตัวตรวจ</h3>
-      <p><code>audit.py</code> — 25 หัวข้อ ใน ~30 วินาที<br>
-      <code>audit.py --reproduce</code> — รันตัวฉีดจริงซ้ำ 9 ข้อ</p>
-      <p class="muted" style="margin-top:1vh">ทุกตัวตรวจต้อง<strong>พิสูจน์ว่าพลิกสถานะได้</strong> — ตัวนับที่ไม่มีวันตอบลบ = ไม่ได้วัดอะไรเลย</p></div>
+    <div class="card"><h3>ชุดทดลอง + ตัวตรวจอัตโนมัติ</h3>
+      <p>ทั้งหมดรันได้ด้วยคำสั่งเดียวบนเครื่องใครก็ได้ (Docker)
+      ตัวตรวจให้คำตอบต่อความผิดพลาดแต่ละแบบ:</p>
+      <p style="margin-top:1vh">
+        <span class="tag hot">พบปัญหา</span>
+        <span class="tag">ไม่พบปัญหา</span>
+        <span class="tag" style="background:#eee;color:#555">ตรวจไม่ได้</span></p></div>
+    <div class="card"><h3>ทำไม "ตรวจไม่ได้" ต้องแยกออกมา</h3>
+      <p>เครื่องมือที่รายงานว่า "ปลอดภัย" ทั้งที่จริงๆ แล้ว<strong>มันมองไม่เห็นอะไรเลย</strong>
+      อันตรายกว่าไม่มีเครื่องมือ — เพราะทำให้คนวางใจผิดๆ</p>
+      <p class="muted" style="margin-top:.8vh">เช่น ถ้าฐานข้อมูลต่อไม่ติด ตัวตรวจต้องบอกว่า "ตรวจไม่ได้"
+      ห้ามบอกว่า "ไม่พบปัญหา"</p></div>
   </div>
+  <p>และมีกฎเหล็กหนึ่งข้อ: <strong>ตัวตรวจทุกตัวต้องถูกพิสูจน์ว่า "ตอบว่าไม่พบ" ได้จริง</strong> —
+  ตัวตรวจที่ตอบ "พบปัญหา" ตลอดเวลาไม่ว่าอะไรจะเกิด เท่ากับไม่ได้วัดอะไรเลย</p>
 </section>
 
-<!-- 9 ─ RQ1 -->
+<!-- 11 ─ RQ1 -->
 <section class="slide">
-  <div class="kicker">ผลการทดลองนำร่อง · RQ1</div>
-  <h2>ใส่ index แล้วหายไปเท่าไหร่ — ที่ค่าเริ่มต้นล้วน</h2>
+  <div class="kicker">ผลการทดลองนำร่อง · คำถามที่ 1</div>
+  <h2>ใส่ index แล้วคำตอบหายไปเท่าไหร่ — เมื่อใช้ค่าตั้งต้นของระบบ</h2>
   <table>
-    <tr><th>ขนาด</th><th></th><th class="n">recall@10</th><th class="n">แย่สุดต่อ query</th><th class="n">ครบ 10/10</th><th class="n">เร็วขึ้น</th></tr>
-    <tr><td>100k</td><td>HNSW</td><td class="n">0.8565</td><td class="n hot">0.0000</td><td class="n">52/200</td><td class="n">32.6×</td></tr>
-    <tr><td>100k</td><td>IVFFlat</td><td class="n">0.7870</td><td class="n hot">0.0000</td><td class="n">100/200</td><td class="n">44.6×</td></tr>
-    <tr><td><strong>500k</strong></td><td><strong>HNSW</strong></td><td class="n hot"><strong>0.5885</strong></td><td class="n hot">0.0000</td><td class="n hot"><strong>2/200</strong></td><td class="n"><strong>117.1×</strong></td></tr>
-    <tr><td>500k</td><td>IVFFlat</td><td class="n">0.7820</td><td class="n hot">0.0000</td><td class="n">108/200</td><td class="n">51.6×</td></tr>
+    <tr><th>ข้อมูล</th><th>ชนิด index</th><th class="n">คะแนนเฉลี่ย (เต็ม 1.00)</th><th class="n">ข้อที่ได้ถูกครบ 10 อันดับ</th><th class="n">เร็วขึ้น</th></tr>
+    <tr><td>100,000 รายการ</td><td>HNSW</td><td class="n">0.86</td><td class="n">52 จาก 200</td><td class="n">32.6 เท่า</td></tr>
+    <tr><td>100,000 รายการ</td><td>IVFFlat</td><td class="n">0.79</td><td class="n">100 จาก 200</td><td class="n">44.6 เท่า</td></tr>
+    <tr><td><strong>500,000 รายการ</strong></td><td><strong>HNSW</strong></td><td class="n hot"><strong>0.59</strong></td><td class="n hot"><strong>2 จาก 200</strong></td><td class="n"><strong>117.1 เท่า</strong></td></tr>
+    <tr><td>500,000 รายการ</td><td>IVFFlat</td><td class="n">0.78</td><td class="n">108 จาก 200</td><td class="n">51.6 เท่า</td></tr>
   </table>
   <ul>
-    <li><strong>ค่าเฉลี่ยซ่อนความจริง</strong> — ทุกการตั้งค่ามี query ที่ได้ของถูก <span class="hot">0 อัน</span></li>
-    <li>Qdrant ที่ ef เท่ากันได้ 0.9945 → recall loss เป็นธรรมชาติของ ANN แต่<strong>ขนาดขึ้นกับค่าเริ่มต้นที่ผู้พัฒนาเลือก</strong></li>
+    <li><strong>ค่าเฉลี่ยหลอกตาได้</strong> — เฉลี่ย 0.86 ฟังดูดี แต่ทุกการตั้งค่ามีบางคำถามที่ได้คำตอบถูก
+        <span class="hot">0 อันจาก 10</span> คือหายเกลี้ยงทั้งชุด</li>
+    <li>พอข้อมูลโตขึ้น 5 เท่า index แบบ HNSW <strong>แย่ลงเองเงียบๆ</strong> โดยไม่มีใครไปแตะอะไรเลย</li>
+    <li>ยืนยันกับเครื่องมืออีกยี่ห้อ (Qdrant) แล้ว: ปัญหานี้มีทุกยี่ห้อ แต่<strong>ขนาดความเสียหายต่างกันมาก</strong>
+        ตามค่าตั้งต้นที่ผู้พัฒนาแต่ละเจ้าเลือกให้</li>
   </ul>
 </section>
 
-<!-- 10 ─ หน้าผา -->
+<!-- 12 ─ หน้าผา -->
 <section class="slide">
   <div class="kicker">ผลการทดลองนำร่อง</div>
-  <h2>ความล้มเหลวเงียบมาเป็น "หน้าผา" ไม่ใช่ทางลาด</h2>
+  <h2>ความล้มเหลวไม่ได้ค่อยๆ แย่ลง — มันตกหน้าผาทีเดียว</h2>
   <table>
-    <tr><th></th><th>เส้นแบ่ง</th><th>ก่อนเส้น</th><th>หลังเส้น</th></tr>
-    <tr><td><strong>Q06</strong> ขอเกิน ef_search</td><td><code>k = ef_search + 1</code></td><td>ขอ 40 ได้ 40</td><td class="hot">ขอ 41 ได้ 40</td></tr>
-    <tr><td><strong>Q03</strong> filter หลัง scan</td><td>filter ตรง 20% → 2%</td><td>ขอ 10 ได้ 10</td><td class="hot">ขอ 10 ได้ 0</td></tr>
-    <tr><td><strong>L02</strong> แถวตายค้างใน index</td><td>dead 40% → 50%</td><td>ขอ 10 ได้ 10</td><td class="hot">ขอ 10 ได้ 0</td></tr>
+    <tr><th>สถานการณ์</th><th>ก่อนถึงเส้นแบ่ง</th><th>พ้นเส้นแบ่งนิดเดียว</th></tr>
+    <tr><td>ขอผลลัพธ์เกินเพดานที่ระบบตั้งไว้ (40)</td><td>ขอ 40 → ได้ครบ 40</td><td class="hot">ขอ 41 → ได้ 40 เท่าเดิม (ขาดเงียบๆ)</td></tr>
+    <tr><td>ค้นเฉพาะหมวดที่มีข้อมูลน้อย</td><td>หมวดใหญ่ → ได้ครบ 10</td><td class="hot">หมวดเล็ก → ได้ 0 ทั้งที่ข้อมูลมีเป็นพัน</td></tr>
+    <tr><td>ลบข้อมูลเก่าสะสมไปเรื่อยๆ</td><td>ลบไป 40% → ยังได้ครบ 10</td><td class="hot">ลบไป 50% → ได้ 0 ทันที</td></tr>
   </table>
-  <p class="quote">Q03 กับ L02 คือกลไกเดียวกัน — ต่างแค่ตัวกรองของ L02 คือ MVCC ซึ่ง<strong>ไม่มีอะไรในคำสั่งบอกเลย</strong><br>คำสั่งที่พังหน้าตาเหมือนคำสั่งที่ถูกทุกประการ → ตัววัดแบบ threshold จับไม่ทัน</p>
+  <p><strong>ทำไมเรื่องนี้สำคัญ:</strong> ระบบเฝ้าระวังทั่วไปทำงานแบบ "ถ้าค่าต่ำกว่าเกณฑ์ให้เตือน"
+  ซึ่งใช้ได้กับของที่ค่อยๆ แย่ลง — แต่จับของที่<strong>ปกติ 100% แล้วพังเป็น 0 ในก้าวเดียว</strong>ไม่ได้เลย</p>
+  <p class="quote">กรณีที่อันตรายที่สุด: คำสั่งค้นหาที่พัง <strong>หน้าตาเหมือนคำสั่งที่ถูกทุกตัวอักษร</strong> —
+  ต่างกันแค่สภาพข้อมูลข้างใน ที่มองจากโค้ดไม่เห็น</p>
 </section>
 
-<!-- 11 ─ เอกสารผิด -->
+<!-- 13 ─ เอกสารผิด -->
 <section class="slide">
-  <div class="kicker">ผลการทดลองนำร่อง</div>
-  <h2>เอกสารทางการของ pgvector ผิดหรือไม่ครบ — วัดเจอ 3 ที่</h2>
+  <div class="kicker">ผลการทดลองนำร่อง — ผลพลอยได้ที่ไม่ได้ตั้งใจหา</div>
+  <h2>แม้แต่คู่มือทางการของเครื่องมือเอง ก็ผิดหรือบอกไม่ครบ — วัดเจอ 3 จุด</h2>
   <table>
-    <tr><th style="width:12%"></th><th>เอกสารบอก</th><th>วัดได้จริง</th></tr>
-    <tr><td><strong>Q04</strong></td><td>ตั้ง <code>probes = √lists = 10</code></td><td><strong>5 ได้ recall เต็มแล้ว</strong> — 10 ช้ากว่า 2.2× ฟรี</td></tr>
-    <tr><td><strong>I02</strong></td><td>NOTICE เตือน <em>"low recall"</em></td><td>กรณีถูกเตือนได้ <span class="ok">1.0000</span> · กรณีหาย 77% <span class="hot">เงียบสนิท</span></td></tr>
-    <tr><td><strong>Q03</strong></td><td>ข้อจำกัดของทางแก้มี 4 ข้อ</td><td>มี<strong>ข้อที่ 5</strong>: ต้องเพิ่ม <code>work_mem</code> ไม่งั้นได้ 0 แถว</td></tr>
+    <tr><th style="width:34%">คู่มือทางการบอกว่า</th><th>การวัดจริงพบว่า</th></tr>
+    <tr><td>ค่าที่เหมาะสมคือ 10 (ตามสูตรที่ให้ไว้)</td>
+        <td>แค่ 5 ก็ได้คะแนนเต็มแล้ว — ค่า 10 <strong>ช้ากว่า 2.2 เท่าโดยไม่ได้อะไรเพิ่มเลย</strong></td></tr>
+    <tr><td>ระบบจะเตือนเมื่อสร้าง index ตอน "ข้อมูลน้อย"</td>
+        <td>กรณีที่ถูกเตือน ได้คะแนน<span class="ok">เต็ม 1.00</span> ·
+        กรณีที่คำตอบหายไป 77% กลับ<span class="hot">ไม่ถูกเตือนเลย</span> — เตือนผิดตัว</td></tr>
+    <tr><td>วิธีแก้ปัญหาค้นหมวดเล็กแล้วได้ไม่ครบ มีเงื่อนไข 4 ข้อ</td>
+        <td>มี<strong>ข้อที่ 5 ที่คู่มือไม่ได้เขียน</strong> — ถ้าไม่ปรับหน่วยความจำ (work_mem)
+        ทำตามครบ 4 ข้อก็ยังได้ <span class="hot">0 แถว</span></td></tr>
   </table>
-  <p class="quote">จูนตามเอกสารครบทุกตัว → จ่าย I/O เพิ่ม แต่ยังได้ <span class="hot">0 แถว</span> · เติม <code>work_mem</code> ตัวเดียว → ได้ครบ<br><strong>คำตอบที่ถูกมาจากการวัดเท่านั้น — นี่คือวิทยานิพนธ์ของโปรเจค</strong></p>
+  <p class="quote">ข้อสรุปที่งานนี้ยืนยันซ้ำแล้วซ้ำอีก: <strong>คำตอบที่ถูกต้องมาจากการวัดกับข้อมูลของเราเอง</strong> —
+  ไม่ใช่จากค่าตั้งต้น และไม่ใช่จากคู่มือ</p>
 </section>
 
-<!-- 12 ─ RQ2 -->
+<!-- 14 ─ RQ2 -->
 <section class="slide">
-  <div class="kicker">ผลการทดลองนำร่อง · RQ2</div>
-  <h2>ตรวจจับล่วงหน้าได้ 11 จาก 12 ข้อ</h2>
+  <div class="kicker">ผลการทดลองนำร่อง · คำถามที่ 2</div>
+  <h2>ข่าวดี: 11 จาก 12 แบบ ตรวจเจอล่วงหน้าได้ด้วยโปรแกรม</h2>
   <table>
-    <tr><th>ชนิดหลักฐาน</th><th>ตรวจได้เมื่อไหร่</th><th>fault</th></tr>
-    <tr><td><strong>catalog ล้วน</strong></td><td>เมื่อไหร่ก็ได้ — <strong>ไม่ต้องมีข้อมูล</strong></td><td>I01 I04 I05 Q04 Q06</td></tr>
-    <tr><td>วัดสด query เดียว</td><td>หลังมีข้อมูล (วินาที)</td><td>I02 L02 Q03 V07</td></tr>
-    <tr><td>สถานะสดของ DB</td><td class="hot">ต้องจับตอนกำลังเกิด</td><td>F01 F05 I03</td></tr>
-    <tr><td>ตาราง / ประวัติ query</td><td>หลังเหตุการณ์</td><td>F03 F10 · Q02</td></tr>
+    <tr><th>ตรวจจากอะไร</th><th>เงื่อนไข</th><th class="n">กี่แบบ</th></tr>
+    <tr><td><strong>อ่านข้อมูลระบบของฐานข้อมูลตรงๆ</strong></td><td>ตรวจได้ทุกเมื่อ — <strong>ไม่ต้องมีข้อมูลจริงด้วยซ้ำ</strong></td><td class="n">5</td></tr>
+    <tr><td>ยิงคำถามทดสอบหนึ่งครั้งแล้วนับผล</td><td>ใช้เวลาไม่กี่วินาที</td><td class="n">4</td></tr>
+    <tr><td>เฝ้าดูสถานะขณะปัญหากำลังเกิด</td><td class="hot">ต้องจับตอนเกิดเท่านั้น — สแกนทีหลังไม่เห็น</td><td class="n">3</td></tr>
+    <tr><td>อ่านประวัติ / บันทึกที่เก็บไว้</td><td>หลังเหตุการณ์</td><td class="n">3</td></tr>
   </table>
   <ul>
-    <li><strong>5 ข้อแรกเข้า CI ได้ทันที</strong> — ไม่ต้องมีข้อมูล production ไม่ต้องรอปัญหาเกิด</li>
-    <li>3 ข้อต้องเฝ้าตอนเกิด — ระบุเป็นข้อจำกัด ไม่ซ่อน</li>
+    <li>กลุ่มแรก 5 แบบ เอาไปใส่ระบบตรวจโค้ดอัตโนมัติ (CI) ได้ทันที —
+        <strong>ตรวจก่อนโค้ดขึ้นระบบจริง โดยไม่ต้องรอให้ปัญหาเกิดก่อน</strong></li>
+    <li>อีก 3 แบบต้องเฝ้าตอนเกิด — เป็นข้อจำกัดที่รายงานตรงๆ ไม่ซ่อน</li>
   </ul>
 </section>
 
-<!-- 13 ─ RQ3 -->
+<!-- 15 ─ RQ3 -->
 <section class="slide">
-  <div class="kicker">ผลการทดลองนำร่อง · RQ3</div>
-  <h2>โมเดลระดับบนสุด ติดกับดัก 5 จาก 10 โจทย์</h2>
+  <div class="kicker">ผลการทดลองนำร่อง · คำถามที่ 3</div>
+  <h2>ให้ AI ระดับแนวหน้าเขียนโค้ดจากโจทย์ 10 ข้อ — ตกหลุม 5 ข้อ</h2>
   <div class="cols c2">
-    <div class="card"><h3>วิธีวัด</h3>
-      <p>10 โจทย์ · แชทแยกต่อข้อ · ไม่ใบ้เรื่อง index · ให้คะแนนด้วยการ<strong>รัน SQL จริง</strong>เทียบ exact search</p>
-      <p style="margin-top:1vh"><span class="tag hot">ติด 5/10</span><span class="tag hot">เงียบสนิท 4/10</span></p></div>
-    <div class="card"><h3>ข้อที่สำคัญที่สุด (P08)</h3>
-      <p>โมเดล<strong>อธิบายกลไก over-filtering ถูกต้องเอง</strong> แล้วตั้งค่าตามเอกสารครบทุกตัว</p>
-      <p style="margin-top:.6vh">→ ได้ <span class="hot">0 แถว</span> · เติม <code>work_mem</code> → ได้ครบ 10</p></div>
+    <div class="card"><h3>วิธีทดสอบ</h3>
+      <p>โจทย์ 10 ข้อเหมือนงานจริง (เช่น "หาเอกสารใกล้เคียง 10 อันดับในหมวดนี้")
+      ถามแยกคนละบทสนทนา ไม่ใบ้เรื่องกับดักเลย
+      แล้วเอาโค้ดที่ได้มา<strong>รันจริง</strong>บนฐานข้อมูล นับผลตามเฉลย</p>
+      <p style="margin-top:1vh"><span class="tag hot">ตกหลุม 5 / 10</span>
+      <span class="tag hot">แบบเงียบสนิท 4 / 10</span></p></div>
+    <div class="card"><h3>ข้อที่น่าตกใจที่สุด</h3>
+      <p>มีข้อหนึ่งที่ AI <strong>อธิบายกลไกของปัญหาได้ถูกต้องเป๊ะ</strong>ในคอมเมนต์ของมันเอง
+      แล้วตั้งค่าตามคู่มือครบทุกตัว</p>
+      <p style="margin-top:.6vh">→ ยังได้ <span class="hot">0 แถว</span>อยู่ดี
+      เพราะตัวปลดล็อกจริงคือค่าที่<strong>คู่มือไม่ได้เขียนไว้</strong></p></div>
   </div>
-  <p class="quote">ไม่ใช่เพราะโมเดลไม่รู้จักปัญหา — แต่เพราะ<strong>เอกสารไม่ครบ</strong> · RQ3 ยืนยันช่องว่างเดียวกับที่ Q03 วัดไว้ ด้วยหลักฐานอิสระ (n=1 — แผน: โมเดลที่สอง)</p>
+  <p class="quote">แปลว่าปัญหาไม่ใช่ "AI ไม่เก่ง" — AI รู้จักปัญหานี้ด้วยซ้ำ
+  แต่<strong>ความรู้ที่มันเรียนมาจากคู่มือ ก็ขาดตรงเดียวกับที่คู่มือขาด</strong>
+  (ทดสอบกับ 1 โมเดล — โมเดลถัดไปอยู่ในแผนงาน)</p>
 </section>
 
-<!-- 14 ─ ความน่าเชื่อถือ -->
+<!-- 16 ─ ความน่าเชื่อถือ -->
 <section class="slide">
   <div class="kicker">ความน่าเชื่อถือของวิธีวิจัย</div>
-  <h2>ระเบียบวิธีที่จับความผิดพลาดของตัวเองได้</h2>
+  <h2>วิธีวิจัยนี้จับความผิดพลาดของตัวผู้วิจัยเองได้ — และจับได้จริงมาแล้ว</h2>
   <div class="cols c2">
-    <div class="card"><h3>กลุ่มควบคุมหักล้างชื่อ fault ของเราเอง 4 ข้อ</h3>
-      <p>Q02 · I04 · I02 · L02 — สมมติฐานแรกผิดทั้ง 4 ครั้ง และ<strong>การวัดเป็นคนจับ</strong> เช่น I04: HNSW ไม่มี k-means แต่ก็แกว่ง 132/200</p></div>
-    <div class="card"><h3>บั๊กของเครื่องมือตัวเอง — บันทึก 27 รายการ</h3>
-      <p>ทุกข้อคือความล้มเหลวเงียบ<strong>ในเครื่องมือที่สร้างมาจับความล้มเหลวเงียบ</strong> · 2 ครั้งตัวตรวจรายงาน "ไม่พบปัญหา" ทั้งที่ fault อยู่ตรงหน้า — ถูกจับด้วยกฎ "ต้องพิสูจน์ว่าตอบลบได้"</p></div>
+    <div class="card"><h3>สมมติฐานแรกของเราผิด 4 ครั้ง — การทดลองเป็นคนจับ</h3>
+      <p>ชื่อที่ตั้งให้ความผิดพลาด 4 จาก 12 แบบ ระบุ "สาเหตุ" ที่พอวัดด้วยกลุ่มควบคุมแล้ว<strong>พบว่าผิด</strong>
+      ทุกครั้งถูกแก้พร้อมบันทึกไว้ว่าเคยเชื่ออะไรและทำไมถึงเปลี่ยน</p></div>
+    <div class="card"><h3>บั๊กของเครื่องมือตัวเอง — บันทึกไว้ 27 รายการ</h3>
+      <p>รวมถึง 2 ครั้งที่ตัวตรวจรายงานว่า "ไม่พบปัญหา" ทั้งที่ปัญหาอยู่ตรงหน้า —
+      ถูกจับได้ด้วยกฎที่บังคับให้พิสูจน์ตัวตรวจก่อนเชื่อ</p></div>
   </div>
   <ul>
-    <li>ทุก fault รัน <strong>3 รอบติด</strong> · index ที่ไม่ reproducible สร้าง <strong>5 รอบ</strong> · รายงานราย query ไม่ใช่แค่ค่าเฉลี่ย</li>
-    <li>บันทึกการตัดสินใจ 19 รายการ · ความผิดพลาด 35 รายการ · หลักฐานดิบ 39 ไฟล์ ผูก commit</li>
+    <li>การวัดทุกชุดรันซ้ำ <strong>3 รอบ</strong> · ส่วนที่ผลไม่นิ่งโดยธรรมชาติ สร้างซ้ำ <strong>5 รอบ</strong> แล้วรายงานเป็นช่วง</li>
+    <li>ผลดิบทุกไฟล์ (39 ไฟล์) เก็บถาวรพร้อมรหัสกำกับ — ตรวจสอบย้อนหลังได้ทุกตัวเลข</li>
+    <li>มีสคริปต์ตรวจความพร้อมทั้งโปรเจค 25 หัวข้อ รันได้ในครึ่งนาที — กรรมการทำซ้ำได้เองด้วยคำสั่งเดียว</li>
   </ul>
 </section>
 
-<!-- 15 ─ ข้อจำกัด -->
+<!-- 17 ─ ข้อจำกัด -->
 <section class="slide">
-  <div class="kicker">ข้อจำกัด</div>
-  <h2>สิ่งที่งานนี้ยังตอบไม่ได้ — พูดเอง ก่อนถูกถาม</h2>
+  <div class="kicker">ข้อจำกัดของงาน</div>
+  <h2>สิ่งที่งานนี้ยังตอบไม่ได้ — ขอพูดเองก่อนถูกถาม</h2>
   <ul>
-    <li><strong>เครื่องเดียว โปรไฟล์เดียว</strong> — จึงใช้ buffers เป็นตัวชี้วัดหลัก ไม่ใช่เวลา</li>
-    <li><strong>corpus สังเคราะห์</strong> 50 กลุ่มสะอาด — ผลของ I02 ผูกกับคุณสมบัตินี้โดยตรง · ข้อมูลจริงคืองานต่อ</li>
-    <li><strong>กลไกที่ทำให้ HNSW rebuild ไม่นิ่ง ยังไม่รู้</strong> — ตัดออกได้แค่ฝั่ง query กับ parallel build</li>
-    <li><strong>RQ3 n=1</strong> — อ้างได้ว่า "เกิดขึ้นจริง" อ้างไม่ได้ว่าเป็นอัตราของ AI ทั่วไป</li>
-    <li>3 fault ตรวจได้เฉพาะตอนกำลังเกิด — เครื่องมือสแกนครั้งเดียวไม่เห็น</li>
+    <li><strong>ทดลองบนเครื่องเดียว การตั้งค่าเดียว</strong> — ตัวเลขความเร็วจึงใช้เทียบภายในงานเท่านั้น
+        (งานนี้เลี่ยงปัญหานี้โดยใช้ตัวชี้วัดที่ไม่ขึ้นกับเครื่องเป็นหลัก)</li>
+    <li><strong>ข้อมูลสร้างเอง ยังไม่ใช่ข้อมูลจริง</strong> — จำเป็นสำหรับการมีเฉลย 100%
+        แต่ผลบางข้อผูกกับโครงสร้างข้อมูลชุดนี้ · การทดสอบกับข้อมูลจริงคือแผนงานขั้นถัดไป</li>
+    <li><strong>กลไกลึกของบางปรากฏการณ์ยังไม่รู้</strong> — เช่น ทำไมสร้าง index แบบ HNSW ใหม่แล้วคำตอบเปลี่ยน
+        (ตัดสาเหตุที่เป็นไปได้ออกไปแล้ว 2 ทาง แต่ยังไม่พบตัวจริง)</li>
+    <li><strong>ผล AI มาจาก 1 โมเดล ทดสอบ 1 ครั้ง</strong> — บอกได้ว่า "เกิดขึ้นจริง"
+        แต่ยังบอกไม่ได้ว่า "AI ทุกตัวเป็นแบบนี้"</li>
   </ul>
 </section>
 
-<!-- 16 ─ แผนงาน + สรุป -->
+<!-- 18 ─ แผนงาน + สรุป -->
 <section class="slide">
-  <div class="kicker">แผนงานและสรุป</div>
-  <h2>สถานะ: วัดครบแล้ว — เหลือขยายผลและเรียบเรียงเล่ม</h2>
+  <div class="kicker">แผนงานและบทสรุป</div>
+  <h2>สถานะปัจจุบัน: การวัดหลักเสร็จแล้ว — เหลือขยายผลและเรียบเรียงเล่ม</h2>
   <table>
-    <tr><th>งาน</th><th>สถานะ</th></tr>
-    <tr><td>harness + ตัวฉีด + ตัวตรวจ 15 ข้อ (พิสูจน์พลิกสถานะครบ)</td><td class="ok">เสร็จ</td></tr>
-    <tr><td>ผล RQ1 (2 ขนาดข้อมูล) · RQ2 (11/12) · RQ3 (n=1) + รายงาน</td><td class="ok">เสร็จ</td></tr>
-    <tr><td>RQ3 โมเดลที่สอง — แยก "รูปแบบร่วม" ออกจาก "นิสัยโมเดลเดียว"</td><td>ถัดไป</td></tr>
-    <tr><td>quietfail-check เป็น GitHub Action (5 ข้อ catalog พร้อมใช้)</td><td>ถัดไป</td></tr>
-    <tr><td>ทดสอบบน embedding จริง · เรียบเรียงเล่มวิทยานิพนธ์</td><td>ถัดไป</td></tr>
+    <tr><th>งาน</th><th style="width:18%">สถานะ</th></tr>
+    <tr><td>ชุดทดลอง + ตัวฉีดความผิดพลาด + ตัวตรวจ (พิสูจน์ครบทุกตัว)</td><td class="ok">เสร็จ</td></tr>
+    <tr><td>ผลคำถามวิจัยทั้ง 3 ข้อ + รายงานฉบับเต็ม</td><td class="ok">เสร็จ</td></tr>
+    <tr><td>ทดสอบ AI โมเดลที่สอง — แยก "ปัญหาร่วม" ออกจาก "นิสัยของโมเดลเดียว"</td><td>ขั้นถัดไป</td></tr>
+    <tr><td>แปลงตัวตรวจเป็นเครื่องมือ CI ที่ทีมอื่นติดตั้งใช้ได้ทันที</td><td>ขั้นถัดไป</td></tr>
+    <tr><td>ทดสอบกับข้อมูลจริง · เรียบเรียงเล่มวิทยานิพนธ์</td><td>ขั้นถัดไป</td></tr>
   </table>
-  <p class="quote"><strong>ข้อเสนอ:</strong> ความล้มเหลวเงียบของ vector search วัดได้ ตรวจจับล่วงหน้าได้เกือบทั้งหมด<br>และคำตอบที่ถูกต้องมาจากการวัด — ไม่ใช่จากค่าเริ่มต้น ไม่ใช่จากเอกสาร และไม่ใช่จาก AI</p>
+  <p class="quote"><strong>ข้อเสนอของงานนี้ในหนึ่งย่อหน้า:</strong>
+  ระบบค้นหาแบบเวกเตอร์ล้มเหลวแบบเงียบได้จริงและรุนแรงกว่าที่คิด —
+  แต่ความล้มเหลวนี้<strong>วัดเป็นตัวเลขได้ ตรวจจับล่วงหน้าได้เกือบทั้งหมด</strong>
+  และบทเรียนสำคัญที่สุดคือ คำตอบที่ถูกต้องมาจากการวัดกับข้อมูลของเราเอง
+  ไม่ใช่จากค่าตั้งต้น ไม่ใช่จากคู่มือ และไม่ใช่จาก AI</p>
 </section>
 
 </div>
