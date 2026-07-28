@@ -153,7 +153,7 @@
     "assertions_per_run": "6/6 ทุกรอบ (18/18 รวม)",
     "checker_states_verified": "CANNOT_CHECK (ไม่มีตาราง) / DETECTED (ลบ 90% ยังไม่ vacuum · ขอ 10 ได้ 0) / NOT_DETECTED (หลัง VACUUM ได้ครบ 10) — 3 รอบติด",
     "checker_states_evidence": "sql/l02_checker_states.sql -> results/l02_phase3_cycle.txt",
-    "checker_first_version_failed_th": "ตัวตรวจรุ่นแรกไม่พลิก เพราะใช้แถวในตารางเองเป็น query vector ซึ่งยังไม่ตาย — ดู E33 · H27",
+    "checker_first_version_failed_th": "ตัวตรวจรุ่นแรกไม่พลิก เพราะใช้แถวในตารางเองเป็น query vector ซึ่งยังไม่ตาย — ดู E35 · H27",
     "qf_corpus_untouched": "100000 แถว · fingerprint 5a32cba54ea2be4ed022fe8bfedae9b0 ตรวจทุกรอบใน assertion [6/6]"
   }
 }

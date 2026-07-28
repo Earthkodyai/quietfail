@@ -218,6 +218,14 @@ def check_docs(bl):
               ("อ้างลอย: " + ", ".join(dangling)) if dangling
               else "%d ตัว อ้างครบทุกตัว" % len(defined))
 
+        # เลข E/D ซ้ำอันตรายกว่าอ้างลอย — อ้างลอยมีคนสังเกต แต่ซ้ำจะชี้ไปผิดที่เงียบๆ
+        # (เกิดจริงแล้ว: E33 ถูกใช้สองครั้ง ตอนทำ I02 กับตอนทำ L02)
+        heads = re.findall(r"^#{1,4}\s*([ED]\d{2})\b", dec, re.M)
+        dup = sorted({h for h in heads if heads.count(h) > 1})
+        check(g, "เลข E/D ไม่ซ้ำกัน", FAIL if dup else PASS,
+              ("ซ้ำ: " + ", ".join(dup) + " — การอ้างถึงจะชี้ไปผิดที่โดยไม่มีอะไรเตือน")
+              if dup else "%d หัวข้อ ไม่มีเลขซ้ำ" % len(heads))
+
     # CLAUDE.md บรรทัดสถานะ ต้องตรงกับ baseline
     try:
         cl = read("CLAUDE.md")
