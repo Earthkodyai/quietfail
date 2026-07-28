@@ -113,5 +113,48 @@
       ],
       "why_th": "ค่าประมาณจากการสุ่มของ ANALYZE เปลี่ยนทุกครั้ง — ห้ามเทียบเป็นค่าตายตัว (E31)"
     }
+  },
+  "_deliverables_comment_th": "ของส่งมอบตาม PROJECT.md ข้อ 8 · audit.py เทียบสามทาง: ตาราง CLAUDE.md ตรงกับที่นี่ไหม · ข้อที่ติ๊กเสร็จมีไฟล์ครบไหม · ข้อที่ยังไม่ติ๊กมีไฟล์โผล่มาแล้วหรือยัง (= ทำเสร็จแล้วลืมอัปเดต)",
+  "deliverables": {
+    "1": {
+      "name": "harness",
+      "done": true,
+      "artifacts": [
+        "docker-compose.yml",
+        "sql/score.sql",
+        "faults",
+        "groundtruth"
+      ]
+    },
+    "2": {
+      "name": "ตัวตรวจที่รันได้จริง",
+      "done": true,
+      "artifacts": [
+        "sql/score.sql",
+        "scripts/audit.py"
+      ]
+    },
+    "3": {
+      "name": "รายงานผล",
+      "done": true,
+      "artifacts": [
+        "REPORT.md"
+      ]
+    },
+    "4": {
+      "name": "README",
+      "done": true,
+      "artifacts": [
+        "README.md"
+      ]
+    },
+    "5": {
+      "name": "ชุดโจทย์ AI ตอบ RQ3",
+      "done": false,
+      "artifacts": [
+        "results/rq3_ai_traps.txt"
+      ],
+      "note_th": "ถ้าไฟล์นี้โผล่มา แปลว่าทำ RQ3 แล้ว ต้องมาติ๊ก done เป็น true และแก้ตารางใน CLAUDE.md"
+    }
   }
 }

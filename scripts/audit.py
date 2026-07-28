@@ -257,6 +257,47 @@ def check_docs(bl):
               % (sorted(claimed_done), sorted(claimed_left),
                  sorted(phase3_done), sorted(remaining)))
 
+    # ---- ตารางของส่งมอบใน CLAUDE.md ----
+    #
+    # หัวข้อนี้มีเพราะเคยพลาดจริง: บล็อกสถานะเขียนว่า "งานถัดไปคือเขียนรายงาน"
+    # ทั้งที่ REPORT.md เขียนเสร็จและ commit ไปแล้ว — session ใหม่จะสร้างของซ้ำ
+    #
+    # ตรวจสามทาง เพราะเก่าได้สองทิศ:
+    #   ก) ตาราง CLAUDE.md ตรงกับ baseline ไหม
+    #   ข) ข้อที่ติ๊กว่าเสร็จ มีไฟล์ครบไหม        (ติ๊กเกินจริง)
+    #   ค) ข้อที่ยังไม่ติ๊ก มีไฟล์โผล่มาแล้วไหม   (ทำเสร็จแล้วลืมอัปเดต ← เคสที่เคยเกิด)
+    dl = bl.get("deliverables", {})
+    if not dl:
+        check(g, "ตารางของส่งมอบใน CLAUDE.md", CANNOT,
+              "baseline ไม่มีหัวข้อ deliverables — เทียบไม่ได้")
+    else:
+        rows = dict(re.findall(r"^\|\s*(\d+)\s*\|[^|\n]*\|\s*(✅|⬜)", cl, re.M))
+        if not rows:
+            check(g, "ตารางของส่งมอบใน CLAUDE.md", CANNOT,
+                  "หาตารางของส่งมอบใน CLAUDE.md ไม่เจอ (แถวขึ้นต้นด้วยเลขแล้วมี ✅/⬜)")
+        else:
+            problems = []
+            for num, spec in sorted(dl.items()):
+                want_done = bool(spec.get("done"))
+                mark = rows.get(num)
+                if mark is None:
+                    problems.append("ข้อ %s ไม่มีในตาราง CLAUDE.md" % num)
+                    continue
+                if (mark == "✅") != want_done:
+                    problems.append("ข้อ %s: CLAUDE.md ติ๊ก %s แต่ baseline บอก done=%s"
+                                    % (num, mark, want_done))
+                arts = spec.get("artifacts", [])
+                have = [a for a in arts if os.path.exists(a)]
+                if want_done and len(have) < len(arts):
+                    problems.append("ข้อ %s ติ๊กว่าเสร็จ แต่ไม่มีไฟล์: %s"
+                                    % (num, ", ".join(a for a in arts if a not in have)))
+                if (not want_done) and have:
+                    problems.append("ข้อ %s ยังไม่ติ๊กว่าเสร็จ แต่มีไฟล์แล้ว: %s "
+                                    "— ทำเสร็จแล้วลืมอัปเดตหรือเปล่า" % (num, ", ".join(have)))
+            check(g, "ตารางของส่งมอบใน CLAUDE.md", FAIL if problems else PASS,
+                  " · ".join(problems) if problems
+                  else "%d ข้อตรงกับ baseline · ไฟล์สอดคล้องทุกข้อ" % len(dl))
+
     # ห้ามมี fault ที่ตัดไปแล้วโผล่กลับมาเป็นข้อที่ต้องทำ
     cut = ["Q05", "L01", "V08"]
     back = [c for c in cut if re.search(r"%s\s*✅" % c, cl)]
