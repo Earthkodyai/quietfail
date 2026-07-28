@@ -1,0 +1,186 @@
+Timing is off.
+LOAD
+psql:/sql/l02_dead_tuples.sql:29: NOTICE:  index "qf_l02_idx" does not exist, skipping
+DROP INDEX
+psql:/sql/l02_dead_tuples.sql:30: NOTICE:  table "qf_l02" does not exist, skipping
+DROP TABLE
+DROP TABLE
+psql:/sql/l02_dead_tuples.sql:31: NOTICE:  table "qf_l02_obs" does not exist, skipping
+DROP TABLE
+psql:/sql/l02_dead_tuples.sql:32: NOTICE:  table "qf_l02_ctl" does not exist, skipping
+psql:/sql/l02_dead_tuples.sql:33: NOTICE:  table "qf_l02_guard" does not exist, skipping
+DROP TABLE
+SELECT 1
+SET
+CREATE TABLE
+CREATE TABLE
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+=== ค่าที่ใช้ ===
+ ef_search | autovacuum_global 
+-----------+-------------------
+ 40        | on
+(1 row)
+
+
+=== ส่วนที่ 1-3: ลบทีละขั้นบน index ตัวเดียว ไม่ vacuum เลย ===
+    เฉลย (ปิด index scan) ต้องได้ 10 ทุกขั้น เพราะแถวที่เหลือยังมีเกิน 10 เสมอ
+psql:/sql/l02_dead_tuples.sql:117: NOTICE:  index "qf_l02_idx" does not exist, skipping
+psql:/sql/l02_dead_tuples.sql:117: NOTICE:  table "qf_l02" does not exist, skipping
+psql:/sql/l02_dead_tuples.sql:117: NOTICE:  hnsw graph no longer fits into maintenance_work_mem after 28358 tuples
+DETAIL:  Building will take significantly more time.
+HINT:  Increase maintenance_work_mem to speed up builds.
+ qf_l02_fresh 
+--------------
+ 
+(1 row)
+
+ qf_l02_note 
+-------------
+ 
+(1 row)
+
+DELETE 10000
+ qf_l02_note 
+-------------
+ 
+(1 row)
+
+DELETE 10000
+ qf_l02_note 
+-------------
+ 
+(1 row)
+
+DELETE 10000
+ qf_l02_note 
+-------------
+ 
+(1 row)
+
+DELETE 10000
+ qf_l02_note 
+-------------
+ 
+(1 row)
+
+DELETE 10000
+ qf_l02_note 
+-------------
+ 
+(1 row)
+
+DELETE 20000
+ qf_l02_note 
+-------------
+ 
+(1 row)
+
+DELETE 20000
+ qf_l02_note 
+-------------
+ 
+(1 row)
+
+    ขั้น     | ตายไป % | แถวที่ยังอยู่ | ขอ | ได้จาก index | เฉลย | ขนาด index 
+-----------+---------+----------+----+-------------+------+------------
+ 0_ฐาน     |       0 |   100000 | 10 |          10 |   10 | 195 MB
+ 1_ตาย 10% |      10 |    90000 | 10 |          10 |   10 | 195 MB
+ 2_ตาย 20% |      20 |    80000 | 10 |          10 |   10 | 195 MB
+ 3_ตาย 30% |      30 |    70000 | 10 |          10 |   10 | 195 MB
+ 4_ตาย 40% |      40 |    60000 | 10 |          10 |   10 | 195 MB
+ 5_ตาย 50% |      50 |    50000 | 10 |           0 |   10 | 195 MB
+ 6_ตาย 70% |      70 |    30000 | 10 |           0 |   10 | 195 MB
+ 7_ตาย 90% |      90 |    10000 | 10 |           0 |   10 | 195 MB
+(8 rows)
+
+
+=== ส่วนที่ 4: ขอเยอะขึ้นช่วยไหม (ที่ตาย 90%) ===
+  ขอ  | ได้ 
+------+----
+   10 |  0
+   40 |  0
+  100 |  0
+ 1000 |  0
+(4 rows)
+
+
+=== VACUUM แล้ววัดใหม่ · จับเวลา (FAQ บอกว่า HNSW vacuum ช้า) ===
+DROP TABLE
+psql:/sql/l02_dead_tuples.sql:155: NOTICE:  table "qf_l02_vac" does not exist, skipping
+CREATE TABLE
+DO
+Timing is on.
+VACUUM
+Time: 27025.383 ms (00:27.025)
+Timing is off.
+UPDATE 1
+ qf_l02_note 
+-------------
+ 
+(1 row)
+
+ ขนาด index ก่อน | หลัง VACUUM 
+----------------+------------
+ 195 MB         | 195 MB
+(1 row)
+
+      ขั้น      | แถวที่ยังอยู่ | ขอ | ได้จาก index | เฉลย 
+--------------+----------+----+-------------+------
+ 8_หลัง VACUUM |    10000 | 10 |          10 |   10
+(1 row)
+
+
+=== ส่วนที่ 5: กลุ่มควบคุม — UPDATE ทำให้เกิดแบบเดียวกันไหม ===
+    แถวยังอยู่ครบ 100,000 แต่เวอร์ชันเก่าตายค้าง · ทะเบียนเดิมบอกว่า index บวม -> recall ตก
+psql:/sql/l02_dead_tuples.sql:182: NOTICE:  hnsw graph no longer fits into maintenance_work_mem after 28374 tuples
+DETAIL:  Building will take significantly more time.
+HINT:  Increase maintenance_work_mem to speed up builds.
+ qf_l02_fresh 
+--------------
+ 
+(1 row)
+
+INSERT 0 1
+UPDATE 50000
+INSERT 0 1
+UPDATE 100000
+INSERT 0 1
+       ขั้น       | แถวที่ยังอยู่ | ขนาด index | ขอ | ได้ | recall 
+----------------+----------+------------+----+----+--------
+ ฐาน            |   100000 | 195 MB     | 10 | 10 | 0.8570
+ UPDATE 50%     |   100000 | 198 MB     | 10 | 10 | 0.8615
+ UPDATE ทั้งตาราง |   100000 | 203 MB     | 10 | 10 | 0.8530
+(3 rows)
+
+
+=== assertion ===
+psql:/sql/l02_dead_tuples.sql:273: NOTICE:  [1/6] OK ฐานได้ครบ 10 แถว
+psql:/sql/l02_dead_tuples.sql:273: NOTICE:  [2/6] OK เฉลยได้ครบ 10 ทุกขั้น — แถวยังอยู่ในตาราง เส้นทาง index ต่างหากที่ทำหาย
+psql:/sql/l02_dead_tuples.sql:273: NOTICE:  [3/6] OK มี 3 ขั้นที่คืนไม่ครบ · หน้าผาเริ่มที่ตาย %50 (ได้ 0 จาก 10)
+psql:/sql/l02_dead_tuples.sql:273: NOTICE:  [4/6] OK VACUUM แก้ได้หมด — กลับมาครบ 10 แถว
+psql:/sql/l02_dead_tuples.sql:273: NOTICE:  [5/6] OK กลุ่มควบคุม UPDATE ครบ 3 ขั้น · น้อยสุดที่ได้คืนมา = 10 จาก 10
+psql:/sql/l02_dead_tuples.sql:273: NOTICE:  [6/6] OK qf_corpus ไม่ถูกแตะ
+psql:/sql/l02_dead_tuples.sql:273: NOTICE:  
+psql:/sql/l02_dead_tuples.sql:273: NOTICE:  ⭐ UPDATE **ไม่ทำให้เกิด** — index บวมจริงแต่ผลยังครบ
+psql:/sql/l02_dead_tuples.sql:273: NOTICE:     ชื่อในทะเบียน "dead tuple สะสม -> index บวม recall ตก" จึงกว้างเกินไป
+psql:/sql/l02_dead_tuples.sql:273: NOTICE:     ต้นเหตุคือแถวที่ถูก **ลบแล้วไม่มีตัวแทน** ไม่ใช่ dead tuple ทุกชนิด
+DO
+
+=== เก็บกวาด: ทิ้ง index กับตารางข้อมูล เก็บตารางผลไว้ ===
+DROP INDEX
+DROP TABLE
+DROP TABLE
+DROP FUNCTION
+DROP FUNCTION
+DROP FUNCTION
+DROP FUNCTION
+DROP FUNCTION
+ vector_index_ค้าง 
+------------------
+                0
+(1 row)
+

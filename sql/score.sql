@@ -100,6 +100,7 @@ DECLARE
     flt_val    text;
     ask_k      int;
     got_rows   bigint;
+    qry_tbl    text;
 BEGIN
     FOR f IN
         SELECT name FROM pg_ls_dir('/groundtruth') AS name
@@ -799,6 +800,85 @@ BEGIN
                     format('ขอ %s แถว ได้ครบ %s (มีแถวเข้าเงื่อนไข %s แถว · iterative_scan = %s)',
                            ask_k, got_rows, n_rows, current_setting('hnsw.iterative_scan')),
                     NULL);
+            END IF;
+
+        -- ---- ตัวตรวจของ L02: ถาม k แถว **โดยไม่มี filter เลย** แล้วนับที่ได้คืน ----
+        --
+        -- คล้าย Q03 แต่แยกกันชัดเจนด้วยสิ่งที่ **ไม่มี** ในคำสั่ง:
+        --   Q03 มี WHERE ในคำสั่ง — ตัวกรองมองเห็นได้
+        --   L02 ไม่มี WHERE เลย — ตัวกรองคือ MVCC ซึ่งมองไม่เห็นจากโค้ด
+        -- ถ้าไม่มี filter · limit_k < ef_search · ตารางมีแถวมากกว่า k
+        -- แต่ยังได้คืนไม่ถึง k → เหลือคำอธิบายเดียวคือแถวที่ตายแล้วยังอยู่ใน index
+        ELSIF fid = 'L02' THEN
+            rel     := exp ->> 'target_table';
+            vec_col := exp ->> 'vector_column';
+            ask_k   := coalesce((exp ->> 'limit_k')::int, 10);
+
+            IF to_regclass(rel) IS NULL THEN
+                INSERT INTO score_result VALUES (fid, 'CANNOT_CHECK',
+                    format('หาตาราง %L ไม่เจอ — ตัวฉีดยังไม่ได้รัน', rel), NULL);
+                CONTINUE;
+            END IF;
+
+            SELECT count(*) INTO n_idx_total
+            FROM pg_index i
+            JOIN pg_class c ON c.oid = i.indexrelid
+            JOIN pg_class t ON t.oid = i.indrelid
+            JOIN pg_am am   ON am.oid = c.relam
+            WHERE t.relname = rel AND am.amname IN ('hnsw', 'ivfflat');
+
+            IF n_idx_total = 0 THEN
+                INSERT INTO score_result VALUES (fid, 'CANNOT_CHECK',
+                    format('ไม่มี vector index บน %s — เส้นทางที่ทำให้แถวหายไม่มีอยู่', rel), NULL);
+                CONTINUE;
+            END IF;
+
+            ef_now := current_setting('hnsw.ef_search')::int;
+            IF ask_k >= ef_now THEN
+                INSERT INTO score_result VALUES (fid, 'CANNOT_CHECK',
+                    format('limit_k = %s ไม่ต่ำกว่า hnsw.ef_search = %s '
+                           '— แยกไม่ออกจากเพดานของ Q06', ask_k, ef_now), NULL);
+                CONTINUE;
+            END IF;
+
+            EXECUTE format('SELECT count(*) FROM %I', rel) INTO n_rows;
+            IF n_rows <= ask_k THEN
+                INSERT INTO score_result VALUES (fid, 'CANNOT_CHECK',
+                    format('ตารางมีแถวที่ยังอยู่แค่ %s ซึ่งไม่เกิน %s ที่ขอ '
+                           '— ได้ไม่ครบก็ไม่ได้แปลว่าผิด', n_rows, ask_k), NULL);
+                CONTINUE;
+            END IF;
+
+            -- ⚠️ query vector **ต้องมาจากนอกตาราง** — ใช้แถวในตารางเองไม่ได้
+            -- เพราะแถวนั้นเป็นแถวที่ยังไม่ตาย การค้นจะเริ่มจากบริเวณที่ยังมีชีวิต
+            -- แล้วได้ผลครบทั้งที่ fault เกิดอยู่ (วัดเจอตอนพิสูจน์ตัวตรวจ · H27)
+            qry_tbl := exp ->> 'query_table';
+            IF qry_tbl IS NULL OR to_regclass(qry_tbl) IS NULL THEN
+                INSERT INTO score_result VALUES (fid, 'CANNOT_CHECK',
+                    format('ไม่มีตารางชุดโจทย์ %L — ใช้แถวในตารางเองเป็น query vector ไม่ได้ '
+                           'เพราะมันเป็นแถวที่ยังไม่ตาย จะได้ผลครบทั้งที่ fault เกิดอยู่',
+                           coalesce(qry_tbl, '(ไม่ได้ระบุ)')), NULL);
+                CONTINUE;
+            END IF;
+
+            -- ไม่มี WHERE เลย — นี่คือจุดที่แยกจาก Q03
+            EXECUTE format(
+                'SELECT count(*) FROM (SELECT id FROM %I '
+                'ORDER BY %I <=> (SELECT %I FROM %I ORDER BY id LIMIT 1) LIMIT %s) s',
+                rel, vec_col, vec_col, qry_tbl, ask_k)
+            INTO got_rows;
+
+            IF got_rows < ask_k THEN
+                INSERT INTO score_result VALUES (fid, 'DETECTED',
+                    format('ขอ %s แถวโดย**ไม่มี filter เลย** ได้ %s (ขาด %s) '
+                           'ทั้งที่ตารางมีแถวที่ยังอยู่ %s แถว → แถวที่ถูกลบยังค้างใน index '
+                           '· แก้ด้วย VACUUM %s',
+                           ask_k, got_rows, ask_k - got_rows, n_rows, rel),
+                    doc ->> 'correct_diagnosis');
+            ELSE
+                INSERT INTO score_result VALUES (fid, 'NOT_DETECTED',
+                    format('ขอ %s แถวโดยไม่มี filter ได้ครบ %s (ตารางมี %s แถว)',
+                           ask_k, got_rows, n_rows), NULL);
             END IF;
 
         ELSE

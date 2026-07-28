@@ -1,0 +1,1084 @@
+════════════════════════════════════════════════════════════
+L02 — เฟส 3 · รัน 3 รอบติด
+เริ่ม: 2026-07-28 13:32:40
+════════════════════════════════════════════════════════════
+
+############ รอบที่ 1 — การทดลอง ############
+Timing is off.
+LOAD
+psql:/sql/l02_dead_tuples.sql:29: NOTICE:  index "qf_l02_idx" does not exist, skipping
+DROP INDEX
+DROP TABLE
+psql:/sql/l02_dead_tuples.sql:30: NOTICE:  table "qf_l02" does not exist, skipping
+DROP TABLE
+DROP TABLE
+DROP TABLE
+psql:/sql/l02_dead_tuples.sql:33: NOTICE:  table "qf_l02_guard" does not exist, skipping
+SELECT 1
+SET
+CREATE TABLE
+CREATE TABLE
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+=== ค่าที่ใช้ ===
+ ef_search | autovacuum_global 
+-----------+-------------------
+ 40        | on
+(1 row)
+
+
+=== ส่วนที่ 1-3: ลบทีละขั้นบน index ตัวเดียว ไม่ vacuum เลย ===
+    เฉลย (ปิด index scan) ต้องได้ 10 ทุกขั้น เพราะแถวที่เหลือยังมีเกิน 10 เสมอ
+psql:/sql/l02_dead_tuples.sql:117: NOTICE:  index "qf_l02_idx" does not exist, skipping
+psql:/sql/l02_dead_tuples.sql:117: NOTICE:  table "qf_l02" does not exist, skipping
+psql:/sql/l02_dead_tuples.sql:117: NOTICE:  hnsw graph no longer fits into maintenance_work_mem after 28376 tuples
+DETAIL:  Building will take significantly more time.
+HINT:  Increase maintenance_work_mem to speed up builds.
+ qf_l02_fresh 
+--------------
+ 
+(1 row)
+
+ qf_l02_note 
+-------------
+ 
+(1 row)
+
+DELETE 10000
+ qf_l02_note 
+-------------
+ 
+(1 row)
+
+DELETE 10000
+ qf_l02_note 
+-------------
+ 
+(1 row)
+
+DELETE 10000
+ qf_l02_note 
+-------------
+ 
+(1 row)
+
+DELETE 10000
+ qf_l02_note 
+-------------
+ 
+(1 row)
+
+DELETE 10000
+ qf_l02_note 
+-------------
+ 
+(1 row)
+
+DELETE 20000
+ qf_l02_note 
+-------------
+ 
+(1 row)
+
+DELETE 20000
+ qf_l02_note 
+-------------
+ 
+(1 row)
+
+    ขั้น     | ตายไป % | แถวที่ยังอยู่ | ขอ | ได้จาก index | เฉลย | ขนาด index 
+-----------+---------+----------+----+-------------+------+------------
+ 0_ฐาน     |       0 |   100000 | 10 |          10 |   10 | 195 MB
+ 1_ตาย 10% |      10 |    90000 | 10 |          10 |   10 | 195 MB
+ 2_ตาย 20% |      20 |    80000 | 10 |          10 |   10 | 195 MB
+ 3_ตาย 30% |      30 |    70000 | 10 |          10 |   10 | 195 MB
+ 4_ตาย 40% |      40 |    60000 | 10 |          10 |   10 | 195 MB
+ 5_ตาย 50% |      50 |    50000 | 10 |           0 |   10 | 195 MB
+ 6_ตาย 70% |      70 |    30000 | 10 |           0 |   10 | 195 MB
+ 7_ตาย 90% |      90 |    10000 | 10 |           0 |   10 | 195 MB
+(8 rows)
+
+
+=== ส่วนที่ 4: ขอเยอะขึ้นช่วยไหม (ที่ตาย 90%) ===
+  ขอ  | ได้ 
+------+----
+   10 |  0
+   40 |  0
+  100 |  0
+ 1000 |  0
+(4 rows)
+
+
+=== VACUUM แล้ววัดใหม่ · จับเวลา (FAQ บอกว่า HNSW vacuum ช้า) ===
+psql:/sql/l02_dead_tuples.sql:155: NOTICE:  table "qf_l02_vac" does not exist, skipping
+DROP TABLE
+CREATE TABLE
+DO
+Timing is on.
+VACUUM
+Time: 26351.570 ms (00:26.352)
+Timing is off.
+UPDATE 1
+ qf_l02_note 
+-------------
+ 
+(1 row)
+
+ ขนาด index ก่อน | หลัง VACUUM 
+----------------+------------
+ 195 MB         | 195 MB
+(1 row)
+
+      ขั้น      | แถวที่ยังอยู่ | ขอ | ได้จาก index | เฉลย 
+--------------+----------+----+-------------+------
+ 8_หลัง VACUUM |    10000 | 10 |          10 |   10
+(1 row)
+
+
+=== ส่วนที่ 5: กลุ่มควบคุม — UPDATE ทำให้เกิดแบบเดียวกันไหม ===
+    แถวยังอยู่ครบ 100,000 แต่เวอร์ชันเก่าตายค้าง · ทะเบียนเดิมบอกว่า index บวม -> recall ตก
+psql:/sql/l02_dead_tuples.sql:182: NOTICE:  hnsw graph no longer fits into maintenance_work_mem after 28360 tuples
+DETAIL:  Building will take significantly more time.
+HINT:  Increase maintenance_work_mem to speed up builds.
+ qf_l02_fresh 
+--------------
+ 
+(1 row)
+
+INSERT 0 1
+UPDATE 50000
+INSERT 0 1
+UPDATE 100000
+INSERT 0 1
+       ขั้น       | แถวที่ยังอยู่ | ขนาด index | ขอ | ได้ | recall 
+----------------+----------+------------+----+----+--------
+ ฐาน            |   100000 | 195 MB     | 10 | 10 | 0.8610
+ UPDATE 50%     |   100000 | 198 MB     | 10 | 10 | 0.8520
+ UPDATE ทั้งตาราง |   100000 | 201 MB     | 10 | 10 | 0.8405
+(3 rows)
+
+
+=== assertion ===
+psql:/sql/l02_dead_tuples.sql:273: NOTICE:  [1/6] OK ฐานได้ครบ 10 แถว
+psql:/sql/l02_dead_tuples.sql:273: NOTICE:  [2/6] OK เฉลยได้ครบ 10 ทุกขั้น — แถวยังอยู่ในตาราง เส้นทาง index ต่างหากที่ทำหาย
+psql:/sql/l02_dead_tuples.sql:273: NOTICE:  [3/6] OK มี 3 ขั้นที่คืนไม่ครบ · หน้าผาเริ่มที่ตาย %50 (ได้ 0 จาก 10)
+psql:/sql/l02_dead_tuples.sql:273: NOTICE:  [4/6] OK VACUUM แก้ได้หมด — กลับมาครบ 10 แถว
+psql:/sql/l02_dead_tuples.sql:273: NOTICE:  [5/6] OK กลุ่มควบคุม UPDATE ครบ 3 ขั้น · น้อยสุดที่ได้คืนมา = 10 จาก 10
+psql:/sql/l02_dead_tuples.sql:273: NOTICE:  [6/6] OK qf_corpus ไม่ถูกแตะ
+psql:/sql/l02_dead_tuples.sql:273: NOTICE:  
+psql:/sql/l02_dead_tuples.sql:273: NOTICE:  ⭐ UPDATE **ไม่ทำให้เกิด** — index บวมจริงแต่ผลยังครบ
+psql:/sql/l02_dead_tuples.sql:273: NOTICE:     ชื่อในทะเบียน "dead tuple สะสม -> index บวม recall ตก" จึงกว้างเกินไป
+psql:/sql/l02_dead_tuples.sql:273: NOTICE:     ต้นเหตุคือแถวที่ถูก **ลบแล้วไม่มีตัวแทน** ไม่ใช่ dead tuple ทุกชนิด
+DO
+
+=== เก็บกวาด: ทิ้ง index กับตารางข้อมูล เก็บตารางผลไว้ ===
+DROP INDEX
+DROP TABLE
+DROP TABLE
+DROP FUNCTION
+DROP FUNCTION
+DROP FUNCTION
+DROP FUNCTION
+DROP FUNCTION
+ vector_index_ค้าง 
+------------------
+                0
+(1 row)
+
+exit: 0
+
+############ รอบที่ 1 — พิสูจน์ตัวตรวจ 3 สถานะ ############
+LOAD
+SET
+DROP INDEX
+psql:/sql/l02_checker_states.sql:16: NOTICE:  index "qf_l02_idx" does not exist, skipping
+DROP TABLE
+=== สถานะ 1: ยังไม่มีตาราง -> CANNOT_CHECK ===
+LOAD
+ set_config 
+------------
+ ALL
+(1 row)
+
+psql:/sql/score.sql:33: NOTICE:  table "score_result" does not exist, skipping
+DROP TABLE
+CREATE TABLE
+DO
+
+============================================================
+ผลการนับคะแนน
+============================================================
+ fault_id |   verdict    |                                                   detail                                                   
+----------+--------------+------------------------------------------------------------------------------------------------------------
+ F01      | NOT_DETECTED | idle in transaction 0 session (ต้อง >= 10) · ค้างนานสุด 0.0 วิ (ต้อง >= 2)
+ F03      | CANNOT_CHECK | ไม่มีตาราง 'qf_f03_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ F05      | NOT_DETECTED | lock ที่ granted=false 0 แถว (ต้อง >= 2) · session ที่ถูกบล็อก 0 (ต้อง >= 2)
+ F10      | CANNOT_CHECK | ไม่มีตาราง 'qf_f10_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ I01      | CANNOT_CHECK | ไม่มี vector index บน 'qf_corpus' เลย — ตรวจ opclass ไม่ได้
+ I02      | CANNOT_CHECK | หาตาราง 'qf_i02' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+ I03      | NOT_DETECTED | ShareLock ที่ได้รับแล้ว 0 แถว · การเขียนที่รออยู่ 0 แถว (ต้อง >= 1 และ >= 1)
+ I04      | CANNOT_CHECK | ไม่มี vector index บน qf_corpus — ไม่มีอะไรให้เทียบว่าถูกสร้างใหม่หรือยัง
+ I05      | DETECTED     | maintenance_work_mem = 64 MB รับได้ประมาณ 28352 tuples แต่ตารางมี 100000 แถว → build จะ spill และช้าลงราว 3 เท่า
+ L02      | CANNOT_CHECK | หาตาราง 'qf_l02' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+ Q02      | NOT_DETECTED | query ที่ใช้ vector operator ทั้ง 15 ตัว มี ORDER BY + LIMIT ครบ และไม่ได้เรียง DESC
+ Q03      | CANNOT_CHECK | หาตาราง 'qf_q03' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+ Q04      | CANNOT_CHECK | ไม่มี ivfflat index บน qf_corpus ที่ระบุ lists — เทียบกับ sqrt(lists) ไม่ได้
+ Q06      | DETECTED     | hnsw.ef_search = 40 แต่โค้ดใช้ LIMIT ได้ถึง 100 → คืนผลได้ไม่เกิน 40 แถว ขาดไป 60
+ V07      | CANNOT_CHECK | หาตาราง 'qf_v07' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+(15 rows)
+
+
+--- สรุป ---
+ detected | not_detected | cannot_check | total 
+----------+--------------+--------------+-------
+        2 |            4 |            9 |    15
+(1 row)
+
+
+หมายเหตุ: cannot_check ไม่ใช่ผ่าน และไม่ใช่ไม่พบ (กฎเหล็กข้อ 10)
+
+=== สร้างตาราง + hnsw index แล้วลบ 90% โดยไม่ vacuum ===
+CREATE TABLE
+INSERT 0 100000
+ANALYZE
+psql:/sql/l02_checker_states.sql:27: NOTICE:  hnsw graph no longer fits into maintenance_work_mem after 28368 tuples
+DETAIL:  Building will take significantly more time.
+HINT:  Increase maintenance_work_mem to speed up builds.
+CREATE INDEX
+ALTER TABLE
+DELETE 90000
+ แถวที่ยังอยู่ 
+----------
+    10000
+(1 row)
+
+
+=== สถานะ 2: ลบแล้วยังไม่ vacuum -> DETECTED ===
+    ตารางมี 10,000 แถวที่ยังอยู่ แต่ขอ 10 จะได้ไม่ครบ
+LOAD
+ set_config 
+------------
+ ALL
+(1 row)
+
+DROP TABLE
+CREATE TABLE
+DO
+
+============================================================
+ผลการนับคะแนน
+============================================================
+ fault_id |   verdict    |                                                         detail                                                         
+----------+--------------+------------------------------------------------------------------------------------------------------------------------
+ F01      | NOT_DETECTED | idle in transaction 0 session (ต้อง >= 10) · ค้างนานสุด 0.0 วิ (ต้อง >= 2)
+ F03      | CANNOT_CHECK | ไม่มีตาราง 'qf_f03_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ F05      | NOT_DETECTED | lock ที่ granted=false 0 แถว (ต้อง >= 2) · session ที่ถูกบล็อก 0 (ต้อง >= 2)
+ F10      | CANNOT_CHECK | ไม่มีตาราง 'qf_f10_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ I01      | CANNOT_CHECK | ไม่มี vector index บน 'qf_corpus' เลย — ตรวจ opclass ไม่ได้
+ I02      | CANNOT_CHECK | หาตาราง 'qf_i02' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+ I03      | NOT_DETECTED | ShareLock ที่ได้รับแล้ว 0 แถว · การเขียนที่รออยู่ 0 แถว (ต้อง >= 1 และ >= 1)
+ I04      | CANNOT_CHECK | ไม่มี vector index บน qf_corpus — ไม่มีอะไรให้เทียบว่าถูกสร้างใหม่หรือยัง
+ I05      | DETECTED     | maintenance_work_mem = 64 MB รับได้ประมาณ 28352 tuples แต่ตารางมี 100000 แถว → build จะ spill และช้าลงราว 3 เท่า
+ L02      | DETECTED     | ขอ 10 แถวโดย**ไม่มี filter เลย** ได้ 0 (ขาด 10) ทั้งที่ตารางมีแถวที่ยังอยู่ 10000 แถว → แถวที่ถูกลบยังค้างใน index · แก้ด้วย VACUUM qf_l02
+ Q02      | NOT_DETECTED | query ที่ใช้ vector operator ทั้ง 16 ตัว มี ORDER BY + LIMIT ครบ และไม่ได้เรียง DESC
+ Q03      | CANNOT_CHECK | หาตาราง 'qf_q03' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+ Q04      | CANNOT_CHECK | ไม่มี ivfflat index บน qf_corpus ที่ระบุ lists — เทียบกับ sqrt(lists) ไม่ได้
+ Q06      | DETECTED     | hnsw.ef_search = 40 แต่โค้ดใช้ LIMIT ได้ถึง 100 → คืนผลได้ไม่เกิน 40 แถว ขาดไป 60
+ V07      | CANNOT_CHECK | หาตาราง 'qf_v07' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+(15 rows)
+
+
+--- สรุป ---
+ detected | not_detected | cannot_check | total 
+----------+--------------+--------------+-------
+        3 |            4 |            8 |    15
+(1 row)
+
+
+หมายเหตุ: cannot_check ไม่ใช่ผ่าน และไม่ใช่ไม่พบ (กฎเหล็กข้อ 10)
+
+=== VACUUM — ทางแก้ที่วัดแล้วว่าได้ผล ===
+VACUUM
+
+=== สถานะ 3: หลัง VACUUM -> NOT_DETECTED ===
+LOAD
+ set_config 
+------------
+ ALL
+(1 row)
+
+DROP TABLE
+CREATE TABLE
+DO
+
+============================================================
+ผลการนับคะแนน
+============================================================
+ fault_id |   verdict    |                                                   detail                                                   
+----------+--------------+------------------------------------------------------------------------------------------------------------
+ F01      | NOT_DETECTED | idle in transaction 0 session (ต้อง >= 10) · ค้างนานสุด 0.0 วิ (ต้อง >= 2)
+ F03      | CANNOT_CHECK | ไม่มีตาราง 'qf_f03_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ F05      | NOT_DETECTED | lock ที่ granted=false 0 แถว (ต้อง >= 2) · session ที่ถูกบล็อก 0 (ต้อง >= 2)
+ F10      | CANNOT_CHECK | ไม่มีตาราง 'qf_f10_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ I01      | CANNOT_CHECK | ไม่มี vector index บน 'qf_corpus' เลย — ตรวจ opclass ไม่ได้
+ I02      | CANNOT_CHECK | หาตาราง 'qf_i02' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+ I03      | NOT_DETECTED | ShareLock ที่ได้รับแล้ว 0 แถว · การเขียนที่รออยู่ 0 แถว (ต้อง >= 1 และ >= 1)
+ I04      | CANNOT_CHECK | ไม่มี vector index บน qf_corpus — ไม่มีอะไรให้เทียบว่าถูกสร้างใหม่หรือยัง
+ I05      | DETECTED     | maintenance_work_mem = 64 MB รับได้ประมาณ 28352 tuples แต่ตารางมี 100000 แถว → build จะ spill และช้าลงราว 3 เท่า
+ L02      | NOT_DETECTED | ขอ 10 แถวโดยไม่มี filter ได้ครบ 10 (ตารางมี 10000 แถว)
+ Q02      | NOT_DETECTED | query ที่ใช้ vector operator ทั้ง 16 ตัว มี ORDER BY + LIMIT ครบ และไม่ได้เรียง DESC
+ Q03      | CANNOT_CHECK | หาตาราง 'qf_q03' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+ Q04      | CANNOT_CHECK | ไม่มี ivfflat index บน qf_corpus ที่ระบุ lists — เทียบกับ sqrt(lists) ไม่ได้
+ Q06      | DETECTED     | hnsw.ef_search = 40 แต่โค้ดใช้ LIMIT ได้ถึง 100 → คืนผลได้ไม่เกิน 40 แถว ขาดไป 60
+ V07      | CANNOT_CHECK | หาตาราง 'qf_v07' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+(15 rows)
+
+
+--- สรุป ---
+ detected | not_detected | cannot_check | total 
+----------+--------------+--------------+-------
+        2 |            5 |            8 |    15
+(1 row)
+
+
+หมายเหตุ: cannot_check ไม่ใช่ผ่าน และไม่ใช่ไม่พบ (กฎเหล็กข้อ 10)
+
+=== เก็บกวาด ===
+DROP INDEX
+DROP TABLE
+RESET
+ vector_index_ค้าง 
+------------------
+                0
+(1 row)
+
+ corpus_rows |        corpus_fingerprint        
+-------------+----------------------------------
+        5000 | 5a32cba54ea2be4ed022fe8bfedae9b0
+(1 row)
+
+exit: 0
+
+############ รอบที่ 2 — การทดลอง ############
+Timing is off.
+LOAD
+DROP INDEX
+psql:/sql/l02_dead_tuples.sql:29: NOTICE:  index "qf_l02_idx" does not exist, skipping
+psql:/sql/l02_dead_tuples.sql:DROP TABLE
+30: NOTICE:  table "qf_l02" does not exist, skipping
+DROP TABLE
+DROP TABLE
+DROP TABLE
+psql:/sql/l02_dead_tuples.sql:33: NOTICE:  table "qf_l02_guard" does not exist, skipping
+SELECT 1
+SET
+CREATE TABLE
+CREATE TABLE
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+=== ค่าที่ใช้ ===
+ ef_search | autovacuum_global 
+-----------+-------------------
+ 40        | on
+(1 row)
+
+
+=== ส่วนที่ 1-3: ลบทีละขั้นบน index ตัวเดียว ไม่ vacuum เลย ===
+    เฉลย (ปิด index scan) ต้องได้ 10 ทุกขั้น เพราะแถวที่เหลือยังมีเกิน 10 เสมอ
+psql:/sql/l02_dead_tuples.sql:117: NOTICE:  index "qf_l02_idx" does not exist, skipping
+psql:/sql/l02_dead_tuples.sql:117: NOTICE:  table "qf_l02" does not exist, skipping
+psql:/sql/l02_dead_tuples.sql:117: NOTICE:  hnsw graph no longer fits into maintenance_work_mem after 28358 tuples
+DETAIL:  Building will take significantly more time.
+HINT:  Increase maintenance_work_mem to speed up builds.
+ qf_l02_fresh 
+--------------
+ 
+(1 row)
+
+ qf_l02_note 
+-------------
+ 
+(1 row)
+
+DELETE 10000
+ qf_l02_note 
+-------------
+ 
+(1 row)
+
+DELETE 10000
+ qf_l02_note 
+-------------
+ 
+(1 row)
+
+DELETE 10000
+ qf_l02_note 
+-------------
+ 
+(1 row)
+
+DELETE 10000
+ qf_l02_note 
+-------------
+ 
+(1 row)
+
+DELETE 10000
+ qf_l02_note 
+-------------
+ 
+(1 row)
+
+DELETE 20000
+ qf_l02_note 
+-------------
+ 
+(1 row)
+
+DELETE 20000
+ qf_l02_note 
+-------------
+ 
+(1 row)
+
+    ขั้น     | ตายไป % | แถวที่ยังอยู่ | ขอ | ได้จาก index | เฉลย | ขนาด index 
+-----------+---------+----------+----+-------------+------+------------
+ 0_ฐาน     |       0 |   100000 | 10 |          10 |   10 | 195 MB
+ 1_ตาย 10% |      10 |    90000 | 10 |          10 |   10 | 195 MB
+ 2_ตาย 20% |      20 |    80000 | 10 |          10 |   10 | 195 MB
+ 3_ตาย 30% |      30 |    70000 | 10 |          10 |   10 | 195 MB
+ 4_ตาย 40% |      40 |    60000 | 10 |          10 |   10 | 195 MB
+ 5_ตาย 50% |      50 |    50000 | 10 |           0 |   10 | 195 MB
+ 6_ตาย 70% |      70 |    30000 | 10 |           0 |   10 | 195 MB
+ 7_ตาย 90% |      90 |    10000 | 10 |           0 |   10 | 195 MB
+(8 rows)
+
+
+=== ส่วนที่ 4: ขอเยอะขึ้นช่วยไหม (ที่ตาย 90%) ===
+  ขอ  | ได้ 
+------+----
+   10 |  0
+   40 |  0
+  100 |  0
+ 1000 |  0
+(4 rows)
+
+
+=== VACUUM แล้ววัดใหม่ · จับเวลา (FAQ บอกว่า HNSW vacuum ช้า) ===
+DROP TABLE
+psql:/sql/l02_dead_tuples.sql:155: NOTICE:  table "qf_l02_vac" does not exist, skipping
+CREATE TABLE
+DO
+Timing is on.
+VACUUM
+Time: 20372.352 ms (00:20.372)
+Timing is off.
+UPDATE 1
+ qf_l02_note 
+-------------
+ 
+(1 row)
+
+ ขนาด index ก่อน | หลัง VACUUM 
+----------------+------------
+ 195 MB         | 195 MB
+(1 row)
+
+      ขั้น      | แถวที่ยังอยู่ | ขอ | ได้จาก index | เฉลย 
+--------------+----------+----+-------------+------
+ 8_หลัง VACUUM |    10000 | 10 |          10 |   10
+(1 row)
+
+
+=== ส่วนที่ 5: กลุ่มควบคุม — UPDATE ทำให้เกิดแบบเดียวกันไหม ===
+    แถวยังอยู่ครบ 100,000 แต่เวอร์ชันเก่าตายค้าง · ทะเบียนเดิมบอกว่า index บวม -> recall ตก
+psql:/sql/l02_dead_tuples.sql:182: NOTICE:  hnsw graph no longer fits into maintenance_work_mem after 28362 tuples
+DETAIL:  Building will take significantly more time.
+HINT:  Increase maintenance_work_mem to speed up builds.
+ qf_l02_fresh 
+--------------
+ 
+(1 row)
+
+INSERT 0 1
+UPDATE 50000
+INSERT 0 1
+UPDATE 100000
+INSERT 0 1
+       ขั้น       | แถวที่ยังอยู่ | ขนาด index | ขอ | ได้ | recall 
+----------------+----------+------------+----+----+--------
+ ฐาน            |   100000 | 195 MB     | 10 | 10 | 0.8530
+ UPDATE 50%     |   100000 | 198 MB     | 10 | 10 | 0.8520
+ UPDATE ทั้งตาราง |   100000 | 202 MB     | 10 | 10 | 0.8555
+(3 rows)
+
+
+=== assertion ===
+psql:/sql/l02_dead_tuples.sql:273: NOTICE:  [1/6] OK ฐานได้ครบ 10 แถว
+psql:/sql/l02_dead_tuples.sql:273: NOTICE:  [2/6] OK เฉลยได้ครบ 10 ทุกขั้น — แถวยังอยู่ในตาราง เส้นทาง index ต่างหากที่ทำหาย
+psql:/sql/l02_dead_tuples.sql:273: NOTICE:  [3/6] OK มี 3 ขั้นที่คืนไม่ครบ · หน้าผาเริ่มที่ตาย %50 (ได้ 0 จาก 10)
+psql:/sql/l02_dead_tuples.sql:273: NOTICE:  [4/6] OK VACUUM แก้ได้หมด — กลับมาครบ 10 แถว
+psql:/sql/l02_dead_tuples.sql:273: NOTICE:  [5/6] OK กลุ่มควบคุม UPDATE ครบ 3 ขั้น · น้อยสุดที่ได้คืนมา = 10 จาก 10
+DO
+
+=== เก็บกวาด: ทิ้ง index กับตารางข้อมูล เก็บตารางผลไว้ ===
+psql:/sql/l02_dead_tuples.sql:273: NOTICE:  [6/6] OK qf_corpus ไม่ถูกแตะ
+psql:/sql/l02_dead_tuples.sql:273: NOTICE:  
+psql:/sql/l02_dead_tuples.sql:273: NOTICE:  ⭐ UPDATE **ไม่ทำให้เกิด** — index บวมจริงแต่ผลยังครบ
+psql:/sql/l02_dead_tuples.sql:273: NOTICE:     ชื่อในทะเบียน "dead tuple สะสม -> index บวม recall ตก" จึงกว้างเกินไป
+psql:/sql/l02_dead_tuples.sql:273: NOTICE:     ต้นเหตุคือแถวที่ถูก **ลบแล้วไม่มีตัวแทน** ไม่ใช่ dead tuple ทุกชนิด
+DROP INDEX
+DROP TABLE
+DROP TABLE
+DROP FUNCTION
+DROP FUNCTION
+DROP FUNCTION
+DROP FUNCTION
+DROP FUNCTION
+ vector_index_ค้าง 
+------------------
+                0
+(1 row)
+
+exit: 0
+
+############ รอบที่ 2 — พิสูจน์ตัวตรวจ 3 สถานะ ############
+LOAD
+SET
+psql:/sql/l02_checker_states.sql:16: NOTICE:  index "qf_l02_idx" does not exist, skipping
+DROP INDEX
+DROP TABLE
+=== สถานะ 1: ยังไม่มีตาราง -> CANNOT_CHECK ===
+LOAD
+ set_config 
+------------
+ ALL
+(1 row)
+
+psql:/sql/score.sql:33: NOTICE:  table "score_result" does not exist, skipping
+DROP TABLE
+CREATE TABLE
+DO
+
+============================================================
+ผลการนับคะแนน
+============================================================
+ fault_id |   verdict    |                                                   detail                                                   
+----------+--------------+------------------------------------------------------------------------------------------------------------
+ F01      | NOT_DETECTED | idle in transaction 0 session (ต้อง >= 10) · ค้างนานสุด 0.0 วิ (ต้อง >= 2)
+ F03      | CANNOT_CHECK | ไม่มีตาราง 'qf_f03_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ F05      | NOT_DETECTED | lock ที่ granted=false 0 แถว (ต้อง >= 2) · session ที่ถูกบล็อก 0 (ต้อง >= 2)
+ F10      | CANNOT_CHECK | ไม่มีตาราง 'qf_f10_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ I01      | CANNOT_CHECK | ไม่มี vector index บน 'qf_corpus' เลย — ตรวจ opclass ไม่ได้
+ I02      | CANNOT_CHECK | หาตาราง 'qf_i02' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+ I03      | NOT_DETECTED | ShareLock ที่ได้รับแล้ว 0 แถว · การเขียนที่รออยู่ 0 แถว (ต้อง >= 1 และ >= 1)
+ I04      | CANNOT_CHECK | ไม่มี vector index บน qf_corpus — ไม่มีอะไรให้เทียบว่าถูกสร้างใหม่หรือยัง
+ I05      | DETECTED     | maintenance_work_mem = 64 MB รับได้ประมาณ 28352 tuples แต่ตารางมี 100000 แถว → build จะ spill และช้าลงราว 3 เท่า
+ L02      | CANNOT_CHECK | หาตาราง 'qf_l02' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+ Q02      | NOT_DETECTED | query ที่ใช้ vector operator ทั้ง 19 ตัว มี ORDER BY + LIMIT ครบ และไม่ได้เรียง DESC
+ Q03      | CANNOT_CHECK | หาตาราง 'qf_q03' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+ Q04      | CANNOT_CHECK | ไม่มี ivfflat index บน qf_corpus ที่ระบุ lists — เทียบกับ sqrt(lists) ไม่ได้
+ Q06      | DETECTED     | hnsw.ef_search = 40 แต่โค้ดใช้ LIMIT ได้ถึง 100 → คืนผลได้ไม่เกิน 40 แถว ขาดไป 60
+ V07      | CANNOT_CHECK | หาตาราง 'qf_v07' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+(15 rows)
+
+
+--- สรุป ---
+ detected | not_detected | cannot_check | total 
+----------+--------------+--------------+-------
+        2 |            4 |            9 |    15
+(1 row)
+
+
+หมายเหตุ: cannot_check ไม่ใช่ผ่าน และไม่ใช่ไม่พบ (กฎเหล็กข้อ 10)
+
+=== สร้างตาราง + hnsw index แล้วลบ 90% โดยไม่ vacuum ===
+CREATE TABLE
+INSERT 0 100000
+ANALYZE
+psql:/sql/l02_checker_states.sql:27: NOTICE:  hnsw graph no longer fits into maintenance_work_mem after 28355 tuples
+DETAIL:  Building will take significantly more time.
+HINT:  Increase maintenance_work_mem to speed up builds.
+CREATE INDEX
+ALTER TABLE
+DELETE 90000
+ แถวที่ยังอยู่ 
+----------
+    10000
+(1 row)
+
+
+=== สถานะ 2: ลบแล้วยังไม่ vacuum -> DETECTED ===
+    ตารางมี 10,000 แถวที่ยังอยู่ แต่ขอ 10 จะได้ไม่ครบ
+LOAD
+ set_config 
+------------
+ ALL
+(1 row)
+
+DROP TABLE
+CREATE TABLE
+DO
+
+============================================================
+ผลการนับคะแนน
+============================================================
+ fault_id |   verdict    |                                                         detail                                                         
+----------+--------------+------------------------------------------------------------------------------------------------------------------------
+ F01      | NOT_DETECTED | idle in transaction 0 session (ต้อง >= 10) · ค้างนานสุด 0.0 วิ (ต้อง >= 2)
+ F03      | CANNOT_CHECK | ไม่มีตาราง 'qf_f03_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ F05      | NOT_DETECTED | lock ที่ granted=false 0 แถว (ต้อง >= 2) · session ที่ถูกบล็อก 0 (ต้อง >= 2)
+ F10      | CANNOT_CHECK | ไม่มีตาราง 'qf_f10_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ I01      | CANNOT_CHECK | ไม่มี vector index บน 'qf_corpus' เลย — ตรวจ opclass ไม่ได้
+ I02      | CANNOT_CHECK | หาตาราง 'qf_i02' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+ I03      | NOT_DETECTED | ShareLock ที่ได้รับแล้ว 0 แถว · การเขียนที่รออยู่ 0 แถว (ต้อง >= 1 และ >= 1)
+ I04      | CANNOT_CHECK | ไม่มี vector index บน qf_corpus — ไม่มีอะไรให้เทียบว่าถูกสร้างใหม่หรือยัง
+ I05      | DETECTED     | maintenance_work_mem = 64 MB รับได้ประมาณ 28352 tuples แต่ตารางมี 100000 แถว → build จะ spill และช้าลงราว 3 เท่า
+ L02      | DETECTED     | ขอ 10 แถวโดย**ไม่มี filter เลย** ได้ 0 (ขาด 10) ทั้งที่ตารางมีแถวที่ยังอยู่ 10000 แถว → แถวที่ถูกลบยังค้างใน index · แก้ด้วย VACUUM qf_l02
+ Q02      | NOT_DETECTED | query ที่ใช้ vector operator ทั้ง 20 ตัว มี ORDER BY + LIMIT ครบ และไม่ได้เรียง DESC
+ Q03      | CANNOT_CHECK | หาตาราง 'qf_q03' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+ Q04      | CANNOT_CHECK | ไม่มี ivfflat index บน qf_corpus ที่ระบุ lists — เทียบกับ sqrt(lists) ไม่ได้
+ Q06      | DETECTED     | hnsw.ef_search = 40 แต่โค้ดใช้ LIMIT ได้ถึง 100 → คืนผลได้ไม่เกิน 40 แถว ขาดไป 60
+ V07      | CANNOT_CHECK | หาตาราง 'qf_v07' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+(15 rows)
+
+
+--- สรุป ---
+ detected | not_detected | cannot_check | total 
+----------+--------------+--------------+-------
+        3 |            4 |            8 |    15
+(1 row)
+
+
+หมายเหตุ: cannot_check ไม่ใช่ผ่าน และไม่ใช่ไม่พบ (กฎเหล็กข้อ 10)
+
+=== VACUUM — ทางแก้ที่วัดแล้วว่าได้ผล ===
+VACUUM
+
+=== สถานะ 3: หลัง VACUUM -> NOT_DETECTED ===
+LOAD
+ set_config 
+------------
+ ALL
+(1 row)
+
+DROP TABLE
+CREATE TABLE
+DO
+
+============================================================
+ผลการนับคะแนน
+============================================================
+ fault_id |   verdict    |                                                   detail                                                   
+----------+--------------+------------------------------------------------------------------------------------------------------------
+ F01      | NOT_DETECTED | idle in transaction 0 session (ต้อง >= 10) · ค้างนานสุด 0.0 วิ (ต้อง >= 2)
+ F03      | CANNOT_CHECK | ไม่มีตาราง 'qf_f03_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ F05      | NOT_DETECTED | lock ที่ granted=false 0 แถว (ต้อง >= 2) · session ที่ถูกบล็อก 0 (ต้อง >= 2)
+ F10      | CANNOT_CHECK | ไม่มีตาราง 'qf_f10_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ I01      | CANNOT_CHECK | ไม่มี vector index บน 'qf_corpus' เลย — ตรวจ opclass ไม่ได้
+ I02      | CANNOT_CHECK | หาตาราง 'qf_i02' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+ I03      | NOT_DETECTED | ShareLock ที่ได้รับแล้ว 0 แถว · การเขียนที่รออยู่ 0 แถว (ต้อง >= 1 และ >= 1)
+ I04      | CANNOT_CHECK | ไม่มี vector index บน qf_corpus — ไม่มีอะไรให้เทียบว่าถูกสร้างใหม่หรือยัง
+ I05      | DETECTED     | maintenance_work_mem = 64 MB รับได้ประมาณ 28352 tuples แต่ตารางมี 100000 แถว → build จะ spill และช้าลงราว 3 เท่า
+ L02      | NOT_DETECTED | ขอ 10 แถวโดยไม่มี filter ได้ครบ 10 (ตารางมี 10000 แถว)
+ Q02      | NOT_DETECTED | query ที่ใช้ vector operator ทั้ง 20 ตัว มี ORDER BY + LIMIT ครบ และไม่ได้เรียง DESC
+ Q03      | CANNOT_CHECK | หาตาราง 'qf_q03' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+ Q04      | CANNOT_CHECK | ไม่มี ivfflat index บน qf_corpus ที่ระบุ lists — เทียบกับ sqrt(lists) ไม่ได้
+ Q06      | DETECTED     | hnsw.ef_search = 40 แต่โค้ดใช้ LIMIT ได้ถึง 100 → คืนผลได้ไม่เกิน 40 แถว ขาดไป 60
+ V07      | CANNOT_CHECK | หาตาราง 'qf_v07' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+(15 rows)
+
+
+--- สรุป ---
+ detected | not_detected | cannot_check | total 
+----------+--------------+--------------+-------
+        2 |            5 |            8 |    15
+(1 row)
+
+
+หมายเหตุ: cannot_check ไม่ใช่ผ่าน และไม่ใช่ไม่พบ (กฎเหล็กข้อ 10)
+
+=== เก็บกวาด ===
+DROP INDEX
+DROP TABLE
+RESET
+ vector_index_ค้าง 
+------------------
+                0
+(1 row)
+
+ corpus_rows |        corpus_fingerprint        
+-------------+----------------------------------
+        5000 | 5a32cba54ea2be4ed022fe8bfedae9b0
+(1 row)
+
+exit: 0
+
+############ รอบที่ 3 — การทดลอง ############
+Timing is off.
+LOAD
+DROP INDEX
+psql:/sql/l02_dead_tuples.sql:29: NOTICE:  index "qf_l02_idx" does not exist, skipping
+DROP TABLE
+psql:/sql/l02_dead_tuples.sql:30: NOTICE:  table "qf_l02" does not exist, skipping
+DROP TABLE
+DROP TABLE
+psql:/sql/l02_dead_tuples.sql:33: NOTICE:  table "qf_l02_guard" does not exist, skipping
+DROP TABLE
+SELECT 1
+SET
+CREATE TABLE
+CREATE TABLE
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+=== ค่าที่ใช้ ===
+ ef_search | autovacuum_global 
+-----------+-------------------
+ 40        | on
+(1 row)
+
+
+=== ส่วนที่ 1-3: ลบทีละขั้นบน index ตัวเดียว ไม่ vacuum เลย ===
+    เฉลย (ปิด index scan) ต้องได้ 10 ทุกขั้น เพราะแถวที่เหลือยังมีเกิน 10 เสมอ
+psql:/sql/l02_dead_tuples.sql:117: NOTICE:  index "qf_l02_idx" does not exist, skipping
+psql:/sql/l02_dead_tuples.sql:117: NOTICE:  table "qf_l02" does not exist, skipping
+psql:/sql/l02_dead_tuples.sql:117: NOTICE:  hnsw graph no longer fits into maintenance_work_mem after 28366 tuples
+DETAIL:  Building will take significantly more time.
+HINT:  Increase maintenance_work_mem to speed up builds.
+ qf_l02_fresh 
+--------------
+ 
+(1 row)
+
+ qf_l02_note 
+-------------
+ 
+(1 row)
+
+DELETE 10000
+ qf_l02_note 
+-------------
+ 
+(1 row)
+
+DELETE 10000
+ qf_l02_note 
+-------------
+ 
+(1 row)
+
+DELETE 10000
+ qf_l02_note 
+-------------
+ 
+(1 row)
+
+DELETE 10000
+ qf_l02_note 
+-------------
+ 
+(1 row)
+
+DELETE 10000
+ qf_l02_note 
+-------------
+ 
+(1 row)
+
+DELETE 20000
+ qf_l02_note 
+-------------
+ 
+(1 row)
+
+DELETE 20000
+ qf_l02_note 
+-------------
+ 
+(1 row)
+
+    ขั้น     | ตายไป % | แถวที่ยังอยู่ | ขอ | ได้จาก index | เฉลย | ขนาด index 
+-----------+---------+----------+----+-------------+------+------------
+ 0_ฐาน     |       0 |   100000 | 10 |          10 |   10 | 195 MB
+ 1_ตาย 10% |      10 |    90000 | 10 |          10 |   10 | 195 MB
+ 2_ตาย 20% |      20 |    80000 | 10 |          10 |   10 | 195 MB
+ 3_ตาย 30% |      30 |    70000 | 10 |          10 |   10 | 195 MB
+ 4_ตาย 40% |      40 |    60000 | 10 |          10 |   10 | 195 MB
+ 5_ตาย 50% |      50 |    50000 | 10 |           0 |   10 | 195 MB
+ 6_ตาย 70% |      70 |    30000 | 10 |           0 |   10 | 195 MB
+ 7_ตาย 90% |      90 |    10000 | 10 |           0 |   10 | 195 MB
+(8 rows)
+
+
+=== ส่วนที่ 4: ขอเยอะขึ้นช่วยไหม (ที่ตาย 90%) ===
+  ขอ  | ได้ 
+------+----
+   10 |  0
+   40 |  0
+  100 |  0
+ 1000 |  0
+(4 rows)
+
+
+=== VACUUM แล้ววัดใหม่ · จับเวลา (FAQ บอกว่า HNSW vacuum ช้า) ===
+DROP TABLE
+psql:/sql/l02_dead_tuples.sql:155: NOTICE:  table "qf_l02_vac" does not exist, skipping
+CREATE TABLE
+DO
+Timing is on.
+VACUUM
+Time: 31056.670 ms (00:31.057)
+Timing is off.
+UPDATE 1
+ qf_l02_note 
+-------------
+ 
+(1 row)
+
+ ขนาด index ก่อน | หลัง VACUUM 
+----------------+------------
+ 195 MB         | 195 MB
+(1 row)
+
+      ขั้น      | แถวที่ยังอยู่ | ขอ | ได้จาก index | เฉลย 
+--------------+----------+----+-------------+------
+ 8_หลัง VACUUM |    10000 | 10 |          10 |   10
+(1 row)
+
+
+=== ส่วนที่ 5: กลุ่มควบคุม — UPDATE ทำให้เกิดแบบเดียวกันไหม ===
+    แถวยังอยู่ครบ 100,000 แต่เวอร์ชันเก่าตายค้าง · ทะเบียนเดิมบอกว่า index บวม -> recall ตก
+psql:/sql/l02_dead_tuples.sql:182: NOTICE:  hnsw graph no longer fits into maintenance_work_mem after 28357 tuples
+DETAIL:  Building will take significantly more time.
+HINT:  Increase maintenance_work_mem to speed up builds.
+ qf_l02_fresh 
+--------------
+ 
+(1 row)
+
+INSERT 0 1
+UPDATE 50000
+INSERT 0 1
+UPDATE 100000
+INSERT 0 1
+       ขั้น       | แถวที่ยังอยู่ | ขนาด index | ขอ | ได้ | recall 
+----------------+----------+------------+----+----+--------
+ ฐาน            |   100000 | 195 MB     | 10 | 10 | 0.8325
+ UPDATE 50%     |   100000 | 199 MB     | 10 | 10 | 0.8320
+ UPDATE ทั้งตาราง |   100000 | 203 MB     | 10 | 10 | 0.8360
+(3 rows)
+
+
+=== assertion ===
+psql:/sql/l02_dead_tuples.sql:273: NOTICE:  [1/6] OK ฐานได้ครบ 10 แถว
+psql:/sql/l02_dead_tuples.sql:273: NOTICE:  [2/6] OK เฉลยได้ครบ 10 ทุกขั้น — แถวยังอยู่ในตาราง เส้นทาง index ต่างหากที่ทำหาย
+psql:/sql/l02_dead_tuples.sql:273: NOTICE:  [3/6] OK มี 3 ขั้นที่คืนไม่ครบ · หน้าผาเริ่มที่ตาย %50 (ได้ 0 จาก 10)
+psql:/sql/l02_dead_tuples.sql:273: NOTICE:  [4/6] OK VACUUM แก้ได้หมด — กลับมาครบ 10 แถว
+psql:/sql/l02_dead_tuples.sql:273: NOTICE:  [5/6] OK กลุ่มควบคุม UPDATE ครบ 3 ขั้น · น้อยสุดที่ได้คืนมา = 10 จาก 10
+psql:/sql/l02_dead_tuples.sql:273: NOTICE:  [6/6] OK qf_corpus ไม่ถูกแตะ
+psql:/sql/l02_dead_tuples.sql:273: NOTICE:  
+psql:/sql/l02_dead_tuples.sql:273: NOTICE:  ⭐ UPDATE **ไม่ทำให้เกิด** — index บวมจริงแต่ผลยังครบ
+psql:/sql/l02_dead_tuples.sql:273: NOTICE:     ชื่อในทะเบียน "dead tuple สะสม -> index บวม recall ตก" จึงกว้างเกินไป
+psql:/sql/l02_dead_tuples.sql:273: NOTICE:     ต้นเหตุคือแถวที่ถูก **ลบแล้วไม่มีตัวแทน** ไม่ใช่ dead tuple ทุกชนิด
+DO
+
+=== เก็บกวาด: ทิ้ง index กับตารางข้อมูล เก็บตารางผลไว้ ===
+DROP INDEX
+DROP TABLE
+DROP TABLE
+DROP FUNCTION
+DROP FUNCTION
+DROP FUNCTION
+DROP FUNCTION
+DROP FUNCTION
+ vector_index_ค้าง 
+------------------
+                0
+(1 row)
+
+exit: 0
+
+############ รอบที่ 3 — พิสูจน์ตัวตรวจ 3 สถานะ ############
+LOAD
+SET
+DROP INDEX
+psql:/sql/l02_checker_states.sql:16: NOTICE:  index "qf_l02_idx" does not exist, skipping
+DROP TABLE
+=== สถานะ 1: ยังไม่มีตาราง -> CANNOT_CHECK ===
+LOAD
+ set_config 
+------------
+ ALL
+(1 row)
+
+DROP TABLE
+psql:/sql/score.sql:33: NOTICE:  table "score_result" does not exist, skipping
+CREATE TABLE
+DO
+
+============================================================
+ผลการนับคะแนน
+============================================================
+ fault_id |   verdict    |                                                   detail                                                   
+----------+--------------+------------------------------------------------------------------------------------------------------------
+ F01      | NOT_DETECTED | idle in transaction 0 session (ต้อง >= 10) · ค้างนานสุด 0.0 วิ (ต้อง >= 2)
+ F03      | CANNOT_CHECK | ไม่มีตาราง 'qf_f03_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ F05      | NOT_DETECTED | lock ที่ granted=false 0 แถว (ต้อง >= 2) · session ที่ถูกบล็อก 0 (ต้อง >= 2)
+ F10      | CANNOT_CHECK | ไม่มีตาราง 'qf_f10_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ I01      | CANNOT_CHECK | ไม่มี vector index บน 'qf_corpus' เลย — ตรวจ opclass ไม่ได้
+ I02      | CANNOT_CHECK | หาตาราง 'qf_i02' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+ I03      | NOT_DETECTED | ShareLock ที่ได้รับแล้ว 0 แถว · การเขียนที่รออยู่ 0 แถว (ต้อง >= 1 และ >= 1)
+ I04      | CANNOT_CHECK | ไม่มี vector index บน qf_corpus — ไม่มีอะไรให้เทียบว่าถูกสร้างใหม่หรือยัง
+ I05      | DETECTED     | maintenance_work_mem = 64 MB รับได้ประมาณ 28352 tuples แต่ตารางมี 100000 แถว → build จะ spill และช้าลงราว 3 เท่า
+ L02      | CANNOT_CHECK | หาตาราง 'qf_l02' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+ Q02      | NOT_DETECTED | query ที่ใช้ vector operator ทั้ง 23 ตัว มี ORDER BY + LIMIT ครบ และไม่ได้เรียง DESC
+ Q03      | CANNOT_CHECK | หาตาราง 'qf_q03' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+ Q04      | CANNOT_CHECK | ไม่มี ivfflat index บน qf_corpus ที่ระบุ lists — เทียบกับ sqrt(lists) ไม่ได้
+ Q06      | DETECTED     | hnsw.ef_search = 40 แต่โค้ดใช้ LIMIT ได้ถึง 100 → คืนผลได้ไม่เกิน 40 แถว ขาดไป 60
+ V07      | CANNOT_CHECK | หาตาราง 'qf_v07' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+(15 rows)
+
+
+--- สรุป ---
+ detected | not_detected | cannot_check | total 
+----------+--------------+--------------+-------
+        2 |            4 |            9 |    15
+(1 row)
+
+
+หมายเหตุ: cannot_check ไม่ใช่ผ่าน และไม่ใช่ไม่พบ (กฎเหล็กข้อ 10)
+
+=== สร้างตาราง + hnsw index แล้วลบ 90% โดยไม่ vacuum ===
+CREATE TABLE
+INSERT 0 100000
+ANALYZE
+psql:/sql/l02_checker_states.sql:27: NOTICE:  hnsw graph no longer fits into maintenance_work_mem after 28364 tuples
+DETAIL:  Building will take significantly more time.
+HINT:  Increase maintenance_work_mem to speed up builds.
+CREATE INDEX
+ALTER TABLE
+DELETE 90000
+ แถวที่ยังอยู่ 
+----------
+    10000
+(1 row)
+
+
+=== สถานะ 2: ลบแล้วยังไม่ vacuum -> DETECTED ===
+    ตารางมี 10,000 แถวที่ยังอยู่ แต่ขอ 10 จะได้ไม่ครบ
+LOAD
+ set_config 
+------------
+ ALL
+(1 row)
+
+DROP TABLE
+CREATE TABLE
+DO
+
+============================================================
+ผลการนับคะแนน
+============================================================
+ fault_id |   verdict    |                                                         detail                                                         
+----------+--------------+------------------------------------------------------------------------------------------------------------------------
+ F01      | NOT_DETECTED | idle in transaction 0 session (ต้อง >= 10) · ค้างนานสุด 0.0 วิ (ต้อง >= 2)
+ F03      | CANNOT_CHECK | ไม่มีตาราง 'qf_f03_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ F05      | NOT_DETECTED | lock ที่ granted=false 0 แถว (ต้อง >= 2) · session ที่ถูกบล็อก 0 (ต้อง >= 2)
+ F10      | CANNOT_CHECK | ไม่มีตาราง 'qf_f10_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ I01      | CANNOT_CHECK | ไม่มี vector index บน 'qf_corpus' เลย — ตรวจ opclass ไม่ได้
+ I02      | CANNOT_CHECK | หาตาราง 'qf_i02' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+ I03      | NOT_DETECTED | ShareLock ที่ได้รับแล้ว 0 แถว · การเขียนที่รออยู่ 0 แถว (ต้อง >= 1 และ >= 1)
+ I04      | CANNOT_CHECK | ไม่มี vector index บน qf_corpus — ไม่มีอะไรให้เทียบว่าถูกสร้างใหม่หรือยัง
+ I05      | DETECTED     | maintenance_work_mem = 64 MB รับได้ประมาณ 28352 tuples แต่ตารางมี 100000 แถว → build จะ spill และช้าลงราว 3 เท่า
+ L02      | DETECTED     | ขอ 10 แถวโดย**ไม่มี filter เลย** ได้ 0 (ขาด 10) ทั้งที่ตารางมีแถวที่ยังอยู่ 10000 แถว → แถวที่ถูกลบยังค้างใน index · แก้ด้วย VACUUM qf_l02
+ Q02      | NOT_DETECTED | query ที่ใช้ vector operator ทั้ง 24 ตัว มี ORDER BY + LIMIT ครบ และไม่ได้เรียง DESC
+ Q03      | CANNOT_CHECK | หาตาราง 'qf_q03' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+ Q04      | CANNOT_CHECK | ไม่มี ivfflat index บน qf_corpus ที่ระบุ lists — เทียบกับ sqrt(lists) ไม่ได้
+ Q06      | DETECTED     | hnsw.ef_search = 40 แต่โค้ดใช้ LIMIT ได้ถึง 100 → คืนผลได้ไม่เกิน 40 แถว ขาดไป 60
+ V07      | CANNOT_CHECK | หาตาราง 'qf_v07' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+(15 rows)
+
+
+--- สรุป ---
+ detected | not_detected | cannot_check | total 
+----------+--------------+--------------+-------
+        3 |            4 |            8 |    15
+(1 row)
+
+
+หมายเหตุ: cannot_check ไม่ใช่ผ่าน และไม่ใช่ไม่พบ (กฎเหล็กข้อ 10)
+
+=== VACUUM — ทางแก้ที่วัดแล้วว่าได้ผล ===
+VACUUM
+
+=== สถานะ 3: หลัง VACUUM -> NOT_DETECTED ===
+LOAD
+ set_config 
+------------
+ ALL
+(1 row)
+
+DROP TABLE
+CREATE TABLE
+DO
+
+============================================================
+ผลการนับคะแนน
+============================================================
+ fault_id |   verdict    |                                                   detail                                                   
+----------+--------------+------------------------------------------------------------------------------------------------------------
+ F01      | NOT_DETECTED | idle in transaction 0 session (ต้อง >= 10) · ค้างนานสุด 0.0 วิ (ต้อง >= 2)
+ F03      | CANNOT_CHECK | ไม่มีตาราง 'qf_f03_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ F05      | NOT_DETECTED | lock ที่ granted=false 0 แถว (ต้อง >= 2) · session ที่ถูกบล็อก 0 (ต้อง >= 2)
+ F10      | CANNOT_CHECK | ไม่มีตาราง 'qf_f10_obs' — ตัวฉีดยังไม่ได้รัน หรือเก็บกวาดไปแล้ว
+ I01      | CANNOT_CHECK | ไม่มี vector index บน 'qf_corpus' เลย — ตรวจ opclass ไม่ได้
+ I02      | CANNOT_CHECK | หาตาราง 'qf_i02' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+ I03      | NOT_DETECTED | ShareLock ที่ได้รับแล้ว 0 แถว · การเขียนที่รออยู่ 0 แถว (ต้อง >= 1 และ >= 1)
+ I04      | CANNOT_CHECK | ไม่มี vector index บน qf_corpus — ไม่มีอะไรให้เทียบว่าถูกสร้างใหม่หรือยัง
+ I05      | DETECTED     | maintenance_work_mem = 64 MB รับได้ประมาณ 28352 tuples แต่ตารางมี 100000 แถว → build จะ spill และช้าลงราว 3 เท่า
+ L02      | NOT_DETECTED | ขอ 10 แถวโดยไม่มี filter ได้ครบ 10 (ตารางมี 10000 แถว)
+ Q02      | NOT_DETECTED | query ที่ใช้ vector operator ทั้ง 24 ตัว มี ORDER BY + LIMIT ครบ และไม่ได้เรียง DESC
+ Q03      | CANNOT_CHECK | หาตาราง 'qf_q03' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+ Q04      | CANNOT_CHECK | ไม่มี ivfflat index บน qf_corpus ที่ระบุ lists — เทียบกับ sqrt(lists) ไม่ได้
+ Q06      | DETECTED     | hnsw.ef_search = 40 แต่โค้ดใช้ LIMIT ได้ถึง 100 → คืนผลได้ไม่เกิน 40 แถว ขาดไป 60
+ V07      | CANNOT_CHECK | หาตาราง 'qf_v07' ไม่เจอ — ตัวฉีดยังไม่ได้รัน
+(15 rows)
+
+
+--- สรุป ---
+ detected | not_detected | cannot_check | total 
+----------+--------------+--------------+-------
+        2 |            5 |            8 |    15
+(1 row)
+
+
+หมายเหตุ: cannot_check ไม่ใช่ผ่าน และไม่ใช่ไม่พบ (กฎเหล็กข้อ 10)
+
+=== เก็บกวาด ===
+DROP INDEX
+DROP TABLE
+RESET
+ vector_index_ค้าง 
+------------------
+                0
+(1 row)
+
+ corpus_rows |        corpus_fingerprint        
+-------------+----------------------------------
+        5000 | 5a32cba54ea2be4ed022fe8bfedae9b0
+(1 row)
+
+exit: 0
+
+จบ: 2026-07-28 14:02:46
+>>> DONE

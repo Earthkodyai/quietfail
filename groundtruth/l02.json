@@ -1,0 +1,159 @@
+{
+  "fault_id": "L02",
+  "group": "E_degrades_over_time",
+  "name": "deleted_rows_still_in_index",
+  "true_cause": "deleted_tuples_remain_in_index_until_vacuum",
+  "true_cause_th": "แถวที่ถูก DELETE ยังมีรายการค้างอยู่ใน index จนกว่าจะ VACUUM · index คืน candidate ตาม ef_search ก่อน แล้ว MVCC ค่อยคัดแถวที่ตายแล้วออก ถ้า candidate ตายหมดก็ได้ศูนย์แถว",
+  "surface_symptom": "query ที่**ไม่มี WHERE เลย** คืนศูนย์แถว ทั้งที่ตารางมีข้อมูลเป็นหมื่นแถว · ไม่มี error · ค่อยๆ แย่ลงตามเวลาโดยไม่มีใครเปลี่ยนโค้ดอะไร",
+  "differs_from_q03_th": "กลไกเดียวกันเป๊ะ — index คืน candidate แล้วมีอะไรมาคัดออกทีหลัง · ต่างกันตรงที่ Q03 ตัวกรองคือ WHERE ซึ่ง**เห็นได้ในโค้ด** ส่วน L02 ตัวกรองคือ MVCC ซึ่ง**ไม่มีอะไรในคำสั่งบอกเลย** → หายากกว่า Q03 มาก",
+  "differs_from_q06_th": "Q06 เพดานคือ ef_search (ขอ 100 ได้ 40) · L02 ได้ 0 แม้ขอแค่ 10 ซึ่งต่ำกว่า ef_search=40 มาก",
+  "name_correction_2026_07_28_th": "ชื่อในทะเบียนเดิมคือ 'dead tuple สะสม → index บวม recall ตก' ซึ่ง **กว้างเกินไป** — กลุ่มควบคุมด้วย UPDATE พบว่า index บวมจริง (195→202 MB) แต่ผลยังครบทุกครั้งและ recall ไม่ตก · ต้นเหตุคือ **แถวที่ถูกลบแล้วไม่มีตัวแทน** ไม่ใช่ dead tuple ทุกชนิด",
+  "misleading_fixes": [
+    "REINDEX (แพงกว่า VACUUM มากโดยไม่จำเป็น)",
+    "เพิ่ม LIMIT (วัดแล้วว่าไม่ช่วยเลย)",
+    "เพิ่ม ef_search",
+    "สร้าง index ใหม่ทั้งตัว",
+    "สรุปว่าข้อมูลถูกลบไปหมดแล้ว"
+  ],
+  "correct_diagnosis": "ถาม k แถวโดยไม่มี WHERE เลย แล้วเทียบกับจำนวนแถวที่ยังอยู่ในตาราง · ถ้าตารางมีมากกว่า k แต่ได้คืนไม่ถึง k แปลว่ามีแถวที่ตายแล้วค้างอยู่ใน index",
+  "correct_fix_th": "VACUUM ตารางนั้น — วัดแล้วว่าแก้ได้หมดทันที · และอย่าปิด autovacuum บนตารางที่มี vector index · หมายเหตุ: VACUUM **ไม่ลดขนาด index** (195 MB เท่าเดิม) มันแค่ทำให้รายการที่ตายแล้วถูกนำกลับมาใช้ได้",
+  "evidence_query": "วัดสดใน score.sql — ถาม k แถวโดยไม่มี filter แล้วนับที่ได้คืน",
+  "evidence_expectation": {
+    "target_table": "qf_l02",
+    "vector_column": "embedding",
+    "limit_k": 10,
+    "detect_when": "query ที่ไม่มี filter คืนแถวน้อยกว่า limit_k ทั้งที่ตารางมีแถวที่ยังอยู่มากกว่า limit_k",
+    "query_table": "qf_queries"
+  },
+  "checker_design_note_th": "แยกจาก Q03 ด้วยสิ่งที่ **ไม่มี** ในคำสั่ง — ตัวตรวจของ L02 ไม่ใส่ WHERE เลย ถ้ายังได้ไม่ครบก็เหลือคำอธิบายเดียว · และบังคับ limit_k < ef_search เพื่อแยกจาก Q06 · query vector ต้องมาจาก qf_queries ซึ่งอยู่นอกตาราง ห้ามใช้แถวในตารางเองเป็นโจทย์ (H27)",
+  "checker_limitation_th": "ไม่ได้อ่าน n_dead_tup เพราะ **ตัวนับนั้นมาช้าเชื่อไม่ได้** (วัดแล้ว: รายงาน 0 ตอนลบ แล้วโผล่ 99,900 หลัง VACUUM · ตระกูลเดียวกับ E19) จึงวัดผลกระทบตรงๆ แทน",
+  "measured_2026_07_28": {
+    "table_rows_initial": 100000,
+    "dim": 384,
+    "ef_search": 40,
+    "limit_k": 10,
+    "autovacuum_on_table": "ปิดเฉพาะตารางทดสอบ ไม่งั้นมันเก็บกวาดเองระหว่างวัด",
+    "delete_sweep": [
+      {
+        "dead_pct": 0,
+        "live": 100000,
+        "asked": 10,
+        "got": 10,
+        "exact": 10
+      },
+      {
+        "dead_pct": 10,
+        "live": 90000,
+        "asked": 10,
+        "got": 10,
+        "exact": 10
+      },
+      {
+        "dead_pct": 20,
+        "live": 80000,
+        "asked": 10,
+        "got": 10,
+        "exact": 10
+      },
+      {
+        "dead_pct": 30,
+        "live": 70000,
+        "asked": 10,
+        "got": 10,
+        "exact": 10
+      },
+      {
+        "dead_pct": 40,
+        "live": 60000,
+        "asked": 10,
+        "got": 10,
+        "exact": 10
+      },
+      {
+        "dead_pct": 50,
+        "live": 50000,
+        "asked": 10,
+        "got": 0,
+        "exact": 10
+      },
+      {
+        "dead_pct": 70,
+        "live": 30000,
+        "asked": 10,
+        "got": 0,
+        "exact": 10
+      },
+      {
+        "dead_pct": 90,
+        "live": 10000,
+        "asked": 10,
+        "got": 0,
+        "exact": 10
+      }
+    ],
+    "cliff_th": "⭐ หน้าผาอยู่ระหว่างตาย 40% กับ 50% และ **ไม่มีทางลาดเลย** — 10 แถวเต็ม กลายเป็น 0 แถวในขั้นเดียว ไม่มีสัญญาณเตือนระหว่างทาง",
+    "asking_more_does_not_help": {
+      "asked_10": 0,
+      "asked_40": 0,
+      "asked_100": 0,
+      "asked_1000": 0,
+      "why_th": "ขอเยอะขึ้นไม่ได้ทำให้ ef_search โตตาม candidate ยังเป็น 40 ตัวที่ตายหมดเหมือนเดิม"
+    },
+    "vacuum": {
+      "seconds": 27.0,
+      "got_after": 10,
+      "index_size_before": "195 MB",
+      "index_size_after": "195 MB",
+      "note_th": "VACUUM แก้ได้หมดทันที แต่ **ไม่ลดขนาด index** · FAQ บอกว่า vacuum ของ HNSW ช้า — วัดได้ 27 วิ ที่ 100k แถว และ 118 วิ หลัง UPDATE ทั้งตาราง"
+    },
+    "control_update": [
+      {
+        "stage": "ฐาน",
+        "live": 100000,
+        "idx_size": "195 MB",
+        "asked": 10,
+        "got": 10,
+        "recall": 0.8415
+      },
+      {
+        "stage": "UPDATE 50%",
+        "live": 100000,
+        "idx_size": "198 MB",
+        "asked": 10,
+        "got": 10,
+        "recall": 0.8445
+      },
+      {
+        "stage": "UPDATE ทั้งตาราง",
+        "live": 100000,
+        "idx_size": "202 MB",
+        "asked": 10,
+        "got": 10,
+        "recall": 0.84
+      }
+    ],
+    "control_finding_th": "⭐ UPDATE **ไม่ทำให้เกิดเลย** — index บวมจาก 195 เป็น 202 MB แต่ได้ครบ 10 ทุกขั้น และ recall ไม่ตก (0.8415 → 0.8400 อยู่ในช่วงแกว่งปกติของ I04) → เพราะแถวที่ถูก UPDATE ได้รายการใหม่ใน index ทันที candidate จึงยังมีตัวเป็นๆ ให้เลือก",
+    "errors_raised": 0,
+    "across_3_cycles": {
+      "cliff_every_cycle": "ตาย 50% ได้ 0 จาก 10 · เหมือนกันทั้ง 3 รอบ",
+      "control_update_every_cycle": "น้อยสุดที่ได้คืนมา = 10 จาก 10 ทั้ง 3 รอบ",
+      "note_th": "ผลเหมือนกันเป๊ะทุกรอบ เหมือน Q03 และต่างจาก I02/I04 เพราะเป็นผลเชิงโครงสร้างของ MVCC ไม่ขึ้นกับการสุ่มตอน build"
+    }
+  },
+  "reproduce": "sql/l02_dead_tuples.sql",
+  "config_profile": "fragile",
+  "safety_note_th": "ใช้ตารางแยก qf_l02 · qf_corpus อ่านอย่างเดียวและตรวจ fingerprint ก่อน/หลัง",
+  "verified_on": {
+    "postgres_version": "17.10 (Debian 17.10-1.pgdg12+1)",
+    "pgvector_version": "0.8.5",
+    "image_tag": "pgvector/pgvector:0.8.5-pg17",
+    "config_profile": "fragile",
+    "date": "2026-07-28",
+    "consecutive_successful_runs": 3,
+    "assertions_per_run": "6/6 ทุกรอบ (18/18 รวม)",
+    "checker_states_verified": "CANNOT_CHECK (ไม่มีตาราง) / DETECTED (ลบ 90% ยังไม่ vacuum · ขอ 10 ได้ 0) / NOT_DETECTED (หลัง VACUUM ได้ครบ 10) — 3 รอบติด",
+    "checker_states_evidence": "sql/l02_checker_states.sql -> results/l02_phase3_cycle.txt",
+    "checker_first_version_failed_th": "ตัวตรวจรุ่นแรกไม่พลิก เพราะใช้แถวในตารางเองเป็น query vector ซึ่งยังไม่ตาย — ดู E33 · H27",
+    "qf_corpus_untouched": "100000 แถว · fingerprint 5a32cba54ea2be4ed022fe8bfedae9b0 ตรวจทุกรอบใน assertion [6/6]"
+  }
+}
