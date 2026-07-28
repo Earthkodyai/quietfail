@@ -1,7 +1,7 @@
 ==============================================================================
 QuietFail — ตรวจความพร้อมของ repo
-รันเมื่อ : 2026-07-28 16:13:01
-commit  : 29b31d8  RQ3 answered: Opus 5 follows the documentation exact
+รันเมื่อ : 2026-07-28 16:21:56
+commit  : 1447a48  RQ3: quantify how much the answer-block ordering cha
 baseline: scripts/audit_baseline.json (_updated = 2026-07-27)
 ==============================================================================
 
