@@ -1,7 +1,7 @@
 ==============================================================================
 QuietFail — ตรวจความพร้อมของ repo
-รันเมื่อ : 2026-07-28 19:00:51
-commit  : ba81f21  slides: rewrite for a general audience, data descrip
+รันเมื่อ : 2026-07-28 19:21:11
+commit  : 7fc4bf0  slides: justify top-10, explain the two index types,
 baseline: scripts/audit_baseline.json (_updated = 2026-07-27)
 ==============================================================================
 
