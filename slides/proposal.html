@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QuietFail — สอบเสนอหัวข้อวิทยานิพนธ์</title>
+<style>
+  /* ============================================================
+     QuietFail — สไลด์สอบเสนอหัวข้อวิทยานิพนธ์
+     ไฟล์เดียว เปิด offline ได้ · ← → เปลี่ยนหน้า · Ctrl+P พิมพ์แจก
+     ทุกตัวเลขมาจาก results/ ของ repo — ห้ามแก้ตัวเลขในไฟล์นี้เดี่ยวๆ
+     ============================================================ */
+  :root{
+    --bg:#f6f7f5; --card:#ffffff; --ink:#16211c; --muted:#5b6a63;
+    --accent:#0b7a5c; --accent-soft:#e3f2ec; --hot:#c2410c; --hot-soft:#fdeee4;
+    --line:#dde4df; --code:#f0f3f1;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:"Sarabun","Leelawadee UI","Segoe UI",system-ui,sans-serif;
+    overflow:hidden;
+  }
+  #deck{position:relative;height:100%;width:100%}
+  .slide{
+    position:absolute; inset:0; display:none;
+    padding:5.5vh 7vw 9vh;
+    flex-direction:column; justify-content:center; gap:2.6vh;
+  }
+  .slide.active{display:flex}
+  .kicker{
+    color:var(--accent); font-weight:700; letter-spacing:.06em;
+    font-size:clamp(13px,1.6vh,18px); text-transform:uppercase;
+  }
+  h1{font-size:clamp(30px,6.4vh,64px); line-height:1.18; font-weight:800}
+  h2{font-size:clamp(24px,4.6vh,46px); line-height:1.22; font-weight:800}
+  p,li{font-size:clamp(16px,2.5vh,25px); line-height:1.55; color:var(--ink)}
+  .muted{color:var(--muted)}
+  .hot{color:var(--hot); font-weight:800}
+  .ok{color:var(--accent); font-weight:800}
+  strong{font-weight:800}
+  code,pre{
+    font-family:"Cascadia Code",Consolas,monospace;
+    background:var(--code); border-radius:6px;
+  }
+  code{padding:.1em .35em; font-size:.92em}
+  pre{padding:1.6vh 1.4vw; font-size:clamp(13px,2.1vh,21px); line-height:1.5; overflow:auto}
+  table{border-collapse:collapse; width:100%; background:var(--card);
+        border-radius:10px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,.06)}
+  th,td{padding:1.15vh 1.1vw; font-size:clamp(14px,2.2vh,22px);
+        text-align:left; border-bottom:1px solid var(--line)}
+  th{background:var(--accent-soft); color:var(--ink); font-weight:800}
+  tr:last-child td{border-bottom:none}
+  td.n,th.n{text-align:right; font-variant-numeric:tabular-nums}
+  ul{padding-left:1.2em} li{margin:.45vh 0}
+  .cols{display:grid; gap:2vw} .c2{grid-template-columns:1fr 1fr}
+  .card{background:var(--card); border-radius:14px; padding:2.4vh 1.6vw;
+        box-shadow:0 1px 4px rgba(0,0,0,.07)}
+  .card h3{font-size:clamp(16px,2.5vh,25px); margin-bottom:.8vh}
+  .big{font-size:clamp(44px,11vh,120px); font-weight:800; line-height:1.05;
+       font-variant-numeric:tabular-nums}
+  .tag{display:inline-block; background:var(--accent-soft); color:var(--accent);
+       border-radius:999px; padding:.2em .8em; font-weight:700;
+       font-size:clamp(13px,1.9vh,19px); margin-right:.4em}
+  .tag.hot{background:var(--hot-soft); color:var(--hot)}
+  .foot{position:absolute; left:7vw; right:7vw; bottom:3vh; display:flex;
+        justify-content:space-between; color:var(--muted);
+        font-size:clamp(11px,1.6vh,15px)}
+  #bar{position:absolute; top:0; left:0; height:5px; background:var(--accent);
+       width:0; transition:width .25s; z-index:5}
+  #pg{position:absolute; right:2.2vw; bottom:2.6vh; color:var(--muted);
+      font-size:clamp(12px,1.8vh,16px); font-variant-numeric:tabular-nums}
+  .quote{border-left:5px solid var(--accent); padding:.6vh 1.4vw;
+         background:var(--card); border-radius:0 10px 10px 0;
+         font-size:clamp(16px,2.6vh,26px)}
+  @media print{
+    body{overflow:visible; background:#fff}
+    .slide{display:flex !important; position:relative; height:100vh;
+           page-break-after:always}
+    #bar,#pg{display:none}
+  }
+</style>
+</head>
+<body>
+<div id="bar"></div>
+<div id="deck">
+
+<!-- 1 ─ ปก -->
+<section class="slide active">
+  <div class="kicker">การสอบเสนอหัวข้อวิทยานิพนธ์</div>
+  <h1>QuietFail</h1>
+  <h2 style="font-weight:600;color:var(--muted)">ชุดทดสอบความล้มเหลวเงียบ<br>ของระบบค้นหาแบบเวกเตอร์บน PostgreSQL</h2>
+  <p class="muted" style="margin-top:1.5vh">A fault-injection benchmark for silent failures in PostgreSQL vector search</p>
+  <p><span class="tag">PostgreSQL 17.10</span><span class="tag">pgvector 0.8.5</span><span class="tag">fault injection</span><span class="tag">recall@k</span></p>
+  <div class="foot"><span>QuietFail — สอบเสนอหัวข้อวิทยานิพนธ์</span><span>2026</span></div>
+</section>
+
+<!-- 2 ─ ปัญหา -->
+<section class="slide">
+  <div class="kicker">ปัญหา</div>
+  <h2>ความล้มเหลวที่ไม่มี error ให้เห็น</h2>
+  <table>
+    <tr><th></th><th>เขียนผิด / ตั้งค่าผิด แล้วเกิดอะไร</th></tr>
+    <tr><td><strong>SQL ปกติ</strong></td><td>ได้ error หรือได้ผลผิดที่สังเกตเห็นได้</td></tr>
+    <tr><td><strong>ANN search</strong></td><td class="hot">ได้ผลลัพธ์ที่ดูสมเหตุสมผลเสมอ — แค่ไม่ใช่ผลที่ถูก</td></tr>
+  </table>
+  <ul>
+    <li>ไม่มี exception · ไม่มี log · dashboard เขียวทุกช่อง</li>
+    <li>ทีมรู้ตัวเมื่อผู้ใช้บ่นว่า <em>"ค้นแล้วไม่เจอ"</em> — ซึ่งสายไปแล้ว</li>
+    <li>เอกสาร pgvector เขียนเองว่า approximate index <strong>เปลี่ยนคำตอบ</strong> ไม่ใช่แค่เร็วขึ้น</li>
+  </ul>
+</section>
+
+<!-- 3 ─ hook -->
+<section class="slide">
+  <div class="kicker">ตัวอย่างที่วัดได้จริง — 500,000 แถว · ค่าเริ่มต้นล้วน</div>
+  <div class="cols c2">
+    <div class="card"><h3>ความเร็วที่ทีมเห็น</h3>
+      <div class="big ok">117×</div><p class="muted">เร็วขึ้นหลังใส่ HNSW index</p></div>
+    <div class="card"><h3>สิ่งที่ไม่มีใครเห็น</h3>
+      <div class="big hot">2/200</div><p class="muted">query ที่ได้คำตอบถูกครบ 10 อันดับ</p></div>
+  </div>
+  <p class="quote">ระบบเร็วขึ้นพร้อมกับที่มันพังลง — ทีมที่ดูแต่ latency จะเห็นกราฟที่ "ดีขึ้น"</p>
+</section>
+
+<!-- 4 ─ คำถามวิจัย -->
+<section class="slide">
+  <div class="kicker">คำถามวิจัย</div>
+  <h2>3 คำถาม · วัดได้ทุกข้อ</h2>
+  <table>
+    <tr><th style="width:9%">RQ</th><th>คำถาม</th><th style="width:30%">ตอบด้วยอะไร</th></tr>
+    <tr><td><strong>RQ1</strong></td><td>การตั้งค่า ANN index ผิดแบบ<strong>ไม่มี error</strong> ทำให้ผลลัพธ์ผิดไปกี่ %</td><td>recall@k เทียบ exact search</td></tr>
+    <tr><td><strong>RQ2</strong></td><td>ความผิดพลาดเหล่านี้ตรวจจับอัตโนมัติได้กี่ข้อ จากหลักฐานอะไร</td><td>ตัวตรวจที่พิสูจน์ว่าพลิกสถานะได้ / 12</td></tr>
+    <tr><td><strong>RQ3</strong></td><td>โค้ดที่ AI สร้าง ติดกับดักเหล่านี้บ่อยแค่ไหน</td><td>ชุดโจทย์มาตรฐาน รันจริงบน DB</td></tr>
+  </table>
+  <p class="muted">RQ1 คือแกน · RQ2 ทำให้เป็นซอฟต์แวร์ไม่ใช่บทความ · RQ3 เชื่อมกับยุคที่โค้ดมาจาก AI</p>
+</section>
+
+<!-- 5 ─ งานที่เกี่ยวข้อง -->
+<section class="slide">
+  <div class="kicker">งานที่เกี่ยวข้อง</div>
+  <h2>ช่องว่าง: ทุกคนช่วย<em>เลือก</em>เครื่องมือ ไม่มีใคร<em>ตรวจ</em>เครื่องมือที่ deploy แล้ว</h2>
+  <table>
+    <tr><th style="width:24%">งาน</th><th>เขาตอบอะไร</th><th>เราต่างตรงไหน</th></tr>
+    <tr><td><strong>ann-benchmarks</strong></td><td>ตัวไหนเร็วสุดที่ recall เท่านี้ (จูนแล้ว)</td><td>เราวัดระบบ<strong>ที่ตั้งค่าตามจริง</strong> ไม่ใช่ที่จูนแล้ว</td></tr>
+    <tr><td><strong>Jepsen</strong></td><td>DB แบบกระจายละเมิดคำโฆษณาไหม</td><td>วิธีคิดเดียวกัน — เราใช้กับ ANN + ส่งมอบเครื่องมือ</td></tr>
+    <tr><td><strong>SQLancer</strong></td><td>บั๊กใน<strong>ตัว DB</strong></td><td>เราหา<strong>การใช้ผิด</strong>ของทีมที่ deploy</td></tr>
+    <tr><td><strong>RAGAS / BEIR</strong></td><td>คำตอบ RAG ดีไหม</td><td>เราวัดชั้นที่อยู่ใต้เขา: index ทำผลหายกี่ %</td></tr>
+  </table>
+  <p class="quote">ann-benchmarks ช่วยคุณ<strong>เลือก</strong> — QuietFail ช่วยคุณ<strong>ตรวจ</strong>ของที่เลือกไปแล้ว ทุก PR</p>
+</section>
+
+<!-- 6 ─ วิธีการ -->
+<section class="slide">
+  <div class="kicker">วิธีการ</div>
+  <h2>เฉลยที่เถียงไม่ได้ สองชั้น</h2>
+  <div class="cols c2">
+    <div class="card"><h3>1 · Fault injection</h3>
+      <p>จงใจสร้างความล้มเหลวเอง จึงรู้สาเหตุ <strong>100%</strong> ไม่ใช่เดาจากอาการ · ทุก fault มี assertion — ฉีดแล้วไม่เกิด = สคริปต์ต้องล้ม</p></div>
+    <div class="card"><h3>2 · Exact search เป็นเฉลย recall</h3>
+      <pre>BEGIN;
+SET LOCAL enable_indexscan = off;
+SELECT ...   -- คำตอบถูกตามนิยาม
+COMMIT;</pre>
+      <p class="muted">วิธีที่เอกสาร pgvector แนะนำเอง</p></div>
+  </div>
+  <p>ฐานวัดล็อกก่อนเก็บผล: corpus 100,000 แถว · 384 มิติ · 200 query · fingerprint กำกับ — <strong>แก้ทีหลังไม่ได้โดยไม่ถูกจับ</strong></p>
+</section>
+
+<!-- 7 ─ ขอบเขต -->
+<section class="slide">
+  <div class="kicker">ขอบเขต</div>
+  <h2>fault 12 ข้อ · 3 ชั้น · 3 ระดับเครื่องมือ</h2>
+  <div class="cols c2">
+    <table>
+      <tr><th>ชั้นของ fault</th><th>ตัวอย่าง</th></tr>
+      <tr><td>ติดตั้ง / สร้าง index</td><td>I01 I02 I03 I04 I05</td></tr>
+      <tr><td>เรียกใช้ (query)</td><td>Q01 Q02 Q03 Q04 Q06</td></tr>
+      <tr><td>คุณภาพข้อมูล / เสื่อมตามเวลา</td><td>V07 · L02</td></tr>
+    </table>
+    <table>
+      <tr><th>ระดับ</th><th>เครื่องมือ</th><th>ทำอะไร</th></tr>
+      <tr><td>วัดลึก</td><td><strong>pgvector</strong></td><td>ครบ 12 ข้อ</td></tr>
+      <tr><td>พิสูจน์ว่าทั่วไป</td><td>Qdrant</td><td>รัน Q01 ซ้ำ</td></tr>
+      <tr><td>จับคู่เอกสาร</td><td>Milvus · Weaviate · OpenSearch · FAISS</td><td>ทบทวนเอกสาร</td></tr>
+    </table>
+  </div>
+  <p class="muted">ชุด fault ล็อกแล้ว — เพิ่มข้อใหม่ต้องตัดข้อเดิม · ตัด Q05 / L01 / V08 พร้อมบันทึกเหตุผล</p>
+</section>
+
+<!-- 8 ─ เครื่องมือ -->
+<section class="slide">
+  <div class="kicker">เครื่องมือที่ส่งมอบ</div>
+  <h2>ตัวตรวจต้องตอบ 3 อย่าง — ไม่ใช่ 2</h2>
+  <div class="cols c2">
+    <div class="card"><h3>harness + ตัวนับคะแนน</h3>
+      <p><code>docker compose</code> + ตัวฉีด 15 ข้อ + เฉลย JSON<br>
+      <code>score.sql</code> ตอบต่อ fault:</p>
+      <p style="margin-top:1vh"><span class="tag hot">DETECTED</span><span class="tag">NOT_DETECTED</span><span class="tag" style="background:#eee;color:#555">CANNOT_CHECK</span></p>
+      <p class="muted"><strong>CANNOT_CHECK ≠ ผ่าน</strong> — เครื่องมือที่บอกว่าปลอดภัยทั้งที่ไม่ได้ดู อันตรายกว่าไม่มีเครื่องมือ</p></div>
+    <div class="card"><h3>ตัวตรวจของตัวตรวจ</h3>
+      <p><code>audit.py</code> — 25 หัวข้อ ใน ~30 วินาที<br>
+      <code>audit.py --reproduce</code> — รันตัวฉีดจริงซ้ำ 9 ข้อ</p>
+      <p class="muted" style="margin-top:1vh">ทุกตัวตรวจต้อง<strong>พิสูจน์ว่าพลิกสถานะได้</strong> — ตัวนับที่ไม่มีวันตอบลบ = ไม่ได้วัดอะไรเลย</p></div>
+  </div>
+</section>
+
+<!-- 9 ─ RQ1 -->
+<section class="slide">
+  <div class="kicker">ผลการทดลองนำร่อง · RQ1</div>
+  <h2>ใส่ index แล้วหายไปเท่าไหร่ — ที่ค่าเริ่มต้นล้วน</h2>
+  <table>
+    <tr><th>ขนาด</th><th></th><th class="n">recall@10</th><th class="n">แย่สุดต่อ query</th><th class="n">ครบ 10/10</th><th class="n">เร็วขึ้น</th></tr>
+    <tr><td>100k</td><td>HNSW</td><td class="n">0.8565</td><td class="n hot">0.0000</td><td class="n">52/200</td><td class="n">32.6×</td></tr>
+    <tr><td>100k</td><td>IVFFlat</td><td class="n">0.7870</td><td class="n hot">0.0000</td><td class="n">100/200</td><td class="n">44.6×</td></tr>
+    <tr><td><strong>500k</strong></td><td><strong>HNSW</strong></td><td class="n hot"><strong>0.5885</strong></td><td class="n hot">0.0000</td><td class="n hot"><strong>2/200</strong></td><td class="n"><strong>117.1×</strong></td></tr>
+    <tr><td>500k</td><td>IVFFlat</td><td class="n">0.7820</td><td class="n hot">0.0000</td><td class="n">108/200</td><td class="n">51.6×</td></tr>
+  </table>
+  <ul>
+    <li><strong>ค่าเฉลี่ยซ่อนความจริง</strong> — ทุกการตั้งค่ามี query ที่ได้ของถูก <span class="hot">0 อัน</span></li>
+    <li>Qdrant ที่ ef เท่ากันได้ 0.9945 → recall loss เป็นธรรมชาติของ ANN แต่<strong>ขนาดขึ้นกับค่าเริ่มต้นที่ผู้พัฒนาเลือก</strong></li>
+  </ul>
+</section>
+
+<!-- 10 ─ หน้าผา -->
+<section class="slide">
+  <div class="kicker">ผลการทดลองนำร่อง</div>
+  <h2>ความล้มเหลวเงียบมาเป็น "หน้าผา" ไม่ใช่ทางลาด</h2>
+  <table>
+    <tr><th></th><th>เส้นแบ่ง</th><th>ก่อนเส้น</th><th>หลังเส้น</th></tr>
+    <tr><td><strong>Q06</strong> ขอเกิน ef_search</td><td><code>k = ef_search + 1</code></td><td>ขอ 40 ได้ 40</td><td class="hot">ขอ 41 ได้ 40</td></tr>
+    <tr><td><strong>Q03</strong> filter หลัง scan</td><td>filter ตรง 20% → 2%</td><td>ขอ 10 ได้ 10</td><td class="hot">ขอ 10 ได้ 0</td></tr>
+    <tr><td><strong>L02</strong> แถวตายค้างใน index</td><td>dead 40% → 50%</td><td>ขอ 10 ได้ 10</td><td class="hot">ขอ 10 ได้ 0</td></tr>
+  </table>
+  <p class="quote">Q03 กับ L02 คือกลไกเดียวกัน — ต่างแค่ตัวกรองของ L02 คือ MVCC ซึ่ง<strong>ไม่มีอะไรในคำสั่งบอกเลย</strong><br>คำสั่งที่พังหน้าตาเหมือนคำสั่งที่ถูกทุกประการ → ตัววัดแบบ threshold จับไม่ทัน</p>
+</section>
+
+<!-- 11 ─ เอกสารผิด -->
+<section class="slide">
+  <div class="kicker">ผลการทดลองนำร่อง</div>
+  <h2>เอกสารทางการของ pgvector ผิดหรือไม่ครบ — วัดเจอ 3 ที่</h2>
+  <table>
+    <tr><th style="width:12%"></th><th>เอกสารบอก</th><th>วัดได้จริง</th></tr>
+    <tr><td><strong>Q04</strong></td><td>ตั้ง <code>probes = √lists = 10</code></td><td><strong>5 ได้ recall เต็มแล้ว</strong> — 10 ช้ากว่า 2.2× ฟรี</td></tr>
+    <tr><td><strong>I02</strong></td><td>NOTICE เตือน <em>"low recall"</em></td><td>กรณีถูกเตือนได้ <span class="ok">1.0000</span> · กรณีหาย 77% <span class="hot">เงียบสนิท</span></td></tr>
+    <tr><td><strong>Q03</strong></td><td>ข้อจำกัดของทางแก้มี 4 ข้อ</td><td>มี<strong>ข้อที่ 5</strong>: ต้องเพิ่ม <code>work_mem</code> ไม่งั้นได้ 0 แถว</td></tr>
+  </table>
+  <p class="quote">จูนตามเอกสารครบทุกตัว → จ่าย I/O เพิ่ม แต่ยังได้ <span class="hot">0 แถว</span> · เติม <code>work_mem</code> ตัวเดียว → ได้ครบ<br><strong>คำตอบที่ถูกมาจากการวัดเท่านั้น — นี่คือวิทยานิพนธ์ของโปรเจค</strong></p>
+</section>
+
+<!-- 12 ─ RQ2 -->
+<section class="slide">
+  <div class="kicker">ผลการทดลองนำร่อง · RQ2</div>
+  <h2>ตรวจจับล่วงหน้าได้ 11 จาก 12 ข้อ</h2>
+  <table>
+    <tr><th>ชนิดหลักฐาน</th><th>ตรวจได้เมื่อไหร่</th><th>fault</th></tr>
+    <tr><td><strong>catalog ล้วน</strong></td><td>เมื่อไหร่ก็ได้ — <strong>ไม่ต้องมีข้อมูล</strong></td><td>I01 I04 I05 Q04 Q06</td></tr>
+    <tr><td>วัดสด query เดียว</td><td>หลังมีข้อมูล (วินาที)</td><td>I02 L02 Q03 V07</td></tr>
+    <tr><td>สถานะสดของ DB</td><td class="hot">ต้องจับตอนกำลังเกิด</td><td>F01 F05 I03</td></tr>
+    <tr><td>ตาราง / ประวัติ query</td><td>หลังเหตุการณ์</td><td>F03 F10 · Q02</td></tr>
+  </table>
+  <ul>
+    <li><strong>5 ข้อแรกเข้า CI ได้ทันที</strong> — ไม่ต้องมีข้อมูล production ไม่ต้องรอปัญหาเกิด</li>
+    <li>3 ข้อต้องเฝ้าตอนเกิด — ระบุเป็นข้อจำกัด ไม่ซ่อน</li>
+  </ul>
+</section>
+
+<!-- 13 ─ RQ3 -->
+<section class="slide">
+  <div class="kicker">ผลการทดลองนำร่อง · RQ3</div>
+  <h2>โมเดลระดับบนสุด ติดกับดัก 5 จาก 10 โจทย์</h2>
+  <div class="cols c2">
+    <div class="card"><h3>วิธีวัด</h3>
+      <p>10 โจทย์ · แชทแยกต่อข้อ · ไม่ใบ้เรื่อง index · ให้คะแนนด้วยการ<strong>รัน SQL จริง</strong>เทียบ exact search</p>
+      <p style="margin-top:1vh"><span class="tag hot">ติด 5/10</span><span class="tag hot">เงียบสนิท 4/10</span></p></div>
+    <div class="card"><h3>ข้อที่สำคัญที่สุด (P08)</h3>
+      <p>โมเดล<strong>อธิบายกลไก over-filtering ถูกต้องเอง</strong> แล้วตั้งค่าตามเอกสารครบทุกตัว</p>
+      <p style="margin-top:.6vh">→ ได้ <span class="hot">0 แถว</span> · เติม <code>work_mem</code> → ได้ครบ 10</p></div>
+  </div>
+  <p class="quote">ไม่ใช่เพราะโมเดลไม่รู้จักปัญหา — แต่เพราะ<strong>เอกสารไม่ครบ</strong> · RQ3 ยืนยันช่องว่างเดียวกับที่ Q03 วัดไว้ ด้วยหลักฐานอิสระ (n=1 — แผน: โมเดลที่สอง)</p>
+</section>
+
+<!-- 14 ─ ความน่าเชื่อถือ -->
+<section class="slide">
+  <div class="kicker">ความน่าเชื่อถือของวิธีวิจัย</div>
+  <h2>ระเบียบวิธีที่จับความผิดพลาดของตัวเองได้</h2>
+  <div class="cols c2">
+    <div class="card"><h3>กลุ่มควบคุมหักล้างชื่อ fault ของเราเอง 4 ข้อ</h3>
+      <p>Q02 · I04 · I02 · L02 — สมมติฐานแรกผิดทั้ง 4 ครั้ง และ<strong>การวัดเป็นคนจับ</strong> เช่น I04: HNSW ไม่มี k-means แต่ก็แกว่ง 132/200</p></div>
+    <div class="card"><h3>บั๊กของเครื่องมือตัวเอง — บันทึก 27 รายการ</h3>
+      <p>ทุกข้อคือความล้มเหลวเงียบ<strong>ในเครื่องมือที่สร้างมาจับความล้มเหลวเงียบ</strong> · 2 ครั้งตัวตรวจรายงาน "ไม่พบปัญหา" ทั้งที่ fault อยู่ตรงหน้า — ถูกจับด้วยกฎ "ต้องพิสูจน์ว่าตอบลบได้"</p></div>
+  </div>
+  <ul>
+    <li>ทุก fault รัน <strong>3 รอบติด</strong> · index ที่ไม่ reproducible สร้าง <strong>5 รอบ</strong> · รายงานราย query ไม่ใช่แค่ค่าเฉลี่ย</li>
+    <li>บันทึกการตัดสินใจ 19 รายการ · ความผิดพลาด 35 รายการ · หลักฐานดิบ 39 ไฟล์ ผูก commit</li>
+  </ul>
+</section>
+
+<!-- 15 ─ ข้อจำกัด -->
+<section class="slide">
+  <div class="kicker">ข้อจำกัด</div>
+  <h2>สิ่งที่งานนี้ยังตอบไม่ได้ — พูดเอง ก่อนถูกถาม</h2>
+  <ul>
+    <li><strong>เครื่องเดียว โปรไฟล์เดียว</strong> — จึงใช้ buffers เป็นตัวชี้วัดหลัก ไม่ใช่เวลา</li>
+    <li><strong>corpus สังเคราะห์</strong> 50 กลุ่มสะอาด — ผลของ I02 ผูกกับคุณสมบัตินี้โดยตรง · ข้อมูลจริงคืองานต่อ</li>
+    <li><strong>กลไกที่ทำให้ HNSW rebuild ไม่นิ่ง ยังไม่รู้</strong> — ตัดออกได้แค่ฝั่ง query กับ parallel build</li>
+    <li><strong>RQ3 n=1</strong> — อ้างได้ว่า "เกิดขึ้นจริง" อ้างไม่ได้ว่าเป็นอัตราของ AI ทั่วไป</li>
+    <li>3 fault ตรวจได้เฉพาะตอนกำลังเกิด — เครื่องมือสแกนครั้งเดียวไม่เห็น</li>
+  </ul>
+</section>
+
+<!-- 16 ─ แผนงาน + สรุป -->
+<section class="slide">
+  <div class="kicker">แผนงานและสรุป</div>
+  <h2>สถานะ: วัดครบแล้ว — เหลือขยายผลและเรียบเรียงเล่ม</h2>
+  <table>
+    <tr><th>งาน</th><th>สถานะ</th></tr>
+    <tr><td>harness + ตัวฉีด + ตัวตรวจ 15 ข้อ (พิสูจน์พลิกสถานะครบ)</td><td class="ok">เสร็จ</td></tr>
+    <tr><td>ผล RQ1 (2 ขนาดข้อมูล) · RQ2 (11/12) · RQ3 (n=1) + รายงาน</td><td class="ok">เสร็จ</td></tr>
+    <tr><td>RQ3 โมเดลที่สอง — แยก "รูปแบบร่วม" ออกจาก "นิสัยโมเดลเดียว"</td><td>ถัดไป</td></tr>
+    <tr><td>quietfail-check เป็น GitHub Action (5 ข้อ catalog พร้อมใช้)</td><td>ถัดไป</td></tr>
+    <tr><td>ทดสอบบน embedding จริง · เรียบเรียงเล่มวิทยานิพนธ์</td><td>ถัดไป</td></tr>
+  </table>
+  <p class="quote"><strong>ข้อเสนอ:</strong> ความล้มเหลวเงียบของ vector search วัดได้ ตรวจจับล่วงหน้าได้เกือบทั้งหมด<br>และคำตอบที่ถูกต้องมาจากการวัด — ไม่ใช่จากค่าเริ่มต้น ไม่ใช่จากเอกสาร และไม่ใช่จาก AI</p>
+</section>
+
+</div>
+<div id="pg"></div>
+<script>
+  const slides=[...document.querySelectorAll('.slide')],bar=document.getElementById('bar'),pg=document.getElementById('pg');
+  let i=Math.max(0,Math.min(slides.length-1,(parseInt(location.hash.slice(1))||1)-1));
+  function go(n){
+    i=Math.max(0,Math.min(slides.length-1,n));
+    slides.forEach((s,k)=>s.classList.toggle('active',k===i));
+    bar.style.width=((i+1)/slides.length*100)+'%';
+    pg.textContent=(i+1)+' / '+slides.length;
+    history.replaceState(null,'','#'+(i+1));
+  }
+  addEventListener('keydown',e=>{
+    if(['ArrowRight','ArrowDown','PageDown',' '].includes(e.key)) go(i+1);
+    else if(['ArrowLeft','ArrowUp','PageUp'].includes(e.key)) go(i-1);
+    else if(e.key==='Home') go(0); else if(e.key==='End') go(slides.length-1);
+  });
+  addEventListener('click',e=>{ if(e.target.closest('a'))return;
+    go(e.clientX>innerWidth/2? i+1: i-1); });
+  go(i);
+</script>
+</body>
+</html>
