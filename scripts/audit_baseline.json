@@ -127,11 +127,13 @@
       ]
     },
     "2": {
-      "name": "ตัวตรวจที่รันได้จริง",
+      "name": "ตัวตรวจที่รันได้จริง + CI",
       "done": true,
       "artifacts": [
         "sql/score.sql",
-        "scripts/audit.py"
+        "scripts/audit.py",
+        "scripts/quietfail_check.py",
+        ".github/workflows/quietfail-check.yml"
       ]
     },
     "3": {
