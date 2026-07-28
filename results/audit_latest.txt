@@ -1,7 +1,7 @@
 ==============================================================================
 QuietFail — ตรวจความพร้อมของ repo
-รันเมื่อ : 2026-07-28 20:07:36
-commit  : edf3a3c  quietfail-check: the deliverable that runs against s
+รันเมื่อ : 2026-07-28 20:26:28
+commit  : b3769d2  thesis: full Thai draft in KU science-track structur
 baseline: scripts/audit_baseline.json (_updated = 2026-07-27)
 ==============================================================================
 
