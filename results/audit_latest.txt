@@ -1,7 +1,7 @@
 ==============================================================================
 QuietFail — ตรวจความพร้อมของ repo
-รันเมื่อ : 2026-07-28 14:15:22
-commit  : 90d70af  audit report for df9dcd6: 23/23 pass, all 12 vector 
+รันเมื่อ : 2026-07-28 14:16:34
+commit  : 194226c  REPORT.md: the write-up, and a duplicate E33 the aud
 baseline: scripts/audit_baseline.json (_updated = 2026-07-27)
 ==============================================================================
 
@@ -11,7 +11,7 @@ baseline: scripts/audit_baseline.json (_updated = 2026-07-27)
   3. ไม่ตรงกัน = มีอะไรเปลี่ยนหลัง audit ให้รัน  python scripts/audit.py  ใหม่
 
 ── 1 git ──
- FAIL  working tree                                   มีไฟล์ค้าง 6 รายการ ยังไม่ commit: CLAUDE.md, DECISIONS.md, FAULTS.md, groundtruth/l02.json
+ FAIL  working tree                                   มีไฟล์ค้าง 1 รายการ ยังไม่ commit: CLAUDE.md
   ok   results ถูก track                              35 ไฟล์ · ยกเว้น csv ที่ตั้งใจไม่ track 3 ไฟล์
 ── 2 groundtruth ──
   ok   parse ได้ทุกไฟล์                               15 ไฟล์
