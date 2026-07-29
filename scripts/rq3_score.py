@@ -173,8 +173,79 @@ def check_rows_and_recall(spec, sql_text, where_for_ref):
     ok_recall = (recall >= spec.get("min_recall", 1.0))
     detail = "ได้ %d/%d แถว · recall %.2f (ต้อง >= %.2f)" % (
         n, k, recall, spec.get("min_recall", 1.0))
-    return (PASS if (ok_rows and ok_recall) else FAIL), detail, {
-        "rows": n, "expect": k, "recall": round(recall, 4)}
+
+    # ── ตรวจว่า query ใช้ vector index จริงไหม ───────────────────────
+    #
+    # ⚠️ เพิ่มหลังเจอของจริง: ChatGPT เขียน CROSS JOIN แล้ว ORDER BY คอลัมน์
+    #    จากตารางที่ join มา → pgvector ใช้ index ไม่ได้ กลายเป็น Seq Scan
+    #    ผลที่ได้ **ถูกต้องสมบูรณ์ recall 1.00 ทุกข้อ** เพราะสแกนทั้งตาราง
+    #
+    #    ตัวให้คะแนนรุ่นแรกวัดแค่จำนวนแถวกับ recall จึงให้ผ่านหมด —
+    #    **จุดบอดแบบเดียวกับ fault ที่โปรเจคนี้ศึกษาอยู่พอดี** (ดู H29)
+    #
+    #    บนข้อมูล 100k นี่คือความล้มเหลวจริง: index ถูกข้ามเงียบๆ
+    #    ผลไม่ผิด แต่ช้าลงเป็นสิบเท่า และไม่มีอะไรแจ้ง = กับดัก Q02
+    uses_idx, buf = explain_uses_vector_index(prelude, query)
+    extra = {"rows": n, "expect": k, "recall": round(recall, 4),
+             "uses_index": uses_idx, "buffers": buf}
+
+    if uses_idx is False:
+        return FAIL, (detail + " · **แต่ไม่ได้ใช้ vector index เลย** "
+                      "(Seq Scan · อ่าน %s block) — ผลถูกเพราะสแกนทั้งตาราง = กับดัก Q02"
+                      % (buf if buf is not None else "?")), extra
+    if not (ok_rows and ok_recall):
+        return FAIL, detail, extra
+    return PASS, detail + (" · ใช้ index (%s block)" % buf if buf is not None else ""), extra
+
+
+def explain_uses_vector_index(prelude, query):
+    """
+    คืน (ใช้ vector index ไหม, buffers) — อ่านจาก **โครงสร้าง plan**
+    ไม่ใช่ค้นคำในข้อความ (กฎเหล็กข้อ 6)
+
+    คืน None ถ้าตรวจไม่ได้ — ห้ามเดาว่า "ใช้" หรือ "ไม่ใช้"
+    """
+    # ต้องอยู่ใน sql/ เพราะเป็นโฟลเดอร์เดียวที่ mount เข้า container
+    # (เขียนลง rq3/ แล้ว psql หาไฟล์ไม่เจอ → คืน None เงียบๆ → ตัวตรวจ index ไม่ทำงานเลย)
+    tmp = "sql/_rq3_explain.sql"
+    io.open(tmp, "w", encoding="utf-8", newline="\n").write(
+        "BEGIN;\n" + prelude +
+        "EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON)\n" + query + ";\n" +
+        "ROLLBACK;\n")
+    rc, out = psql_file(tmp)
+    try:
+        os.remove(tmp)
+    except OSError:
+        pass
+    if rc != 0:
+        return None, None
+
+    m = re.search(r"\[\s*\{.*\}\s*\]", out, re.S)
+    if not m:
+        return None, None
+    try:
+        plan = json.loads(m.group(0))[0]
+    except Exception:
+        return None, None
+
+    buf = None
+    p = plan.get("Plan", {})
+    buf = (p.get("Shared Hit Blocks", 0) or 0) + (p.get("Shared Read Blocks", 0) or 0)
+
+    # เดินต้นไม้ plan หา Index Scan ที่ใช้ index ของ documents บนคอลัมน์ vector
+    found = [False]
+
+    def walk(node):
+        if node.get("Node Type", "").endswith("Index Scan"):
+            idx = node.get("Index Name", "")
+            # ชื่อ index ของ vector บนตาราง documents — ไม่ใช่ pkey ของตารางอื่น
+            if idx.startswith("documents_") and "embedding" in idx:
+                found[0] = True
+        for child in node.get("Plans", []) or []:
+            walk(child)
+
+    walk(p)
+    return found[0], buf
 
 
 def vector_indexes():
@@ -200,9 +271,19 @@ def check_index_created(spec, sql_text):
     """
     before = vector_indexes()
     rc, out = run_candidate(sql_text)
+
+    # ⚠️ ต้องเก็บกวาด **ก่อน return ทุกทาง** — รุ่นแรก return ตอน rc != 0
+    #    โดยไม่เก็บกวาด ทำให้ index ที่โมเดลสร้างสำเร็จก่อนจะพังค้างอยู่
+    #    รอบถัดไปจึงล้มด้วย "relation already exists" ซึ่งเป็นคนละเรื่องกับความผิดของโมเดล
+    #    = ตัวให้คะแนนสร้างความล้มเหลวปลอมให้ตัวเอง (ดู H30)
+    def cleanup():
+        for x in vector_indexes() - before:
+            psql("DROP INDEX IF EXISTS " + x.split("=")[0] + ";")
+
     if rc != 0:
         tail = [l for l in out.splitlines() if l.strip()][-1:]
         msg = tail[0][:110] if tail else "?"
+        cleanup()
         if is_harness_error(out):
             return CANNOT, "ตัวให้คะแนนเองรันไม่ได้: " + msg, {}
         return FAIL, "SQL รันไม่ผ่าน: " + msg, {"error": True}
