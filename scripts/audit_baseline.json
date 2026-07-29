@@ -1,6 +1,6 @@
 {
   "_comment_th": "ค่าที่ audit.py ใช้เทียบ — แก้ไฟล์นี้ได้เฉพาะเมื่อ 'ตั้งใจ' เปลี่ยนฐาน และต้องมีบรรทัดใน DECISIONS.md",
-  "_updated": "2026-07-27",
+  "_updated": "2026-07-29",
   "db": {
     "corpus_table": "qf_corpus",
     "corpus_rows": 100000,
@@ -172,9 +172,11 @@
       "name": "ชุดโจทย์ AI ตอบ RQ3",
       "done": true,
       "artifacts": [
-        "results/rq3_ai_traps.txt"
+        "results/rq3_ai_traps.txt",
+        "scripts/rq3_score.py",
+        "rq3/assignments.md"
       ],
-      "note_th": "ทำแล้ว 2026-07-28 · Opus 5 (high) · ติดกับดัก 5 จาก 10 (เงียบ 4)"
+      "note_th": "ทำแล้ว **n=2** · Opus 5 = 5/10 (เงียบ 4) · ChatGPT = 10/10 แต่ 8 ข้อมาจากต้นเหตุเดียว (ไม่ใช้ index เลย) — ดูรายละเอียดใน results/rq3_ai_traps.txt"
     },
     "6": {
       "name": "ร่างเล่มวิทยานิพนธ์",

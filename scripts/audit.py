@@ -222,6 +222,18 @@ def check_docs(bl):
         # (เกิดจริงแล้ว: E33 ถูกใช้สองครั้ง ตอนทำ I02 กับตอนทำ L02)
         heads = re.findall(r"^#{1,4}\s*([ED]\d{2})\b", dec, re.M)
         dup = sorted({h for h in heads if heads.count(h) > 1})
+        # ทะเบียนบัคระหว่างทางก็ต้องไม่มีเลขซ้ำด้วยเหตุผลเดียวกัน
+        # (นับเฉพาะ **แถวในตาราง** ไม่ใช่การอ้างถึงในเนื้อความ ไม่งั้นจะฟ้องผิด)
+        try:
+            fa = read("FAULTS.md")
+            reg = re.findall(r"^\|\s*\*\*([HU]\d{2})\*\*", fa, re.M)
+            rdup = sorted({h for h in reg if reg.count(h) > 1})
+        except IOError:
+            reg, rdup = [], []
+        check(g, "เลข H/U ในทะเบียนบัคไม่ซ้ำกัน", FAIL if rdup else PASS,
+              ("ซ้ำ: " + ", ".join(rdup)) if rdup
+              else "%d แถว ไม่มีเลขซ้ำ" % len(reg))
+
         check(g, "เลข E/D ไม่ซ้ำกัน", FAIL if dup else PASS,
               ("ซ้ำ: " + ", ".join(dup) + " — การอ้างถึงจะชี้ไปผิดที่โดยไม่มีอะไรเตือน")
               if dup else "%d หัวข้อ ไม่มีเลขซ้ำ" % len(heads))

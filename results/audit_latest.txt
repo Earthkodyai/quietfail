@@ -1,8 +1,8 @@
 ==============================================================================
 QuietFail — ตรวจความพร้อมของ repo
-รันเมื่อ : 2026-07-30 00:29:23
-commit  : f8c0227  RQ3 n=2: ChatGPT never used the index at all, and go
-baseline: scripts/audit_baseline.json (_updated = 2026-07-27)
+รันเมื่อ : 2026-07-30 00:32:58
+commit  : 0c5efb4  audit report: 25/25 pass
+baseline: scripts/audit_baseline.json (_updated = 2026-07-29)
 ==============================================================================
 
 วิธีใช้รายงานนี้แทนการตรวจเอง
@@ -11,7 +11,7 @@ baseline: scripts/audit_baseline.json (_updated = 2026-07-27)
   3. ไม่ตรงกัน = มีอะไรเปลี่ยนหลัง audit ให้รัน  python scripts/audit.py  ใหม่
 
 ── 1 git ──
-  ok   working tree                                   สะอาด (ไม่นับรายงานของ audit เอง)
+ FAIL  working tree                                   มีไฟล์ค้าง 3 รายการ ยังไม่ commit: CLAUDE.md, scripts/audit.py, scripts/audit_baseline.json
   ok   results ถูก track                              45 ไฟล์ · ยกเว้น csv ที่ตั้งใจไม่ track 3 ไฟล์
 ── 2 groundtruth ──
   ok   parse ได้ทุกไฟล์                               15 ไฟล์
@@ -21,6 +21,7 @@ baseline: scripts/audit_baseline.json (_updated = 2026-07-27)
   ok   มีไฟล์ *_checker_states.sql ตามที่ baseline กำหนด ครบ 10 ข้อ
 ── 3 เอกสาร ──
   ok   E/D ที่ถูกอ้างมีนิยาม                          56 ตัว อ้างครบทุกตัว
+  ok   เลข H/U ในทะเบียนบัคไม่ซ้ำกัน                  36 แถว ไม่มีเลขซ้ำ
   ok   เลข E/D ไม่ซ้ำกัน                              56 หัวข้อ ไม่มีเลขซ้ำ
   ok   สถานะใน CLAUDE.md ตรงกับ baseline              เสร็จ 11 · เหลือ 
   ok   ตารางของส่งมอบใน CLAUDE.md                     6 ข้อตรงกับ baseline · ไฟล์สอดคล้องทุกข้อ
@@ -42,8 +43,8 @@ baseline: scripts/audit_baseline.json (_updated = 2026-07-27)
   ok   verdict ที่ได้ตอนนี้ (ข้อมูล ไม่ใช่เกณฑ์)      F01=NOT_DETECTED · F03=CANNOT_CHECK · F05=NOT_DETECTED · F10=CANNOT_CHECK · I01=CANNOT_CHECK · I02=CANNOT_CHECK · I03=NOT_DETECTED · I04=CANNOT_CHECK · I05=DETECTED · L02=CANNOT_CHECK · Q02=NOT_DETECTED · Q03=CANNOT_CHECK · Q04=CANNOT_CHECK · Q06=DETECTED · V07=DETECTED
 
 ==============================================================================
-ผ่าน 25 · ไม่ผ่าน 0 · ตรวจไม่ได้ 0   (รวม 25)
+ผ่าน 25 · ไม่ผ่าน 1 · ตรวจไม่ได้ 0   (รวม 26)
 
-✅ ผ่านครบทุกข้อ — CLAUDE.md เชื่อถือได้ ณ เวลาที่รัน
-   ผู้ช่วยคนถัดไปไม่ต้องไล่ตรวจซ้ำทีละข้อ
+❌ ยังไม่พร้อม — แก้ให้ครบก่อนถือว่า CLAUDE.md เชื่อถือได้
+   'ตรวจไม่ได้' ไม่ใช่ 'ผ่าน' (กฎเหล็กข้อ 10)
 ==============================================================================
