@@ -57,43 +57,61 @@
     "results/qdrant_search_results.csv"
   ],
   "score_expected_rows": 15,
-  "_reproduce_comment_th": "รันตัวฉีดจริงซ้ำ ไม่ใช่แค่ดูว่าหลักฐานมีอยู่ · สำเร็จ = exit 0 เพราะทุกสคริปต์ใช้ ON_ERROR_STOP และ RAISE EXCEPTION เมื่อ assertion ตก",
+  "_reproduce_comment_th": "รันตัวฉีดจริงซ้ำ ไม่ใช่แค่ดูว่าหลักฐานมีอยู่ · สำเร็จ = exit 0 เพราะทุกสคริปต์ใช้ ON_ERROR_STOP และ RAISE EXCEPTION เมื่อ assertion ตก · minutes เป็นค่า**วัดจริง** 2026-07-28 ไม่ใช่ประมาณ (รวม 32.4 นาที · assertion 46)",
   "reproduce": {
     "I01": {
       "script": "sql/i01_opclass_mismatch.sql",
-      "minutes": 4
+      "minutes": 6,
+      "measured_seconds": 385,
+      "assertions": 4
     },
     "I04": {
       "script": "sql/i04_kmeans_nondeterminism.sql",
-      "minutes": 7
+      "minutes": 9,
+      "measured_seconds": 536,
+      "assertions": 5
     },
     "Q02": {
       "script": "sql/q02_wrong_query_shape.sql",
-      "minutes": 2
+      "minutes": 1,
+      "measured_seconds": 38,
+      "assertions": 5
     },
     "Q04": {
       "script": "sql/q04_default_params.sql",
-      "minutes": 5
+      "minutes": 4,
+      "measured_seconds": 221,
+      "assertions": 5
     },
     "Q06": {
       "script": "sql/q06_limit_exceeds_ef.sql",
-      "minutes": 2
+      "minutes": 1,
+      "measured_seconds": 51,
+      "assertions": 5
     },
     "V07": {
       "script": "sql/v07_null_zero_vectors.sql",
-      "minutes": 1
+      "minutes": 1,
+      "measured_seconds": 1,
+      "assertions": 4
     },
     "I02": {
       "script": "sql/i02_index_built_too_early.sql",
-      "minutes": 9
+      "minutes": 2,
+      "measured_seconds": 105,
+      "assertions": 6
     },
     "Q03": {
       "script": "sql/q03_filter_after_scan.sql",
-      "minutes": 4
+      "minutes": 2,
+      "measured_seconds": 116,
+      "assertions": 6
     },
     "L02": {
       "script": "sql/l02_dead_tuples.sql",
-      "minutes": 6
+      "minutes": 8,
+      "measured_seconds": 491,
+      "assertions": 6
     }
   },
   "reproduce_manual_only": {
