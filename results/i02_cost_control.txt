@@ -1,0 +1,66 @@
+LOAD
+SET
+psql:/sql/i02_cost_control.sql:25: NOTICE:  index "qf_i02c_idx" does not exist, skipping
+DROP INDEX
+psql:/sql/i02_cost_control.sql:26: NOTICE:  table "qf_i02c" does not exist, skipping
+DROP TABLE
+psql:/sql/i02_cost_control.sql:27: NOTICE:  table "qf_i02c_cost" does not exist, skipping
+DROP TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE FUNCTION
+CREATE FUNCTION
+SET
+=== วัดต้นทุนของทุกเงื่อนไข บน corpus ชุดหลัก ===
+psql:/sql/i02_cost_control.sql:89: NOTICE:  index "qf_i02c_idx" does not exist, skipping
+psql:/sql/i02_cost_control.sql:89: NOTICE:  ivfflat index created with little data
+DETAIL:  This will cause low recall.
+HINT:  Drop the index until the table has more data.
+ qf_i02c_run 
+-------------
+ 
+(1 row)
+
+ qf_i02c_run 
+-------------
+ 
+(1 row)
+
+ qf_i02c_run 
+-------------
+ 
+(1 row)
+
+     เงื่อนไข      | แถวตอน_build | recall | buffers_เฉลี่ย | ms_เฉลี่ย | ขนาด_index 
+-----------------+--------------+--------+--------------+---------+------------
+ A_build_at_50   |           50 | 1.0000 |          433 |    4.22 | 157 MB
+ B_build_at_1000 |         1000 | 0.8820 |          437 |    2.44 | 157 MB
+ C_build_at_full |       100000 | 0.7600 |          304 |    2.03 | 157 MB
+(3 rows)
+
+
+=== ข้อสรุป ===
+psql:/sql/i02_cost_control.sql:118: NOTICE:  A: recall=1.0000 buffers=433 index=157 MB
+psql:/sql/i02_cost_control.sql:118: NOTICE:  C: recall=0.7600 buffers=304 index=157 MB
+psql:/sql/i02_cost_control.sql:118: NOTICE:  A อ่านมากกว่า C 1.42 เท่า · index ใหญ่กว่า 1.00 เท่า
+psql:/sql/i02_cost_control.sql:118: NOTICE:  
+psql:/sql/i02_cost_control.sql:118: NOTICE:  -> ⭐ recall ที่สูงกว่าของ A **แลกมาด้วยต้นทุน** ไม่ใช่ของฟรี
+psql:/sql/i02_cost_control.sql:118: NOTICE:     ข้อสรุปเดิมของ I02 ที่เทียบแต่ recall จึงไม่ครบ ต้องแก้
+DO
+
+=== เก็บกวาด ===
+DROP INDEX
+DROP TABLE
+DROP FUNCTION
+DROP FUNCTION
+RESET
+ vector_index_ค้าง 
+------------------
+                0
+(1 row)
+
+ corpus_rows |        corpus_fingerprint        
+-------------+----------------------------------
+        5000 | 5a32cba54ea2be4ed022fe8bfedae9b0
+(1 row)
+

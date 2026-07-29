@@ -1,0 +1,115 @@
+Timing is off.
+LOAD
+SET
+psql:/sql/i02b_harder_corpus.sql:34: NOTICE:  index "qf_i02b_idx" does not exist, skipping
+DROP INDEX
+DROP TABLE
+DROP TABLE
+psql:/sql/i02b_harder_corpus.sql:36: NOTICE:  table "qf_i02b_truth" does not exist, skipping
+psql:/sql/i02b_harder_corpus.sql:37: NOTICE:  table "qf_i02b_obs" does not exist, skipping
+DROP TABLE
+DROP TABLE
+psql:/sql/i02b_harder_corpus.sql:38: NOTICE:  table "qf_i02b_meta" does not exist, skipping
+CREATE TABLE
+=== สร้าง corpus ที่ยากขึ้น 100,000 แถว ===
+DO
+ANALYZE
+
+=== เทียบโครงสร้างกับ corpus ชุดหลัก ===
+      corpus       |  แถว   | กลุ่ม | เล็กสุด | ใหญ่สุด | outlier_pct 
+-------------------+--------+-----+-------+-------+-------------
+ qf_corpus (ชุดหลัก) | 100000 |  50 |  2000 |  2000 |           0
+ qf_i02b (ยากขึ้น)   |  99976 |  50 |   444 | 22226 |           2
+(2 rows)
+
+
+=== ⭐ จุดชี้ขาด: N แถวแรกครอบคลุมกี่กลุ่ม ===
+    ชุดหลักได้ครบ 50 ตั้งแต่ 50 แถวแรก · ชุดนี้ควรได้น้อยกว่ามาก
+ แถวแรก | ชุดหลัก | ยากขึ้น 
+--------+-------+-------
+     50 |    50 |     1
+   1000 |    50 |     1
+   5000 |    50 |     1
+  20000 |    50 |     1
+(4 rows)
+
+
+=== สร้างเฉลยด้วย exact search (200 คำถาม k=10) ===
+CREATE TABLE
+BEGIN
+SET
+SET
+INSERT 0 200
+COMMIT
+ เฉลย | สั้นสุด 
+------+------
+  200 |   10
+(1 row)
+
+CREATE TABLE
+CREATE TABLE
+CREATE FUNCTION
+SET
+
+=== 5 รอบ x 3 เงื่อนไข (I04 บังคับให้ต้อง 5 รอบ) ===
+psql:/sql/i02b_harder_corpus.sql:194: NOTICE:  index "qf_i02b_idx" does not exist, skipping
+ qf_i02b_run 
+-------------
+ 
+ 
+ 
+ 
+ 
+(5 rows)
+
+ qf_i02b_run 
+-------------
+ 
+ 
+ 
+ 
+ 
+(5 rows)
+
+ qf_i02b_run 
+-------------
+ 
+ 
+ 
+ 
+ 
+(5 rows)
+
+
+=== ผล: corpus ยากขึ้น ===
+      cond       | กลุ่มที่เห็นตอน_build | recall_เฉลี่ย |  ต่ำสุด  |  สูงสุด  
+-----------------+------------------+-------------+--------+--------
+ A_build_at_50   |                1 |      0.8727 | 0.8300 | 0.9215
+ B_build_at_1000 |                1 |      0.8697 | 0.8180 | 0.8895
+ C_build_at_full |               50 |      0.8079 | 0.7600 | 0.8440
+(3 rows)
+
+
+=== assertion ===
+psql:/sql/i02b_harder_corpus.sql:248: NOTICE:  [1/3] OK ข้อมูลปลายทางเท่ากันทุกเงื่อนไข
+psql:/sql/i02b_harder_corpus.sql:248: NOTICE:  [2/3] OK corpus ยากจริง — 50 แถวแรกเห็นแค่ 1 กลุ่ม จากทั้งหมด 50
+psql:/sql/i02b_harder_corpus.sql:248: NOTICE:  [3/3] OK วัดครบ — A=0.8727 B=0.8697 C=0.8079
+psql:/sql/i02b_harder_corpus.sql:248: NOTICE:  
+psql:/sql/i02b_harder_corpus.sql:248: NOTICE:  -> build ตอนข้อมูลน้อยยังดีกว่า แม้บน corpus ที่ยากขึ้น
+psql:/sql/i02b_harder_corpus.sql:248: NOTICE:     = ข้อสรุปของ I02 แข็งกว่าที่คิด ไม่ได้ผูกกับการสลับกลุ่มอย่างเดียว
+DO
+
+=== เก็บกวาด ===
+DROP INDEX
+DROP FUNCTION
+RESET
+ vector_index_ค้าง 
+------------------
+                0
+(1 row)
+
+ corpus_rows |        corpus_fingerprint        
+-------------+----------------------------------
+        5000 | 5a32cba54ea2be4ed022fe8bfedae9b0
+(1 row)
+

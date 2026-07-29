@@ -1,0 +1,60 @@
+LOAD
+SET
+psql:/sql/i02b_buffers_control.sql:25: NOTICE:  table "qf_i02b_buf" does not exist, skipping
+DROP TABLE
+CREATE TABLE
+CREATE FUNCTION
+CREATE FUNCTION
+SET
+=== วัด buffers · เวลา · ขนาด index · recall ต่อเงื่อนไข ===
+psql:/sql/i02b_buffers_control.sql:85: NOTICE:  index "qf_i02b_idx" does not exist, skipping
+ qf_i02b_measure_buf 
+---------------------
+ 
+(1 row)
+
+ qf_i02b_measure_buf 
+---------------------
+ 
+(1 row)
+
+     เงื่อนไข      | buffers_เฉลี่ย | ms_เฉลี่ย | ขนาด_index | recall 
+-----------------+--------------+---------+------------+--------
+ A_build_at_50   |          562 |    3.55 | 313 MB     | 0.8560
+ C_build_at_full |          327 |    1.49 | 157 MB     | 0.8415
+(2 rows)
+
+
+=== ⭐ จำนวน list ที่ใช้จริง — ถ้า build บน 50 แถวได้ centroid น้อย list จะใหญ่ ===
+    (อ่านจาก reloptions ได้แค่ค่าที่ขอ ไม่ใช่ค่าที่ได้จริง จึงดูที่ buffers เป็นหลัก)
+   relname    | reloptions |  size   
+--------------+------------+---------
+ qf_i02b_pkey |            | 8784 kB
+ qf_i02b_idx  | lists=100  | 157 MB
+(2 rows)
+
+
+=== ข้อสรุป ===
+psql:/sql/i02b_buffers_control.sql:125: NOTICE:  A (build 50 แถว)  buffers=562 recall=0.8560
+psql:/sql/i02b_buffers_control.sql:125: NOTICE:  C (build ครบ)     buffers=327 recall=0.8415
+psql:/sql/i02b_buffers_control.sql:125: NOTICE:  A อ่านมากกว่า C 1.72 เท่า
+psql:/sql/i02b_buffers_control.sql:125: NOTICE:  
+psql:/sql/i02b_buffers_control.sql:125: NOTICE:  -> **H2 ยืนยัน** recall ที่สูงกว่าแลกมาด้วยการอ่านมากกว่าอย่างมีนัย
+psql:/sql/i02b_buffers_control.sql:125: NOTICE:     index ที่ build บนข้อมูลน้อย **เลิกเป็น index ที่เร็ว** ไม่ใช่แม่นกว่า
+DO
+
+=== เก็บกวาด ===
+DROP INDEX
+DROP FUNCTION
+DROP FUNCTION
+RESET
+ vector_index_ค้าง 
+------------------
+                0
+(1 row)
+
+ corpus_rows |        corpus_fingerprint        
+-------------+----------------------------------
+        5000 | 5a32cba54ea2be4ed022fe8bfedae9b0
+(1 row)
+
