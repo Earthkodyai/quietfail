@@ -1,7 +1,7 @@
 ==============================================================================
 QuietFail — ตรวจความพร้อมของ repo
-รันเมื่อ : 2026-07-30 00:32:58
-commit  : 0c5efb4  audit report: 25/25 pass
+รันเมื่อ : 2026-07-30 00:33:47
+commit  : 29f6299  verification pass: stale trust-block date, two files
 baseline: scripts/audit_baseline.json (_updated = 2026-07-29)
 ==============================================================================
 
@@ -11,7 +11,7 @@ baseline: scripts/audit_baseline.json (_updated = 2026-07-29)
   3. ไม่ตรงกัน = มีอะไรเปลี่ยนหลัง audit ให้รัน  python scripts/audit.py  ใหม่
 
 ── 1 git ──
- FAIL  working tree                                   มีไฟล์ค้าง 3 รายการ ยังไม่ commit: CLAUDE.md, scripts/audit.py, scripts/audit_baseline.json
+  ok   working tree                                   สะอาด (ไม่นับรายงานของ audit เอง)
   ok   results ถูก track                              45 ไฟล์ · ยกเว้น csv ที่ตั้งใจไม่ track 3 ไฟล์
 ── 2 groundtruth ──
   ok   parse ได้ทุกไฟล์                               15 ไฟล์
@@ -43,8 +43,8 @@ baseline: scripts/audit_baseline.json (_updated = 2026-07-29)
   ok   verdict ที่ได้ตอนนี้ (ข้อมูล ไม่ใช่เกณฑ์)      F01=NOT_DETECTED · F03=CANNOT_CHECK · F05=NOT_DETECTED · F10=CANNOT_CHECK · I01=CANNOT_CHECK · I02=CANNOT_CHECK · I03=NOT_DETECTED · I04=CANNOT_CHECK · I05=DETECTED · L02=CANNOT_CHECK · Q02=NOT_DETECTED · Q03=CANNOT_CHECK · Q04=CANNOT_CHECK · Q06=DETECTED · V07=DETECTED
 
 ==============================================================================
-ผ่าน 25 · ไม่ผ่าน 1 · ตรวจไม่ได้ 0   (รวม 26)
+ผ่าน 26 · ไม่ผ่าน 0 · ตรวจไม่ได้ 0   (รวม 26)
 
-❌ ยังไม่พร้อม — แก้ให้ครบก่อนถือว่า CLAUDE.md เชื่อถือได้
-   'ตรวจไม่ได้' ไม่ใช่ 'ผ่าน' (กฎเหล็กข้อ 10)
+✅ ผ่านครบทุกข้อ — CLAUDE.md เชื่อถือได้ ณ เวลาที่รัน
+   ผู้ช่วยคนถัดไปไม่ต้องไล่ตรวจซ้ำทีละข้อ
 ==============================================================================
