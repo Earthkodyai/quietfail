@@ -1,7 +1,7 @@
 ==============================================================================
 QuietFail — ตรวจความพร้อมของ repo
-รันเมื่อ : 2026-07-29 13:40:35
-commit  : a365fc4  audit report: 26/26 pass
+รันเมื่อ : 2026-07-29 13:41:14
+commit  : e3cc3b0  I02b: closing a stated limitation found that I02's o
 baseline: scripts/audit_baseline.json (_updated = 2026-07-27)
 ==============================================================================
 
@@ -11,7 +11,7 @@ baseline: scripts/audit_baseline.json (_updated = 2026-07-27)
   3. ไม่ตรงกัน = มีอะไรเปลี่ยนหลัง audit ให้รัน  python scripts/audit.py  ใหม่
 
 ── 1 git ──
- FAIL  working tree                                   มีไฟล์ค้าง 9 รายการ ยังไม่ commit: CLAUDE.md, DECISIONS.md, REPORT.md, results/i02_cost_control.txt
+  ok   working tree                                   สะอาด (ไม่นับรายงานของ audit เอง)
   ok   results ถูก track                              43 ไฟล์ · ยกเว้น csv ที่ตั้งใจไม่ track 3 ไฟล์
 ── 2 groundtruth ──
   ok   parse ได้ทุกไฟล์                               15 ไฟล์
@@ -42,8 +42,8 @@ baseline: scripts/audit_baseline.json (_updated = 2026-07-27)
   ok   verdict ที่ได้ตอนนี้ (ข้อมูล ไม่ใช่เกณฑ์)      F01=NOT_DETECTED · F03=CANNOT_CHECK · F05=NOT_DETECTED · F10=CANNOT_CHECK · I01=CANNOT_CHECK · I02=CANNOT_CHECK · I03=NOT_DETECTED · I04=CANNOT_CHECK · I05=DETECTED · L02=CANNOT_CHECK · Q02=NOT_DETECTED · Q03=CANNOT_CHECK · Q04=CANNOT_CHECK · Q06=DETECTED · V07=CANNOT_CHECK
 
 ==============================================================================
-ผ่าน 24 · ไม่ผ่าน 1 · ตรวจไม่ได้ 0   (รวม 25)
+ผ่าน 25 · ไม่ผ่าน 0 · ตรวจไม่ได้ 0   (รวม 25)
 
-❌ ยังไม่พร้อม — แก้ให้ครบก่อนถือว่า CLAUDE.md เชื่อถือได้
-   'ตรวจไม่ได้' ไม่ใช่ 'ผ่าน' (กฎเหล็กข้อ 10)
+✅ ผ่านครบทุกข้อ — CLAUDE.md เชื่อถือได้ ณ เวลาที่รัน
+   ผู้ช่วยคนถัดไปไม่ต้องไล่ตรวจซ้ำทีละข้อ
 ==============================================================================
