@@ -1,7 +1,7 @@
 ==============================================================================
 QuietFail — ตรวจความพร้อมของ repo
-รันเมื่อ : 2026-07-29 15:12:11
-commit  : 7b80892  reproduce all nine faults, not six — 46 of 46 assert
+รันเมื่อ : 2026-07-29 15:18:09
+commit  : 45bce03  CLAUDE.md: account for the 640 MB of tables left in 
 baseline: scripts/audit_baseline.json (_updated = 2026-07-27)
 ==============================================================================
 
