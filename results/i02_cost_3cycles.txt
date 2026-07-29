@@ -1,0 +1,93 @@
+════════════════════════════════════════════════════════════
+E36 — วัดต้นทุนของ I02 ซ้ำ 3 รอบ ตามกฎการรันซ้ำ
+เริ่ม: 2026-07-29 13:43:03
+ชุดที่ 1: corpus ชุดหลัก (qf_corpus)  · A=50 · B=1000 · C=ครบ
+ชุดที่ 2: corpus ที่ยากขึ้น (qf_i02b) · A=50 · C=ครบ
+════════════════════════════════════════════════════════════
+
+############ รอบที่ 1 — corpus ชุดหลัก ############
+=== วัดต้นทุนของทุกเงื่อนไข บน corpus ชุดหลัก ===
+     เงื่อนไข      | แถวตอน_build | recall | buffers_เฉลี่ย | ms_เฉลี่ย | ขนาด_index 
+-----------------+--------------+--------+--------------+---------+------------
+ A_build_at_50   |           50 | 1.0000 |          433 |    6.93 | 157 MB
+ B_build_at_1000 |         1000 | 0.8655 |          365 |    4.18 | 157 MB
+ C_build_at_full |       100000 | 0.8285 |          364 |    4.06 | 157 MB
+psql:/sql/i02_cost_control.sql:118: NOTICE:  A: recall=1.0000 buffers=433 index=157 MB
+psql:/sql/i02_cost_control.sql:118: NOTICE:  C: recall=0.8285 buffers=364 index=157 MB
+psql:/sql/i02_cost_control.sql:118: NOTICE:  A อ่านมากกว่า C 1.19 เท่า · index ใหญ่กว่า 1.00 เท่า
+psql:/sql/i02_cost_control.sql:118: NOTICE:  -> ผลไม่เข้าทั้งสองรูปแบบ ต้องดูตารางเอง
+-------------+----------------------------------
+exit: 0
+
+############ รอบที่ 1 — corpus ที่ยากขึ้น ############
+=== วัด buffers · เวลา · ขนาด index · recall ต่อเงื่อนไข ===
+     เงื่อนไข      | buffers_เฉลี่ย | ms_เฉลี่ย | ขนาด_index | recall 
+-----------------+--------------+---------+------------+--------
+ A_build_at_50   |          523 |    4.85 | 313 MB     | 0.8615
+ C_build_at_full |          295 |    1.75 | 157 MB     | 0.7655
+--------------+------------+---------
+psql:/sql/i02b_buffers_control.sql:125: NOTICE:  A (build 50 แถว)  buffers=523 recall=0.8615
+psql:/sql/i02b_buffers_control.sql:125: NOTICE:  C (build ครบ)     buffers=295 recall=0.7655
+psql:/sql/i02b_buffers_control.sql:125: NOTICE:  A อ่านมากกว่า C 1.77 เท่า
+psql:/sql/i02b_buffers_control.sql:125: NOTICE:  -> **H2 ยืนยัน** recall ที่สูงกว่าแลกมาด้วยการอ่านมากกว่าอย่างมีนัย
+-------------+----------------------------------
+exit: 0
+
+############ รอบที่ 2 — corpus ชุดหลัก ############
+=== วัดต้นทุนของทุกเงื่อนไข บน corpus ชุดหลัก ===
+     เงื่อนไข      | แถวตอน_build | recall | buffers_เฉลี่ย | ms_เฉลี่ย | ขนาด_index 
+-----------------+--------------+--------+--------------+---------+------------
+ A_build_at_50   |           50 | 1.0000 |          433 |    2.53 | 157 MB
+ B_build_at_1000 |         1000 | 0.8305 |          348 |    2.10 | 157 MB
+ C_build_at_full |       100000 | 0.8165 |          341 |    1.89 | 157 MB
+psql:/sql/i02_cost_control.sql:118: NOTICE:  A: recall=1.0000 buffers=433 index=157 MB
+psql:/sql/i02_cost_control.sql:118: NOTICE:  C: recall=0.8165 buffers=341 index=157 MB
+psql:/sql/i02_cost_control.sql:118: NOTICE:  A อ่านมากกว่า C 1.27 เท่า · index ใหญ่กว่า 1.00 เท่า
+psql:/sql/i02_cost_control.sql:118: NOTICE:  -> ผลไม่เข้าทั้งสองรูปแบบ ต้องดูตารางเอง
+-------------+----------------------------------
+exit: 0
+
+############ รอบที่ 2 — corpus ที่ยากขึ้น ############
+=== วัด buffers · เวลา · ขนาด index · recall ต่อเงื่อนไข ===
+     เงื่อนไข      | buffers_เฉลี่ย | ms_เฉลี่ย | ขนาด_index | recall 
+-----------------+--------------+---------+------------+--------
+ A_build_at_50   |          568 |    3.47 | 313 MB     | 0.8420
+ C_build_at_full |          263 |    1.53 | 157 MB     | 0.8495
+--------------+------------+---------
+psql:/sql/i02b_buffers_control.sql:125: NOTICE:  A (build 50 แถว)  buffers=568 recall=0.8420
+psql:/sql/i02b_buffers_control.sql:125: NOTICE:  C (build ครบ)     buffers=263 recall=0.8495
+psql:/sql/i02b_buffers_control.sql:125: NOTICE:  A อ่านมากกว่า C 2.16 เท่า
+psql:/sql/i02b_buffers_control.sql:125: NOTICE:  -> **H2 ยืนยัน** recall ที่สูงกว่าแลกมาด้วยการอ่านมากกว่าอย่างมีนัย
+-------------+----------------------------------
+exit: 0
+
+############ รอบที่ 3 — corpus ชุดหลัก ############
+=== วัดต้นทุนของทุกเงื่อนไข บน corpus ชุดหลัก ===
+     เงื่อนไข      | แถวตอน_build | recall | buffers_เฉลี่ย | ms_เฉลี่ย | ขนาด_index 
+-----------------+--------------+--------+--------------+---------+------------
+ A_build_at_50   |           50 | 1.0000 |          433 |    2.96 | 157 MB
+ B_build_at_1000 |         1000 | 0.9265 |          399 |    2.28 | 157 MB
+ C_build_at_full |       100000 | 0.7880 |          345 |    1.72 | 157 MB
+psql:/sql/i02_cost_control.sql:118: NOTICE:  A: recall=1.0000 buffers=433 index=157 MB
+psql:/sql/i02_cost_control.sql:118: NOTICE:  C: recall=0.7880 buffers=345 index=157 MB
+psql:/sql/i02_cost_control.sql:118: NOTICE:  A อ่านมากกว่า C 1.26 เท่า · index ใหญ่กว่า 1.00 เท่า
+psql:/sql/i02_cost_control.sql:118: NOTICE:  -> ผลไม่เข้าทั้งสองรูปแบบ ต้องดูตารางเอง
+-------------+----------------------------------
+exit: 0
+
+############ รอบที่ 3 — corpus ที่ยากขึ้น ############
+=== วัด buffers · เวลา · ขนาด index · recall ต่อเงื่อนไข ===
+     เงื่อนไข      | buffers_เฉลี่ย | ms_เฉลี่ย | ขนาด_index | recall 
+-----------------+--------------+---------+------------+--------
+ A_build_at_50   |          644 |    2.34 | 313 MB     | 0.8365
+ C_build_at_full |          246 |    1.41 | 157 MB     | 0.7850
+--------------+------------+---------
+psql:/sql/i02b_buffers_control.sql:125: NOTICE:  A (build 50 แถว)  buffers=644 recall=0.8365
+psql:/sql/i02b_buffers_control.sql:125: NOTICE:  C (build ครบ)     buffers=246 recall=0.7850
+psql:/sql/i02b_buffers_control.sql:125: NOTICE:  A อ่านมากกว่า C 2.62 เท่า
+psql:/sql/i02b_buffers_control.sql:125: NOTICE:  -> **H2 ยืนยัน** recall ที่สูงกว่าแลกมาด้วยการอ่านมากกว่าอย่างมีนัย
+-------------+----------------------------------
+exit: 0
+
+จบ: 2026-07-29 14:27:49
+>>> DONE
