@@ -1,7 +1,7 @@
 ==============================================================================
 QuietFail — ตรวจความพร้อมของ repo
-รันเมื่อ : 2026-07-29 14:35:57
-commit  : 11c0589  CLAUDE.md: add the artifacts this session produced t
+รันเมื่อ : 2026-07-29 15:12:11
+commit  : 7b80892  reproduce all nine faults, not six — 46 of 46 assert
 baseline: scripts/audit_baseline.json (_updated = 2026-07-27)
 ==============================================================================
 
@@ -39,7 +39,7 @@ baseline: scripts/audit_baseline.json (_updated = 2026-07-27)
 ── 5 score.sql ──
   ok   รันจบไม่มี error                               exit 0
   ok   ทุก fault มีสาขาที่ตอบได้                      15/15 ข้อ
-  ok   verdict ที่ได้ตอนนี้ (ข้อมูล ไม่ใช่เกณฑ์)      F01=NOT_DETECTED · F03=CANNOT_CHECK · F05=NOT_DETECTED · F10=CANNOT_CHECK · I01=CANNOT_CHECK · I02=CANNOT_CHECK · I03=NOT_DETECTED · I04=CANNOT_CHECK · I05=DETECTED · L02=CANNOT_CHECK · Q02=NOT_DETECTED · Q03=CANNOT_CHECK · Q04=CANNOT_CHECK · Q06=DETECTED · V07=CANNOT_CHECK
+  ok   verdict ที่ได้ตอนนี้ (ข้อมูล ไม่ใช่เกณฑ์)      F01=NOT_DETECTED · F03=CANNOT_CHECK · F05=NOT_DETECTED · F10=CANNOT_CHECK · I01=CANNOT_CHECK · I02=CANNOT_CHECK · I03=NOT_DETECTED · I04=CANNOT_CHECK · I05=DETECTED · L02=CANNOT_CHECK · Q02=DETECTED · Q03=CANNOT_CHECK · Q04=CANNOT_CHECK · Q06=DETECTED · V07=DETECTED
 
 ==============================================================================
 ผ่าน 25 · ไม่ผ่าน 0 · ตรวจไม่ได้ 0   (รวม 25)
