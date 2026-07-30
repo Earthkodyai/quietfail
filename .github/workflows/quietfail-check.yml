@@ -9,6 +9,12 @@
 #   ตรวจไม่ได้ (CANNOT_CHECK) -> fail build เช่นกัน (exit 2)
 #     เพราะเครื่องมือที่บอกว่า "ปลอดภัย" ทั้งที่ไม่ได้ตรวจอะไรเลย
 #     อันตรายกว่าไม่มีเครื่องมือ · ทีมที่ยอมรับได้ใส่ --allow-unknown
+#
+# 🔴 ข้อบังคับที่ตามมาจากนโยบายนั้น — เคยพลาดมาแล้ว ดู H31
+#   ถ้าเลือก "CANNOT_CHECK = fail" **ข้อมูลตัวอย่างต้องครอบคลุมทุกข้อที่ตัวตรวจตรวจ**
+#   ไม่งั้น build จะแดงถาวรโดยไม่มีอะไรผิดจริง แล้วคนจะเรียนรู้ที่จะเพิกเฉยกับ CI
+#   ซึ่งแย่กว่าไม่มี CI เลย
+#   ตัวอย่างข้างล่างจึงสร้าง **ทั้ง hnsw และ ivfflat** เพราะ Q04 ตรวจ ivfflat
 # ============================================================
 name: quietfail-check
 
@@ -73,7 +79,24 @@ jobs:
           ON CONFLICT DO NOTHING;
           CREATE INDEX IF NOT EXISTS documents_embedding_idx
               ON documents USING hnsw (embedding vector_cosine_ops);
+
+          -- ⚠️ ต้องมี ivfflat ด้วย ไม่งั้น Q04 ตอบ CANNOT_CHECK แล้ว build แดงตลอดกาล
+          --    และต้องระบุ lists ตรงๆ เพราะ reloptions เก็บเฉพาะค่าที่เขียนไว้
+          --    ค่าปริยายจะไม่ถูกบันทึก ตัวตรวจจึงไม่มี lists ให้เทียบ
+          CREATE INDEX IF NOT EXISTS documents_embedding_ivf
+              ON documents USING ivfflat (embedding vector_cosine_ops)
+              WITH (lists = 10);
           SQL
+
+      # ⚠️ ต้องเป็น ALTER DATABASE ไม่ใช่ SET ระดับ session
+      #    ตัวตรวจเปิด connection ของตัวเอง จึงมองไม่เห็นค่าที่ SET ไว้ในเซสชันอื่น
+      #    และนั่นถูกต้องแล้ว เพราะ SET ในเซสชันเดียวก็ไม่ได้ปกป้อง production เหมือนกัน
+      - name: ตั้ง probes ให้พอกับ lists (สิ่งที่ทีมจริงต้องทำ)
+        env:
+          PGPASSWORD: labpass
+        run: |
+          psql -h localhost -U lab -d faultlab -v ON_ERROR_STOP=1 \
+            -c "ALTER DATABASE faultlab SET ivfflat.probes = 4;"
 
       - name: ให้แอปยิง query จริง (เพื่อให้ตรวจ I01 · Q02 ได้)
         env:
