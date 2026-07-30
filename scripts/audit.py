@@ -415,6 +415,115 @@ def check_scorer(bl):
 
 
 # ══════════════════════════════════════════════════════════════
+# 6. ตัวเลขสรุปในเอกสาร ตรงกับของจริงไหม
+#
+# ⚠️ หมวดนี้เกิดขึ้นเพราะ E39 — กวาดครั้งเดียวเจอตัวเลขเคลื่อน 7 ค่าใน 6 ไฟล์
+#
+# เดิม CLAUDE.md ประกาศไว้ว่า audit "ไม่ได้ตรวจว่าตัวเลขในตารางถูก"
+# โดยให้เหตุผลว่าตัวเลขมาจาก results/ ซึ่งห้ามแก้ด้วยมืออยู่แล้ว
+# **เหตุผลนั้นครอบคลุมไม่หมด** — มันจริงกับตัวเลขที่คัดลอกจากผลการทดลอง
+# แต่ไม่จริงกับตัวเลขที่ "นับตัว repo เอง" (จำนวนหัวข้อ audit · ไฟล์ใน results/ ·
+# แถวในทะเบียนบั๊ก) ซึ่งโตทุกครั้งที่ทำงาน จึงเคลื่อนแน่นอนถ้าไม่มีใครจับ
+#
+# หมวดนี้ตรวจเฉพาะตัวเลขชนิดหลัง — **นับของจริงใหม่ทุกครั้ง** แล้วเทียบกับ
+# ที่เขียนไว้ในเอกสาร ไม่ได้ไปตรวจตัวเลขผลการทดลอง ซึ่งยังคงห้ามแก้ด้วยมือเหมือนเดิม
+#
+# 🔴 กฎเหล็กข้อ 10 ในหมวดนี้: **หา pattern ไม่เจอเลย = CANNOT_CHECK ไม่ใช่ PASS**
+#    ถ้าใครเรียบเรียงประโยคใหม่จน regex ไม่ match ตัวตรวจต้องบอกว่าตรวจไม่ได้
+#    ไม่ใช่เงียบแล้วผ่าน — ไม่งั้นมันจะกลายเป็นตัวตรวจที่ไม่มีวันตอบลบ (สูตรข้อ 6)
+# ══════════════════════════════════════════════════════════════
+DOC_FILES = ["CLAUDE.md", "README.md", "REPORT.md", "PROJECT.md",
+             "FAULTS.md", "EVIDENCE.md", "rq3/README.md",
+             "thesis/THESIS_TH.md", "slides/proposal.html"]
+
+# หมวดนี้ตรวจ "จำนวนหัวข้อของตัวเอง" ด้วย จึงต้องรู้ล่วงหน้าว่าตัวเองจะเพิ่มกี่หัวข้อ
+# ไม่งั้นจะนับตัวเองไม่ครบแล้วฟ้องผิด — มี assert กันไว้ข้างล่างถ้าแก้แล้วลืมอัปเดต
+N_NUMBER_CHECKS = 6
+
+
+def scan_claims(pattern, group=1, line_must_match=None):
+    """หาตัวเลขที่เอกสารเขียนไว้ — คืน [(ไฟล์, บรรทัด, ค่า)]"""
+    rx = re.compile(pattern)
+    keep = re.compile(line_must_match) if line_must_match else None
+    found = []
+    for fn in DOC_FILES:
+        if not os.path.exists(fn):
+            continue
+        for i, line in enumerate(read(fn).splitlines(), 1):
+            if keep and not keep.search(line):
+                continue
+            for m in rx.finditer(line):
+                found.append((fn, i, m.group(group)))
+    return found
+
+
+def check_numbers(bl, n_topics, full_run):
+    g = "6 ตัวเลขในเอกสาร"
+
+    # ---- นับของจริง ----------------------------------------------------
+    rc, out = run(["git", "ls-files", "results/"])
+    n_results = len([l for l in out.splitlines() if l.strip()]) if rc == 0 else None
+
+    try:
+        fa = read("FAULTS.md")
+        h_rows = re.findall(r"^\|\s*\*\*H(\d{2})\*\*", fa, re.M)
+    except IOError:
+        h_rows = []
+    n_h = len(h_rows)
+    max_h = max((int(x) for x in h_rows), default=0)
+
+    rep = bl.get("reproduce", {})
+    n_assert = sum(v.get("assertions", 0) for v in rep.values())
+    minutes = round(sum(v.get("measured_seconds", 0) for v in rep.values()) / 60.0, 1)
+
+    # ---- กฎ: (ชื่อ, ค่าจริง, pattern, บรรทัดต้องมีคำนี้ด้วย) --------------
+    # ค่าจริงเป็น None = นับไม่ได้ → CANNOT_CHECK
+    rules = [
+        # ⚠️ จำนวนหัวข้อขึ้นกับว่าหมวดฐานข้อมูลได้รันไหม — docker ไม่ขึ้นจะเหลือ 21 หัวข้อ
+        #    ถ้าเทียบตอนนั้นจะฟ้องว่าเอกสารผิด ทั้งที่เอกสารถูก จึงตอบ CANNOT_CHECK แทน
+        ("จำนวนหัวข้อของ audit ที่เอกสารอ้าง", n_topics if full_run else None,
+         r"(\d+)\s*หัวข้อ", None),
+        ("จำนวนไฟล์ใน results/ ที่เอกสารอ้าง", n_results,
+         r"(\d+)\s*ไฟล์", r"results/|ผลดิบ"),
+        ("จำนวนแถวทะเบียนบั๊ก H ที่เอกสารอ้าง", n_h if n_h else None,
+         r"(\d+)\s*รายการ", r"บั๊ก|ข้อบกพร่อง"),
+        # ⚠️ `(?!\s*,)` จำเป็น — "H01–H04, H06, H07 แก้แล้ว" ใน FAULTS.md เป็นการอ้าง
+        #    ช่วงย่อย ไม่ใช่ขอบเขตของทะเบียน · ถ้าไม่กันจะฟ้องว่าเอกสารเขียน 04
+        # ⚠️ ต้องเป็น `\d{2}` ความยาวคงที่ ห้ามใช้ `\d+` — `\d+` จะ backtrack
+        #    ให้เหลือ "0" เพื่อหลบ lookahead แล้วรายงานว่าเอกสารเขียน 0
+        #    (เจอตอนทดสอบตัวตรวจนี้เอง — ตรงกับกฎเหล็กข้อ 6 อีกครั้ง)
+        ("เลข H ตัวสุดท้ายที่เอกสารอ้าง", max_h if max_h else None,
+         r"H01[–—-]H(\d{2})(?!\s*,)", None),
+        ("assertion ของ --reproduce ที่เอกสารอ้าง", n_assert if n_assert else None,
+         r"assertion\s*(\d+)/(\d+)", None),
+        ("เวลารวมของ --reproduce ที่เอกสารอ้าง", minutes if minutes else None,
+         r"(\d+\.\d+)\s*นาที", None),
+    ]
+
+    assert len(rules) == N_NUMBER_CHECKS, \
+        "แก้จำนวนกฎแล้วต้องแก้ N_NUMBER_CHECKS ด้วย ไม่งั้นนับหัวข้อตัวเองผิด"
+
+    for name, real, pat, keep in rules:
+        if real is None:
+            check(g, name, CANNOT, "นับของจริงไม่ได้")
+            continue
+        hits = scan_claims(pat, 1, keep)
+        if not hits:
+            # ไม่เจอเลย = ตรวจไม่ได้ ห้ามนับว่าผ่าน (กฎเหล็กข้อ 10)
+            check(g, name, CANNOT,
+                  "ไม่พบข้อความที่อ้างตัวเลขนี้เลย — เรียบเรียงใหม่จน pattern ไม่ match?")
+            continue
+        want = ("%.1f" % real) if isinstance(real, float) else str(int(real))
+        bad = [(f, i, v) for f, i, v in hits if v != want]
+        if bad:
+            shown = " · ".join("%s:%d เขียน %s" % (f, i, v) for f, i, v in bad[:4])
+            more = " (+%d ที่)" % (len(bad) - 4) if len(bad) > 4 else ""
+            check(g, name, FAIL, "ต้องเป็น %s แต่ %s%s" % (want, shown, more))
+        else:
+            check(g, name, PASS, "%s · ตรงกันทั้ง %d ที่" % (want, len(hits)))
+
+
+# ══════════════════════════════════════════════════════════════
 # รายงาน
 # ══════════════════════════════════════════════════════════════
 # ══════════════════════════════════════════════════════════════
@@ -567,10 +676,14 @@ def main():
     check_git(bl)
     check_groundtruth(bl)
     check_docs(bl)
-    if check_db(bl):
+    db_ok = check_db(bl)
+    if db_ok:
         check_scorer(bl)
     else:
         check("5 score.sql", "รันจบไม่มี error", CANNOT, "DB ต่อไม่ได้")
+
+    # ต้องเรียกท้ายสุด — มันนับ "จำนวนหัวข้อทั้งหมดของ audit" รวมของตัวเองด้วย
+    check_numbers(bl, len(results) + N_NUMBER_CHECKS, db_ok)
 
     lines = []
     w = lambda s="": lines.append(s)
