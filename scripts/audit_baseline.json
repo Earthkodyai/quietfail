@@ -1,6 +1,6 @@
 {
   "_comment_th": "ค่าที่ audit.py ใช้เทียบ — แก้ไฟล์นี้ได้เฉพาะเมื่อ 'ตั้งใจ' เปลี่ยนฐาน และต้องมีบรรทัดใน DECISIONS.md",
-  "_updated": "2026-07-29",
+  "_updated": "2026-07-30",
   "db": {
     "corpus_table": "qf_corpus",
     "corpus_rows": 100000,

@@ -858,6 +858,7 @@ MSYS_NO_PATHCONV=1 docker compose exec -T db psql -U lab -d faultlab -f //sql/sc
 | **`scripts/audit.py`** | **ตัวตรวจความพร้อมทั้ง repo — คำสั่งเดียวแทนการไล่ตรวจเอง** · `--reproduce` รันตัวฉีดจริงซ้ำ | **ก่อน commit ทุกครั้ง · ตอนเริ่ม session ถ้าไม่แน่ใจ** |
 | `scripts/rq3_score.py` | ให้คะแนน SQL ที่โมเดลเขียน — **รันจริง + อ่าน plan ว่าใช้ index ไหม** | เมื่อเก็บคำตอบ RQ3 จากโมเดลใหม่ |
 | `sql/qfcheck_states.sql` · `_fix` · `_teardown` | พิสูจน์ว่า `quietfail_check.py` พลิกสถานะได้ | ก่อนเชื่อผลของตัวตรวจ |
+| `scripts/audit_numbers_states.py` | **พิสูจน์ว่าหมวด 6 ของ audit พลิกได้** — แก้ตัวเลขให้ผิดทีละข้อแล้วดูว่าจับไหม · ผลที่ `results/audit_numbers_states.txt` | ก่อนเชื่อว่าตัวเลขในเอกสารถูกตรวจจริง |
 | **`scripts/quietfail_check.py`** | **ของส่งมอบ — ตรวจฐานข้อมูลของใครก็ได้** · ไม่ต้องมีไฟล์เฉลย | เมื่อจะเอาไปใช้จริง หรือทำ CI |
 | **`sql/score.sql`** | **ตัวนับคะแนน** — ตอบ `DETECTED` / `NOT_DETECTED` / `CANNOT_CHECK` ต่อ fault ทุกข้อ | เมื่อต้องรู้ว่าตอนนี้มี fault อะไรอยู่ |
 | `results/audit_reproduce.txt` | ผลการรันตัวฉีดจริงซ้ำครั้งล่าสุด | เมื่อสงสัยว่าผลยังเกิดซ้ำได้ไหม |
