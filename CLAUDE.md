@@ -194,6 +194,16 @@ python scripts/quietfail_check.py --docker          # ใช้ container ขอ
 ตรวจ 6 ข้อที่ยกไปใช้ที่อื่นได้จริง: **I01 · Q02 · Q04 · Q06 · I05 · V07**
 (Q03 กับ L02 ไม่รวม เพราะต้องยิง query ทดสอบด้วย vector จริง ซึ่งเลือกเองไม่ได้โดยไม่เดาเจตนาแอป)
 
+> 🔴 **เงื่อนไขของฐานข้อมูลปลายทาง — ขาดแล้วได้ `exit 2` ไม่ใช่ `exit 0`** (H31)
+>
+> | ต้องมี | ไม่งั้นข้อไหนตรวจไม่ได้ |
+> |---|---|
+> | `shared_preload_libraries = pg_stat_statements` | **I01 · Q02** — `CREATE EXTENSION` อย่างเดียวไม่พอ สร้างได้แต่ query แล้ว error |
+> | มี **ivfflat** index และระบุ `lists` ตรงๆ ตอน `CREATE INDEX` | **Q04** — `reloptions` เก็บเฉพาะค่าที่เขียนไว้ ค่าปริยายไม่ถูกบันทึก |
+>
+> ทั้งคู่พิสูจน์แล้วด้วยการรันจริงบน image เปล่า ไม่ใช่ container ของ repo นี้
+> (ซึ่งมี preload อยู่แล้วจึงมองไม่เห็นปัญหา — เป็นเหตุที่ CI แดงอยู่หลายวันโดยไม่มีใครรู้)
+
 **พิสูจน์ว่าพลิกได้แล้ว** — `sql/qfcheck_states.sql` → `_fix.sql` → `_teardown.sql`
 ผล: `results/qfcheck_states.txt` · จับได้ 6/6 → 0/6 → exit 1 → 0 → 2
 

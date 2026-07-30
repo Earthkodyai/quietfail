@@ -11,10 +11,18 @@
 #     อันตรายกว่าไม่มีเครื่องมือ · ทีมที่ยอมรับได้ใส่ --allow-unknown
 #
 # 🔴 ข้อบังคับที่ตามมาจากนโยบายนั้น — เคยพลาดมาแล้ว ดู H31
-#   ถ้าเลือก "CANNOT_CHECK = fail" **ข้อมูลตัวอย่างต้องครอบคลุมทุกข้อที่ตัวตรวจตรวจ**
+#   ถ้าเลือก "CANNOT_CHECK = fail" **สภาพแวดล้อมตัวอย่างต้องทำให้ทุกข้อตรวจได้จริง**
 #   ไม่งั้น build จะแดงถาวรโดยไม่มีอะไรผิดจริง แล้วคนจะเรียนรู้ที่จะเพิกเฉยกับ CI
 #   ซึ่งแย่กว่าไม่มี CI เลย
-#   ตัวอย่างข้างล่างจึงสร้าง **ทั้ง hnsw และ ivfflat** เพราะ Q04 ตรวจ ivfflat
+#
+#   ต้องครบ 2 อย่าง ขาดอย่างใดอย่างหนึ่งก็แดงตลอดกาล:
+#     1. ข้อมูลตัวอย่างมี **ทั้ง hnsw และ ivfflat**  — ไม่งั้น Q04 ไม่มี lists ให้เทียบ
+#     2. เซิร์ฟเวอร์โหลด **pg_stat_statements** ผ่าน shared_preload_libraries
+#        — ไม่งั้น I01 กับ Q02 อ่านประวัติ query ไม่ได้
+#        `CREATE EXTENSION` อย่างเดียวไม่พอ มันสร้างได้แต่ query แล้ว error
+#
+#   ข้อ 2 เป็นเงื่อนไขของตัวเครื่องมือ ไม่ใช่ของ CI — ทีมที่เอา quietfail-check
+#   ไปใช้จริงก็ต้องเปิด pg_stat_statements เหมือนกัน ไม่งั้นได้ 2 ข้อที่ตรวจไม่ได้
 # ============================================================
 name: quietfail-check
 
@@ -28,19 +36,9 @@ jobs:
   check:
     runs-on: ubuntu-latest
 
-    services:
-      db:
-        # ล็อกเวอร์ชันเต็ม ไม่ใช้ tag ที่ขยับตาม —
-        # tag แบบ :pg17 จะชี้ไปเวอร์ชันใหม่เมื่อไหร่ก็ได้ แล้วผลเทียบกันไม่ได้
-        image: pgvector/pgvector:0.8.5-pg17
-        env:
-          POSTGRES_USER: lab
-          POSTGRES_PASSWORD: labpass
-          POSTGRES_DB: faultlab
-        ports: ['5432:5432']
-        options: >-
-          --health-cmd "pg_isready -U lab -d faultlab"
-          --health-interval 5s --health-timeout 5s --health-retries 20
+    # ⚠️ ไม่ใช้ `services:` เพราะมันส่ง command ให้ container ไม่ได้
+    #    และ shared_preload_libraries ตั้งผ่าน env ของ postgres image ไม่ได้
+    #    ต้องส่งเป็น argument ของ postgres ตอนสตาร์ต จึงต้อง docker run เอง (ดู H31)
 
     steps:
       - uses: actions/checkout@v4
@@ -51,6 +49,24 @@ jobs:
 
       - name: ติดตั้ง psql client
         run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
+
+      # ล็อกเวอร์ชันเต็ม ไม่ใช้ tag ที่ขยับตาม —
+      # tag แบบ :pg17 จะชี้ไปเวอร์ชันใหม่เมื่อไหร่ก็ได้ แล้วผลเทียบกันไม่ได้
+      - name: สตาร์ต PostgreSQL + pgvector
+        run: |
+          docker run -d --name qfdb \
+            -e POSTGRES_USER=lab -e POSTGRES_PASSWORD=labpass -e POSTGRES_DB=faultlab \
+            -p 5432:5432 \
+            pgvector/pgvector:0.8.5-pg17 \
+            -c shared_preload_libraries=pg_stat_statements
+          for i in $(seq 1 40); do
+            if docker exec qfdb pg_isready -U lab -d faultlab >/dev/null 2>&1; then
+              echo "พร้อมหลัง ${i} วินาที"; exit 0
+            fi
+            sleep 1
+          done
+          echo "::error title=quietfail-check::PostgreSQL ไม่ขึ้นภายใน 40 วินาที"
+          docker logs qfdb; exit 1
 
       - name: เตรียม extension
         env:
