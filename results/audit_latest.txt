@@ -1,7 +1,7 @@
 ==============================================================================
 QuietFail — ตรวจความพร้อมของ repo
-รันเมื่อ : 2026-07-30 14:50:09
-commit  : 7216d60  พิสูจน์ว่า audit หมวด 6 พลิกได้ + ปิด E39
+รันเมื่อ : 2026-07-30 15:34:19
+commit  : 8ac4ed5  แก้ CI รอบสอง: pg_stat_statements ต้องถูก preload (H
 baseline: scripts/audit_baseline.json (_updated = 2026-07-30)
 ==============================================================================
 
@@ -21,7 +21,7 @@ baseline: scripts/audit_baseline.json (_updated = 2026-07-30)
   ok   มีไฟล์ *_checker_states.sql ตามที่ baseline กำหนด ครบ 10 ข้อ
 ── 3 เอกสาร ──
   ok   E/D ที่ถูกอ้างมีนิยาม                          59 ตัว อ้างครบทุกตัว
-  ok   เลข H/U ในทะเบียนบัคไม่ซ้ำกัน                  36 แถว ไม่มีเลขซ้ำ
+  ok   เลข H/U ในทะเบียนบัคไม่ซ้ำกัน                  37 แถว ไม่มีเลขซ้ำ
   ok   เลข E/D ไม่ซ้ำกัน                              59 หัวข้อ ไม่มีเลขซ้ำ
   ok   สถานะใน CLAUDE.md ตรงกับ baseline              เสร็จ 11 · เหลือ 
   ok   ตารางของส่งมอบใน CLAUDE.md                     6 ข้อตรงกับ baseline · ไฟล์สอดคล้องทุกข้อ
@@ -40,12 +40,12 @@ baseline: scripts/audit_baseline.json (_updated = 2026-07-30)
 ── 5 score.sql ──
   ok   รันจบไม่มี error                               exit 0
   ok   ทุก fault มีสาขาที่ตอบได้                      15/15 ข้อ
-  ok   verdict ที่ได้ตอนนี้ (ข้อมูล ไม่ใช่เกณฑ์)      F01=NOT_DETECTED · F03=CANNOT_CHECK · F05=NOT_DETECTED · F10=CANNOT_CHECK · I01=CANNOT_CHECK · I02=CANNOT_CHECK · I03=NOT_DETECTED · I04=CANNOT_CHECK · I05=DETECTED · L02=CANNOT_CHECK · Q02=CANNOT_CHECK · Q03=CANNOT_CHECK · Q04=CANNOT_CHECK · Q06=DETECTED · V07=DETECTED
+  ok   verdict ที่ได้ตอนนี้ (ข้อมูล ไม่ใช่เกณฑ์)      F01=NOT_DETECTED · F03=CANNOT_CHECK · F05=NOT_DETECTED · F10=CANNOT_CHECK · I01=CANNOT_CHECK · I02=CANNOT_CHECK · I03=NOT_DETECTED · I04=CANNOT_CHECK · I05=DETECTED · L02=CANNOT_CHECK · Q02=NOT_DETECTED · Q03=CANNOT_CHECK · Q04=CANNOT_CHECK · Q06=DETECTED · V07=DETECTED
 ── 6 ตัวเลขในเอกสาร ──
   ok   จำนวนหัวข้อของ audit ที่เอกสารอ้าง             32 · ตรงกันทั้ง 10 ที่
   ok   จำนวนไฟล์ใน results/ ที่เอกสารอ้าง             47 · ตรงกันทั้ง 4 ที่
-  ok   จำนวนแถวทะเบียนบั๊ก H ที่เอกสารอ้าง            30 · ตรงกันทั้ง 3 ที่
-  ok   เลข H ตัวสุดท้ายที่เอกสารอ้าง                  30 · ตรงกันทั้ง 5 ที่
+  ok   จำนวนแถวทะเบียนบั๊ก H ที่เอกสารอ้าง            31 · ตรงกันทั้ง 3 ที่
+  ok   เลข H ตัวสุดท้ายที่เอกสารอ้าง                  31 · ตรงกันทั้ง 5 ที่
   ok   assertion ของ --reproduce ที่เอกสารอ้าง        46 · ตรงกันทั้ง 4 ที่
   ok   เวลารวมของ --reproduce ที่เอกสารอ้าง           32.4 · ตรงกันทั้ง 5 ที่
 
