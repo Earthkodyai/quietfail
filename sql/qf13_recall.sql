@@ -60,9 +60,13 @@ BEGIN
 
     FOR q IN SELECT id, embedding FROM qf_queries ORDER BY id LOOP
         INSERT INTO qf_truth (query_id, k, ids)
-        SELECT q.id, p_k, array_agg(t.id ORDER BY t.rn)
+        -- ⚠️ ห้ามใช้ row_number() OVER () — window function ทำงาน **ก่อน** ORDER BY/LIMIT
+        --    เลขที่ได้จึงเป็นลำดับที่สแกนเจอ (≈ ลำดับ id) ไม่ใช่ลำดับความใกล้
+        --    เซ็ตยังถูก (LIMIT ตัดหลัง ORDER BY) แต่ **ลำดับในอาเรย์ไม่มีความหมาย**
+        --    เรียงด้วยระยะตรงๆ ไปเลย ไม่ต้องพึ่ง window function (ดู H32)
+        SELECT q.id, p_k, array_agg(t.id ORDER BY t.dist)
         FROM (
-            SELECT c.id, row_number() OVER () AS rn
+            SELECT c.id, c.embedding <=> q.embedding AS dist
             FROM qf_corpus c
             ORDER BY c.embedding <=> q.embedding
             LIMIT p_k
