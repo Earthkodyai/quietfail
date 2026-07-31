@@ -1,43 +1,43 @@
 ==============================================================================
 QuietFail — รันตัวฉีดจริงซ้ำ (--reproduce)
-รันเมื่อ : 2026-07-29 14:37:42
-commit  : f2925dd
+รันเมื่อ : 2026-07-31 23:37:46
+commit  : 2741dda
 ==============================================================================
 
 โหมดนี้ตอบคำถามที่ audit ปกติตอบไม่ได้ — 'ผลยังเกิดซ้ำได้จริงไหม'
 สำเร็จ = exit 0 เพราะทุกสคริปต์ใช้ ON_ERROR_STOP และ RAISE EXCEPTION เมื่อ assertion ตก
 (อ่าน exit code ไม่ใช่ค้นข้อความใน output — กฎเหล็กข้อ 6)
 
-จะรัน 9 ข้อ: I01 I04 Q02 Q04 Q06 V07 I02 Q03 L02  (ประมาณ 40 นาที)
+จะรัน 9 ข้อ: I01 I04 Q02 Q04 Q06 V07 I02 Q03 L02  (ประมาณ 34 นาที)
 
 qf_corpus ก่อนรัน : 5000|5a32cba54ea2be4ed022fe8bfedae9b0
 
 ── I01 : sql/i01_opclass_mismatch.sql ──
-   ok   exit 0 · assertion 4/4 ข้อ · 385 วินาที
+   ok   exit 0 · assertion 4/4 ข้อ · 361 วินาที
 
 ── I04 : sql/i04_kmeans_nondeterminism.sql ──
-   ok   exit 0 · assertion 5/5 ข้อ · 536 วินาที
+   ok   exit 0 · assertion 5/5 ข้อ · 596 วินาที
 
 ── Q02 : sql/q02_wrong_query_shape.sql ──
-   ok   exit 0 · assertion 5/5 ข้อ · 38 วินาที
+   ok   exit 0 · assertion 5/5 ข้อ · 37 วินาที
 
 ── Q04 : sql/q04_default_params.sql ──
-   ok   exit 0 · assertion 5/5 ข้อ · 221 วินาที
+   ok   exit 0 · assertion 5/5 ข้อ · 197 วินาที
 
 ── Q06 : sql/q06_limit_exceeds_ef.sql ──
-   ok   exit 0 · assertion 5/5 ข้อ · 51 วินาที
+   ok   exit 0 · assertion 5/5 ข้อ · 57 วินาที
 
 ── V07 : sql/v07_null_zero_vectors.sql ──
    ok   exit 0 · assertion 4/4 ข้อ · 1 วินาที
 
 ── I02 : sql/i02_index_built_too_early.sql ──
-   ok   exit 0 · assertion 6/6 ข้อ · 105 วินาที
+   ok   exit 0 · assertion 6/6 ข้อ · 108 วินาที
 
 ── Q03 : sql/q03_filter_after_scan.sql ──
-   ok   exit 0 · assertion 6/6 ข้อ · 116 วินาที
+   ok   exit 0 · assertion 6/6 ข้อ · 125 วินาที
 
 ── L02 : sql/l02_dead_tuples.sql ──
-   ok   exit 0 · assertion 6/6 ข้อ · 491 วินาที
+   ok   exit 0 · assertion 6/6 ข้อ · 544 วินาที
 
 qf_corpus หลังรัน : 5000|5a32cba54ea2be4ed022fe8bfedae9b0
    ok   qf_corpus ไม่เปลี่ยน

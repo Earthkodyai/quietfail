@@ -1,6 +1,6 @@
 {
   "_comment_th": "ค่าที่ audit.py ใช้เทียบ — แก้ไฟล์นี้ได้เฉพาะเมื่อ 'ตั้งใจ' เปลี่ยนฐาน และต้องมีบรรทัดใน DECISIONS.md",
-  "_updated": "2026-07-30",
+  "_updated": "2026-07-31",
   "db": {
     "corpus_table": "qf_corpus",
     "corpus_rows": 100000,
@@ -57,36 +57,36 @@
     "results/qdrant_search_results.csv"
   ],
   "score_expected_rows": 15,
-  "_reproduce_comment_th": "รันตัวฉีดจริงซ้ำ ไม่ใช่แค่ดูว่าหลักฐานมีอยู่ · สำเร็จ = exit 0 เพราะทุกสคริปต์ใช้ ON_ERROR_STOP และ RAISE EXCEPTION เมื่อ assertion ตก · minutes เป็นค่า**วัดจริง** 2026-07-28 ไม่ใช่ประมาณ (รวม 32.4 นาที · assertion 46)",
+  "_reproduce_comment_th": "รันตัวฉีดจริงซ้ำ ไม่ใช่แค่ดูว่าหลักฐานมีอยู่ · สำเร็จ = exit 0 เพราะทุกสคริปต์ใช้ ON_ERROR_STOP และ RAISE EXCEPTION เมื่อ assertion ตก · measured_seconds เป็นค่า**วัดจริง** รอบล่าสุด 2026-07-31 (รวม 33.8 นาที · assertion 46) · ⚠️ เวลาแกว่งระหว่างรอบ รอบก่อนหน้า 2026-07-28 ได้ 32.4 นาที สำหรับงานเดียวกันเป๊ะ — ใช้เป็นค่าประมาณ ห้ามใช้เทียบสมรรถนะ (กฎเหล็กข้อ 7)",
   "reproduce": {
     "I01": {
       "script": "sql/i01_opclass_mismatch.sql",
       "minutes": 6,
-      "measured_seconds": 385,
+      "measured_seconds": 361,
       "assertions": 4
     },
     "I04": {
       "script": "sql/i04_kmeans_nondeterminism.sql",
-      "minutes": 9,
-      "measured_seconds": 536,
+      "minutes": 10,
+      "measured_seconds": 596,
       "assertions": 5
     },
     "Q02": {
       "script": "sql/q02_wrong_query_shape.sql",
       "minutes": 1,
-      "measured_seconds": 38,
+      "measured_seconds": 37,
       "assertions": 5
     },
     "Q04": {
       "script": "sql/q04_default_params.sql",
-      "minutes": 4,
-      "measured_seconds": 221,
+      "minutes": 3,
+      "measured_seconds": 197,
       "assertions": 5
     },
     "Q06": {
       "script": "sql/q06_limit_exceeds_ef.sql",
       "minutes": 1,
-      "measured_seconds": 51,
+      "measured_seconds": 57,
       "assertions": 5
     },
     "V07": {
@@ -98,19 +98,19 @@
     "I02": {
       "script": "sql/i02_index_built_too_early.sql",
       "minutes": 2,
-      "measured_seconds": 105,
+      "measured_seconds": 108,
       "assertions": 6
     },
     "Q03": {
       "script": "sql/q03_filter_after_scan.sql",
       "minutes": 2,
-      "measured_seconds": 116,
+      "measured_seconds": 125,
       "assertions": 6
     },
     "L02": {
       "script": "sql/l02_dead_tuples.sql",
-      "minutes": 8,
-      "measured_seconds": 491,
+      "minutes": 9,
+      "measured_seconds": 544,
       "assertions": 6
     }
   },
