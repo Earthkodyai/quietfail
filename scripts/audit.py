@@ -386,6 +386,23 @@ def check_db(bl):
         "SELECT md5(string_agg(embedding::text,'|' ORDER BY id)) FROM "
         "(SELECT id,embedding FROM %s ORDER BY id LIMIT 5000) s" % d["corpus_table"],
         d["corpus_fingerprint_first5k"])
+
+    # ⭐ นิยามกลางของ fingerprint ต้องมีอยู่ และต้องให้ค่าเดียวกับสูตรตรงข้างบน (E40)
+    #    ถ้าใครแก้สูตรในฟังก์ชัน ข้อนี้จะจับได้ทันที
+    #    ถ้าฟังก์ชันหายไป = CANNOT_CHECK ไม่ใช่ PASS (กฎเหล็กข้อ 10)
+    ok_fn, got_fn = psql(
+        "SELECT qf_fingerprint('%s')" % d["corpus_table"])
+    if not ok_fn:
+        check(g, "ฟังก์ชันกลาง qf_fingerprint()", CANNOT,
+              "เรียกไม่ได้ — ยังไม่ได้โหลด init/03_fingerprint.sql เข้า DB นี้ (E40)")
+    elif got_fn == d["corpus_fingerprint_first5k"]:
+        check(g, "ฟังก์ชันกลาง qf_fingerprint()", PASS,
+              "ให้ค่าตรงกับ baseline (%s)" % got_fn[:12] + "…")
+    else:
+        check(g, "ฟังก์ชันกลาง qf_fingerprint()", FAIL,
+              "ให้ค่า %s แต่ baseline คือ %s — สูตรในฟังก์ชันถูกแก้? (E40)"
+              % (got_fn, d["corpus_fingerprint_first5k"]))
+
     one("qf_truth จำนวนแถว", "SELECT count(*) FROM qf_truth", d["truth_rows"])
     one("orders จำนวนแถว", "SELECT count(*) FROM orders", d["orders_rows"])
     one("ไม่มี vector index ค้าง",
