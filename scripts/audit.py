@@ -310,6 +310,41 @@ def check_docs(bl):
                   " · ".join(problems) if problems
                   else "%d ข้อตรงกับ baseline · ไฟล์สอดคล้องทุกข้อ" % len(dl))
 
+    # ⚠️ นิยาม fingerprint ถูกเขียนซ้ำอยู่หลายสิบที่ (ยังไม่ได้ย้ายเป็นฟังก์ชันเดียว)
+    #    E40: เคยเขียนใหม่ด้วยตัวคั่น ',' แทน '|' แล้ว guard ยิงทั้งที่ corpus ไม่เปลี่ยน
+    #    หัวข้อนี้ไม่ได้บังคับให้มีสำเนาเดียว แต่บังคับว่า **ทุกสำเนาต้องตรงกัน**
+    #    ซึ่งกันความล้มเหลวแบบเดิมได้โดยไม่ต้องแตะไฟล์ที่ --reproduce ตรวจแล้ว
+    seps = {}
+    for root, _dirs, files in os.walk("."):
+        if any(p in root for p in (".git", "node_modules", "__pycache__")):
+            continue
+        for fn in files:
+            if not fn.endswith((".sql", ".py")):
+                continue
+            path = os.path.join(root, fn)
+            try:
+                body = read(path)
+            except (IOError, UnicodeDecodeError):
+                continue
+            for m in re.finditer(
+                    r"md5\(string_agg\(\s*embedding::text\s*,\s*'([^']*)'\s*ORDER BY id\s*\)\)",
+                    body):
+                seps.setdefault(m.group(1), []).append(path.replace("\\", "/"))
+
+    if not seps:
+        check(g, "นิยาม fingerprint ตรงกันทุกที่", CANNOT,
+              "หาสูตร md5(string_agg(embedding::text, ...)) ไม่เจอเลย — เปลี่ยนวิธีเขียนไปแล้ว?")
+    elif len(seps) > 1:
+        detail = " · ".join(
+            "ตัวคั่น %r ใน %d ที่ (เช่น %s)" % (k, len(v), v[0])
+            for k, v in sorted(seps.items()))
+        check(g, "นิยาม fingerprint ตรงกันทุกที่", FAIL,
+              "ใช้ตัวคั่นไม่ตรงกัน — " + detail + " (ดู E40)")
+    else:
+        sep = list(seps)[0]
+        check(g, "นิยาม fingerprint ตรงกันทุกที่", PASS,
+              "ตัวคั่น %r เหมือนกันทั้ง %d ที่" % (sep, len(seps[sep])))
+
     # ห้ามมี fault ที่ตัดไปแล้วโผล่กลับมาเป็นข้อที่ต้องทำ
     cut = ["Q05", "L01", "V08"]
     back = [c for c in cut if re.search(r"%s\s*✅" % c, cl)]
