@@ -33,9 +33,11 @@ desktop.ini
 __pycache__/
 *.pyc
 
-# ไฟล์ชั่วคราวของ rq3_score.py
-sql/_rq3_candidate.sql
-sql/_rq3_explain.sql
+# ไฟล์ชั่วคราวใน sql/ — ธรรมเนียมของโปรเจคคือขึ้นต้นด้วย _ แปลว่าสร้างใหม่ได้
+# เดิมไล่ ignore ทีละชื่อ (_rq3_candidate · _rq3_explain) แล้วตกหล่นเรื่อยๆ
+# ประวัติจริงจาก .claude/settings.local.json มี _chk · _order_test · _p02_check
+# · _q03_multiplier_probe · i02_probe ฯลฯ ที่ไม่เคยถูก ignore เลย (แก้ 2026-08-02)
+sql/_*.sql
 
 # ⚠️ ไฟล์ที่ real_embed_build.py สร้าง — ใหญ่มาก (TSV ของ 100k เวกเตอร์)
 #    เดิมไม่ได้ ignore ไว้ ทั้งที่ _rq3_* ถูก ignore มาตั้งแต่ต้น (เพิ่ม 2026-08-01)

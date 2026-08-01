@@ -18,7 +18,7 @@ git add -f results/ชื่อไฟล์.txt
 | ไฟล์ | สร้างโดย | ใช้ตอนไหน |
 |---|---|---|
 | `audit_latest.txt` | `python scripts/audit.py` | **ตอนเริ่ม session** — อ่านแทนการไล่ตรวจเอง |
-| `audit_reproduce.txt` | `python scripts/audit.py --reproduce` | เมื่อสงสัยว่าผลยังเกิดซ้ำได้ไหม (~21 นาที) |
+| `audit_reproduce.txt` | `python scripts/audit.py --reproduce` | เมื่อสงสัยว่าผลยังเกิดซ้ำได้ไหม (**33.8 นาที** วัดจริง) |
 
 สองไฟล์นี้ **ไม่เข้ากฎ "ห้ามแก้ด้วยมือ" แบบเดียวกับผลการทดลอง** เพราะถูกเขียนทับทุกครั้ง
 แต่ยังต้อง `git add -f` เพื่อให้ session ถัดไปอ่านได้โดยไม่ต้องรันเอง
@@ -43,27 +43,77 @@ git add -f results/ชื่อไฟล์.txt
 | `i01_phase3_cycle.txt` | **I01** — opclass ผิด จ่าย 195 MB ได้ศูนย์ · ตัวตรวจ static 3 สถานะ | 2026-07-27 |
 | `i05_phase3_cycle.txt` | **I05** — build ช้าลง 3 เท่า · NOTICE นิ่ง 0.03% · ตัวตรวจทำนายจุด spill ได้ | 2026-07-27 |
 | `i03_phase3_cycle.txt` | **I03** — CREATE INDEX บล็อกการเขียน แต่การอ่านปกติ · ตัวนับพลิก 3 สถานะ | 2026-07-27 |
-| `q06_phase3_cycle.txt` | **Q06** — ขอ 100 ได้ 40 · หน้าผาที่ k = ef+1 · ไม่มี error | 2026-07-27 |
+| `q06_phase3_cycle.txt` | **Q06** — ขอ 100 ได้ 40 · หน้าผาที่ k = ef+1 *(สังเคราะห์ · ข้อมูลจริงเพดาน 41)* · ไม่มี error | 2026-07-27 |
 | `v07_phase3_cycle.txt` | **V07** — NULL/zero vector หายจาก index 10 แถวพอดี · ตัวตรวจ 3 สถานะ | 2026-07-27 |
 | `q02_phase3_cycle.txt` | **Q02** — 6 รูปแบบ query · 4 แบบ index ใช้ไม่ได้ · buffers ต่าง 21 เท่า | 2026-07-27 |
-| `q04_phase3_cycle.txt` | **Q04** — probes=1 ได้ recall 0.737 · probes=5 ได้ 1.0 · เอกสารแนะนำ 10 ช้าเกินจำเป็น | 2026-07-27 |
+| `q04_phase3_cycle.txt` | **Q04** — probes=1 ได้ recall 0.737 · probes=5 ได้ 1.0 *(บนสังเคราะห์)* · 🔴 ข้ออ้าง "เอกสารแนะนำ 10 ช้าเกินจำเป็น" **ถอนแล้ว** ดู `real_q04.txt` | 2026-07-27 |
 | `i05_checker_states.txt` | **I05 ตัวตรวจ** — พลิกที่ 225→226MB ตรงขอบที่คำนวณไว้ · เติมย้อนหลังจาก audit (E30) | 2026-07-27 |
 | `i04_phase3_cycle.txt` | **I04** — สร้าง index ใหม่ 5 รอบ · 196/200 query เปลี่ยนคำตอบ · `probes=5` นิ่งสนิท | 2026-07-27 |
 | `i04_parallel_control.txt` | **I04 ควบคุม ค** — ปิด parallel แล้วยังแกว่งทั้งคู่ → ไม่ใช่เรื่อง parallel (E32) | 2026-07-27 |
 | `i04_run1.txt` | **I04 รอบสำรวจแรก** — รอบที่พบว่า HNSW ก็แกว่ง ทั้งที่ไม่มี k-means | 2026-07-27 |
-| `i02_phase3_cycle.txt` | **I02** — 4 เงื่อนไข · คำเตือนของ pgvector ออกกับกรณีที่ได้ recall 1.0000 | 2026-07-27 |
+| `i02_phase3_cycle.txt` | **I02** — 4 เงื่อนไข · 🔴 ข้ออ้าง "คำเตือนออกผิดที่" **ถอนแล้ว** บนข้อมูลจริงเตือนถูกกรณี ดู `real_i02.txt` | 2026-07-27 |
 | `i02_run1.txt` | **I02 รอบสำรวจแรก** — รอบที่ทำแค่ A/B/C แล้วเกือบสรุปผิด (E33) | 2026-07-27 |
 | `i02_run2.txt` | **I02 หลังเพิ่มเงื่อนไข D** — ตัวอย่างเอียงทำ recall เหลือ 0.2278 | 2026-07-27 |
-| `q03_phase3_cycle.txt` | **Q03** — filter 2% ลงไปได้ศูนย์แถว · ทางแก้ต้องเพิ่ม work_mem ด้วย | 2026-07-27 |
+| `q03_phase3_cycle.txt` | **Q03** — filter 2% ลงไปได้ศูนย์แถว · 🔴 ข้ออ้าง "ทางแก้ต้องเพิ่ม work_mem" **ถอนแล้ว (E42)** ดู `q03_multiplier_probe.txt` | 2026-07-27 |
 | `q03_run1.txt` | **Q03 รอบแรก** — ตารางไล่ selectivity + บันไดของทางแก้ 6 ขั้น | 2026-07-27 |
-| `l02_phase3_cycle.txt` | **L02** — ตาย 50% แล้วได้ศูนย์แถว · VACUUM แก้ได้ · UPDATE ไม่ทำให้เกิด | 2026-07-28 |
+| `l02_phase3_cycle.txt` | **L02** — ตาย 50% แล้วได้ศูนย์แถว *(หน้าผาไม่เกิดบนข้อมูลจริง)* · VACUUM แก้ได้ *(และ `iterative_scan` ก็แก้ได้ E43)* · UPDATE ไม่ทำให้เกิด | 2026-07-28 |
 | `l02_run1.txt` | **L02 รอบแรก** — ตารางไล่ dead% + กลุ่มควบคุม UPDATE + เวลา VACUUM | 2026-07-28 |
+
+### ทดสอบข้ามชุดข้อมูล — embedding จริง (2026-07-30 · 2026-08-01)
+
+| ไฟล์ | เนื้อหา |
+|---|---|
+| `real_q01.txt` | **ตัวหลัก** — recall บน BEIR/Quora 384 มิติ พร้อมบทวิเคราะห์ |
+| `real_i01_q02.txt` · `real_i02.txt` · `real_i04.txt` | I01+Q02 · I02 · I04 บนข้อมูลจริง |
+| `real_l02.txt` · `real_q03.txt` · `real_q04.txt` · `real_q06.txt` · `real_v07.txt` | ที่เหลือของชุด 10 fault |
+| `real2_model2.txt` | **แบบจำลองที่สอง** `all-mpnet-base-v2` 768 มิติ ครบ 10 fault |
+
+### ไล่เทียบเอกสารทางการ (2026-08-01)
+
+| ไฟล์ | เนื้อหา |
+|---|---|
+| `doc_crosscheck.txt` · `doc_crosscheck_f.txt` | **ไล่เทียบครบ 16 fault** — pgvector 12 · PostgreSQL 4 |
+| `q03_multiplier_probe.txt` | หลักฐานว่า `scan_mem_multiplier=32` ได้ครบ 40 (E42) |
+| `doc_reread_probe.txt` | `max_scan_tuples` ไม่ได้ตาย + L02 แก้ได้โดยไม่ VACUUM (E43) |
+| `q06_iterative_probe.txt` | `iterative_scan` ยกเพดาน Q06 ได้ แต่ recall ยังขาด (E44) |
+| `i05_capacity_model.txt` | **สูตรความจุ HNSW จากซอร์ส** — ทำนายล่วงหน้าตรง 5/5 |
+| `auto_explain_overhead.txt` | `auto_explain` เพิ่มต้นทุน 13.1% ให้ทุก query — เงื่อนไขของตัวเลขเวลาทุกตัว |
+
+### หลักฐานว่าตัวตรวจพลิกสถานะได้ (สูตรข้อ 6)
+
+| ไฟล์ | เนื้อหา |
+|---|---|
+| `qfcheck_states.txt` | `quietfail_check.py` จับได้ 6/6 → 0/6 → exit 1 → 0 → 2 |
+| `audit_numbers_states.txt` | หมวด 6 ของ audit จับตัวเลขที่แก้ให้ผิดได้ทุกข้อ |
+| `fingerprint_fn_states.txt` | `qf_fingerprint()` จับการแก้สูตรได้ (E40) |
+| `manual_faults_run.txt` | 6 fault ที่ต้องรันด้วยมือ — ยืนยันครบ 2026-08-01 |
+| `i04_seed_probe.txt` | `setseed` ไม่ทำให้ HNSW build ซ้ำได้ (E41) |
+
+### ต้นทุนของ I02 และ corpus ที่ยากขึ้น
+
+| ไฟล์ | เนื้อหา |
+|---|---|
+| `i02_cost_control.txt` · `i02_cost_3cycles.txt` | วัด buffers คู่กับ recall — ตัวที่เปิดโปง E36 |
+| `i02b_run.txt` · `i02b_buffers.txt` | corpus ที่ยากขึ้น |
+
+### RQ3 — โค้ดที่ AI เขียน
+
+| ไฟล์ | เนื้อหา |
+|---|---|
+| `rq3_ai_traps.txt` | **สรุปรวม** ทั้ง 3 การเก็บ |
+| `rq3_opus5-high.txt` · `rq3_opus5-run2.txt` · `rq3_chatgpt.txt` | ผลรายโมเดล |
+| `rq3__ref_correct.txt` · `rq3__ref_trapped.txt` | คำตอบอ้างอิงที่เขียนเอง — กลุ่มควบคุมของตัวให้คะแนน |
+
+> 📌 **ตารางข้างบนนี้เคยหยุดอยู่ที่ 2026-07-28** ทั้งที่ไฟล์โตขึ้นเป็น 67
+> ระบุไว้แค่ 36 ไฟล์ · เจอตอนทวน 2026-08-02 · สาเหตุคือไฟล์นี้**ไม่เคยอยู่ใน
+> `DOC_FILES` ของ `scripts/audit.py`** จึงไม่มีอะไรตรวจตัวเลขในนี้เลย
+> **แก้แล้ว** — เพิ่มเข้า `DOC_FILES` เรียบร้อย
 
 ## ไฟล์ที่ตั้งใจไม่ track ลง git
 
 | ไฟล์ | ขนาด | ทำไม |
 |---|---|---|
-| `qdrant_corpus.csv` | 470 MB | ข้อมูลนำเข้า Qdrant · สร้างใหม่ได้จาก `qf_corpus` ที่มี fingerprint ล็อกไว้ |
+| `qdrant_corpus.csv` | **448 MB** | ข้อมูลนำเข้า Qdrant · สร้างใหม่ได้จาก `qf_corpus` ที่มี fingerprint ล็อกไว้ |
 | `qdrant_queries.csv` | 918 KB | เช่นเดียวกัน |
 | `qdrant_search_results.csv` | 400 KB | ผลดิบ · ข้อสรุปอยู่ใน `q01_qdrant_cross_engine.txt` แล้ว |
 
