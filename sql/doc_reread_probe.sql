@@ -214,6 +214,12 @@ DROP TABLE IF EXISTS qf_probe_qv;
 DROP FUNCTION IF EXISTS qf_probe_a_run(text, int, int);
 DROP FUNCTION IF EXISTS qf_probe_b_run(text, text, int, int);
 
+-- 🔴 เดิมทิ้ง qf_probe_a กับ qf_probe_b ค้างไว้ทุกครั้ง — ลบแต่ตอนต้นไฟล์
+--    (เจอตอนทวน 2026-08-02 · รูปแบบเดียวกับ qf_seed_ans ใน i04_seed_probe.sql)
+--    ตารางผลไม่ใช่หลักฐาน — หลักฐานจริงอยู่ที่ results/doc_reread_probe.txt
+DROP TABLE IF EXISTS qf_probe_a;
+DROP TABLE IF EXISTS qf_probe_b;
+
 \echo ''
 \echo '=============================================================='
 \echo 'ตรวจว่าไม่ได้แตะ qf_corpus และไม่มี index ค้าง'
@@ -239,3 +245,10 @@ BEGIN
     END IF;
     RAISE NOTICE 'ผ่าน: fingerprint เดิม · ไม่มี index ค้าง';
 END $$;
+
+-- 🔴 ไฟล์นี้ตั้ง client_min_messages = warning ไว้ตอนต้น NOTICE ข้างบนจึงไม่โผล่
+--    ผลคือ assertion ที่ **ผ่าน** ไม่มีอะไรยืนยันให้เห็นเลย เห็นแค่คำว่า DO
+--    ตัวที่ตกยังฟ้องด้วย EXCEPTION ตามปกติ แต่ "เงียบ = ผ่าน" เป็นรูปแบบที่
+--    โครงงานนี้ศึกษาอยู่พอดี จึงพิมพ์ยืนยันออกมาให้เห็นตรงๆ (เพิ่ม 2026-08-02)
+\echo ''
+\echo '✅ assertion ปิดท้ายผ่าน — qf_corpus fingerprint เดิม · ไม่มี vector index ค้าง'
