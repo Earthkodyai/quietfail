@@ -29,6 +29,10 @@
 
 SET qf.rounds = :'rounds';
 
+-- ⭐ guard ตารางต้นทาง — ไฟล์นี้อ่าน qf_real อย่างเดียว ห้ามเขียน (เพิ่ม 2026-08-02)
+DROP TABLE IF EXISTS qf_i02r_guard;
+CREATE TABLE qf_i02r_guard AS SELECT count(*) AS n FROM qf_real;
+
 DROP TABLE IF EXISTS qf_i02r_obs;
 DROP TABLE IF EXISTS qf_i02r_meta;
 DROP TABLE IF EXISTS qf_i02r;
@@ -204,3 +208,32 @@ JOIN qf_i02r_obs o ON o.round = m.round AND o.cond = m.cond
 JOIN LATERAL (SELECT avg(o2.recall) AS r FROM qf_i02r_obs o2
               WHERE o2.round = m.round AND o2.cond = m.cond) agg ON true
 GROUP BY m.cond ORDER BY m.cond;
+
+
+-- ============================================================================
+-- เก็บกวาด + guard ปิดท้าย
+-- ============================================================================
+-- 🔴 ไฟล์นี้เดิม **ไม่มีการเก็บกวาดเลย** — จบด้วย SELECT รายงานผลแล้วหยุด
+--    ตาราง qf_i02r เป็นสำเนา embedding ขนาดราว 400 MB จึงค้างสะสมทุกครั้งที่รัน
+--    (กับดักข้อ 14ฐ · ไฟล์ที่ 8 ที่เจอรูปแบบนี้ และเป็นรายเดียวที่ไม่มี DROP
+--     แม้แต่ตอนต้นไฟล์สำหรับตัวมันเอง) · ผลจริงอยู่ใน results/
+DO $$
+DECLARE n_before bigint; n_now bigint;
+BEGIN
+    SELECT n INTO n_before FROM qf_i02r_guard;
+    SELECT count(*) INTO n_now FROM qf_real;
+    IF n_before <> n_now THEN
+        RAISE EXCEPTION 'ตารางต้นทางเปลี่ยนจำนวนแถว! ก่อน % หลัง % — ไฟล์นี้ต้องอ่านอย่างเดียว',
+                        n_before, n_now;
+    END IF;
+    RAISE NOTICE 'ตารางต้นทางไม่ถูกแตะ (% แถวเท่าเดิม)', n_now;
+END $$;
+
+DROP TABLE IF EXISTS qf_i02r_guard;
+DROP FUNCTION IF EXISTS qf_i02r_measure(int, text, bigint, numeric);
+DROP TABLE IF EXISTS qf_i02r_obs  CASCADE;
+DROP TABLE IF EXISTS qf_i02r_meta CASCADE;
+DROP TABLE IF EXISTS qf_i02r      CASCADE;
+
+\echo ''
+\echo '✅ เก็บกวาดครบ — ตารางต้นทางไม่ถูกแตะ · ไม่มีสำเนา embedding ค้าง'
