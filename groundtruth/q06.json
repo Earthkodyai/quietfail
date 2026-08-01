@@ -19,7 +19,7 @@
 
   "correct_diagnosis": "เทียบ hnsw.ef_search กับ LIMIT ที่โค้ดใช้จริง — ถ้า ef_search < LIMIT จะไม่มีทางได้ผลครบ ตรวจได้จาก GUC โดยไม่ต้องรัน query",
 
-  "correct_fix_th": "ตั้ง hnsw.ef_search ให้ >= LIMIT ที่มากที่สุดที่โค้ดใช้ · แต่ต้องรู้ว่านี่แก้แค่ 'จำนวน' ไม่ได้แก้ 'คุณภาพ' ซึ่งเป็นเรื่องของ Q01",
+  "correct_fix_th": "ตั้ง hnsw.ef_search ให้ >= LIMIT ที่มากที่สุดที่โค้ดใช้ · แต่ต้องรู้ว่านี่แก้แค่ 'จำนวน' ไม่ได้แก้ 'คุณภาพ' ซึ่งเป็นเรื่องของ Q01", "correct_fix_added_2026_08_01_th": "⭐ รายการทางแก้เดิมไม่ครบ (E44) — hnsw.iterative_scan ยกเพดานได้สมบูรณ์โดยไม่ต้องแตะ ef_search เลย: ที่ ef_search=40 ขอ 100 ได้ครบ 100 ทั้ง 200 query จ่าย buffers เพิ่มเพียง 6% (966->1026) และขอ 500 ได้ 500 · เอกสาร pgvector ระบุทางแก้นี้ไว้ตรงๆ ใน FAQ ข้อ 'Why are there less results for a query after adding an HNSW index?' ซึ่งโครงงานไม่เคยทดสอบ", "correct_fix_caveat_2026_08_01_th": "🔴 แต่ iterative_scan แก้ 'จำนวน' ได้สมบูรณ์ขณะที่ recall@100 ได้เพียง 0.7572 (เพิ่ม scan_mem_multiplier=32 ได้ 0.9397 · ทางแก้เดิม ef=100 ได้ 0.9244) -> ได้ครบ 100 แถวทุก query แต่ 1 ใน 4 เป็นของผิด · เป็นกับดักที่อันตรายกว่าเดิมเพราะตัวชี้วัดที่มองเห็นง่ายที่สุด (จำนวนแถว) กลับมาปกติสนิท · ยืนยันข้อสรุปหลักว่าแก้ Q06 ไม่ได้แก้ Q01", "results_file_2026_08_01": "results/q06_iterative_probe.txt",
 
   "declared_max_limit": 100,
 
@@ -37,7 +37,7 @@
     "corpus_rows": 100000,
     "dim": 384,
     "queries": 200,
-    "cliff_note_th": "หน้าผาอยู่ที่ k = ef_search + 1 พอดีเป๊ะ ไม่ใช่ใกล้เคียง",
+    "cliff_note_th": "หน้าผาอยู่ที่ k = ef_search + 1 พอดีเป๊ะ ไม่ใช่ใกล้เคียง", "cliff_note_revised_th": "⚠️ ค่านี้เป็นของ corpus สังเคราะห์ — บน embedding จริงเพดานอยู่ที่ 41 หน้าผาจึงอยู่ที่ k = ef_search + 2 (ขอ 50 · 100 · 1000 ได้ 41 เท่ากันหมด) · กลไก 'มีเพดานตายตัวที่ขอเพิ่มไม่ช่วย' ยกข้ามชุดข้อมูลได้ แต่ตำแหน่งเพดานยกไม่ได้",
     "rows_returned_at_ef40": {"10": 10, "20": 20, "39": 39, "40": 40, "41": 40, "60": 40, "100": 40},
     "errors_raised": 0,
     "recall_100_by_ef": {"40": 0.3864, "100": 0.9057, "200": 0.9658},
@@ -47,7 +47,7 @@
     "key_caveat_th": "ที่ ef_search=100 ได้ครบ 100 แถวแล้ว แต่ recall แค่ 0.9057 และแม้ที่ 200 ยังมี query ที่ได้ถูก 1 จาก 100 → แก้ Q06 ไม่ได้แก้ Q01 ต้องแก้แยกกัน"
   },
 
-  "pgvector_specific_th": "เฟส 2.5 และชั้น 3 ยืนยันว่าเป็นของ pgvector เฉพาะตัว — Qdrant ที่ hnsw_ef=40 กับ limit=100 ยังได้ 100 แถว recall 0.9895 · Milvus ตั้ง ef = limit โดยนิยาม · Weaviate ปรับอัตโนมัติ · OpenSearch engine lucene บังคับ ef = k (ดู D16)",
+  "pgvector_specific_revised_2026_08_01_th": "⚠️ ผ่อนถ้อยคำ (E44) — pgvector มีกลไกป้องกันตั้งแต่ 0.8.0 คือ hnsw.iterative_scan ซึ่งวัดแล้วยกเพดานได้จริง · สิ่งที่ต่างจากเจ้าอื่นคือ **ตั้งค่าปริยายเป็นปิด** ไม่ใช่ 'ไม่มีกลไก' · ข้อสรุปเรื่องค่าเริ่มต้นไม่กระทบเพราะปริยายยังเป็น off จริง", "pgvector_specific_th": "เฟส 2.5 และชั้น 3 ยืนยันว่าเป็นของ pgvector เฉพาะตัว — Qdrant ที่ hnsw_ef=40 กับ limit=100 ยังได้ 100 แถว recall 0.9895 · Milvus ตั้ง ef = limit โดยนิยาม · Weaviate ปรับอัตโนมัติ · OpenSearch engine lucene บังคับ ef = k (ดู D16)",
 
   "reproduce": "sql/q06_limit_exceeds_ef.sql",
   "config_profile": "fragile",

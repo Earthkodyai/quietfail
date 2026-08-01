@@ -1,7 +1,7 @@
 ==============================================================================
 QuietFail — ตรวจความพร้อมของ repo
-รันเมื่อ : 2026-08-01 20:01:51
-commit  : e667d22  ทวน PROJECT.md และ slides: แก้ข้ออ้างค้าง 7 จุด
+รันเมื่อ : 2026-08-01 22:50:20
+commit  : c2f6231  audit report: 36/36 pass
 baseline: scripts/audit_baseline.json (_updated = 2026-07-31)
 ==============================================================================
 
@@ -11,7 +11,7 @@ baseline: scripts/audit_baseline.json (_updated = 2026-07-31)
   3. ไม่ตรงกัน = มีอะไรเปลี่ยนหลัง audit ให้รัน  python scripts/audit.py  ใหม่
 
 ── 1 git ──
-  ok   working tree                                   สะอาด (ไม่นับรายงานของ audit เอง)
+ FAIL  working tree                                   มีไฟล์ค้าง 5 รายการ ยังไม่ commit: CLAUDE.md, groundtruth/l02.json, groundtruth/q03.json, groundtruth/q06.json
   ok   results ถูก track                              66 ไฟล์ · ยกเว้น csv ที่ตั้งใจไม่ track 3 ไฟล์
 ── 2 groundtruth ──
   ok   parse ได้ทุกไฟล์                               15 ไฟล์
@@ -42,7 +42,7 @@ baseline: scripts/audit_baseline.json (_updated = 2026-07-31)
 ── 5 score.sql ──
   ok   รันจบไม่มี error                               exit 0
   ok   ทุก fault มีสาขาที่ตอบได้                      15/15 ข้อ
-  ok   verdict ที่ได้ตอนนี้ (ข้อมูล ไม่ใช่เกณฑ์)      F01=NOT_DETECTED · F03=CANNOT_CHECK · F05=NOT_DETECTED · F10=CANNOT_CHECK · I01=CANNOT_CHECK · I02=CANNOT_CHECK · I03=NOT_DETECTED · I04=CANNOT_CHECK · I05=DETECTED · L02=CANNOT_CHECK · Q02=NOT_DETECTED · Q03=CANNOT_CHECK · Q04=CANNOT_CHECK · Q06=DETECTED · V07=DETECTED
+  ok   verdict ที่ได้ตอนนี้ (ข้อมูล ไม่ใช่เกณฑ์)      F01=NOT_DETECTED · F03=CANNOT_CHECK · F05=NOT_DETECTED · F10=CANNOT_CHECK · I01=CANNOT_CHECK · I02=CANNOT_CHECK · I03=NOT_DETECTED · I04=CANNOT_CHECK · I05=DETECTED · L02=CANNOT_CHECK · Q02=CANNOT_CHECK · Q03=CANNOT_CHECK · Q04=CANNOT_CHECK · Q06=DETECTED · V07=DETECTED
 ── 6 ตัวเลขในเอกสาร ──
   ok   จำนวนหัวข้อของ audit ที่เอกสารอ้าง             36 · ตรงกันทั้ง 9 ที่
   ok   จำนวนไฟล์ใน results/ ที่เอกสารอ้าง             66 · ตรงกันทั้ง 4 ที่
@@ -54,8 +54,8 @@ baseline: scripts/audit_baseline.json (_updated = 2026-07-31)
   ok   จำนวนบันทึกความผิดพลาด E ที่เอกสารอ้าง         46 · ตรงกันทั้ง 1 ที่
 
 ==============================================================================
-ผ่าน 36 · ไม่ผ่าน 0 · ตรวจไม่ได้ 0   (รวม 36)
+ผ่าน 35 · ไม่ผ่าน 1 · ตรวจไม่ได้ 0   (รวม 36)
 
-✅ ผ่านครบทุกข้อ — CLAUDE.md เชื่อถือได้ ณ เวลาที่รัน
-   ผู้ช่วยคนถัดไปไม่ต้องไล่ตรวจซ้ำทีละข้อ
+❌ ยังไม่พร้อม — แก้ให้ครบก่อนถือว่า CLAUDE.md เชื่อถือได้
+   'ตรวจไม่ได้' ไม่ใช่ 'ผ่าน' (กฎเหล็กข้อ 10)
 ==============================================================================

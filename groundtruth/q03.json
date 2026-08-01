@@ -14,7 +14,7 @@
     "สรุปว่าไม่มีข้อมูลตรงเงื่อนไข"
   ],
   "correct_diagnosis": "นับแถวที่เข้าเงื่อนไข filter เทียบกับจำนวนแถวที่ query คืนจริง · ถ้ามีแถวเข้าเงื่อนไขเกิน LIMIT แต่ได้กลับมาไม่ถึง LIMIT แปลว่าผลหายไปในเส้นทาง index",
-  "correct_fix_th": "เปิด hnsw.iterative_scan **และต้องเพิ่ม work_mem ด้วย** — วัดแล้วว่าเปิด iterative_scan อย่างเดียวไม่ช่วยอะไรเลยบนโปรไฟล์ fragile (work_mem=64kB) · ทางเลือกอื่นคือกรองด้วย partial index หรือแยกตารางตามเงื่อนไข",
+  "correct_fix_revised_2026_08_01_th": "🔴 ถอนข้ออ้างเรื่องเอกสาร (E42) — เอกสารนิยาม hnsw.scan_mem_multiplier ว่าเป็น 'the max amount of memory to use, as a multiple of work_mem' ทั้งสองปุ่มจึงคูณกัน ไม่ใช่คนละเรื่อง · การทดลองเดิมไล่ multiplier ถึงแค่ 8 (ได้ 17/40) แล้วสรุปว่าปุ่มไม่ทำงาน · ที่ multiplier=32 ได้ครบ 40/40 โดยคง work_mem ไว้ที่ 64kB เดิม -> ปุ่มที่เอกสารให้ใช้ได้จริง ทางแก้ที่ถูกคือ iterative_scan + scan_mem_multiplier ให้สูงพอ · results/q03_multiplier_probe.txt", "correct_fix_th": "เปิด hnsw.iterative_scan **และต้องเพิ่ม work_mem ด้วย** — วัดแล้วว่าเปิด iterative_scan อย่างเดียวไม่ช่วยอะไรเลยบนโปรไฟล์ fragile (work_mem=64kB) · ทางเลือกอื่นคือกรองด้วย partial index หรือแยกตารางตามเงื่อนไข",
   "evidence_query": "วัดสดใน score.sql — ถาม k แถวแล้วนับว่าได้กี่แถว ไม่ต้องรู้เฉลย",
   "evidence_expectation": {
     "target_table": "qf_q03",
@@ -171,7 +171,7 @@
         "buffers": 28212
       }
     ],
-    "fix_finding_th": "⭐ ตัวที่ปลดล็อกคือ **work_mem** ซึ่งเป็นค่าทั่วไปของ PostgreSQL ไม่ใช่พารามิเตอร์ของ pgvector และ **ไม่มีอยู่ในรายการข้อจำกัด 4 ข้อที่ EVIDENCE.md จดไว้จากเอกสาร** · ขั้น 2-4 จ่าย I/O เพิ่ม (977->1743->3035 buffers) โดยไม่ได้แถวเพิ่มแม้แต่แถวเดียว",
+    "fix_finding_revised_2026_08_01_th": "🔴 ถอน (E42 · E43) — (1) work_mem ไม่ใช่ 'ตัวที่เอกสารไม่พูดถึง' เพราะ scan_mem_multiplier นิยามตัวเองว่าเป็นตัวคูณของมัน (2) ข้ออ้างว่า max_scan_tuples ไม่ได้อะไรเลยก็ถอนด้วย — ปุ่มไม่ได้ตาย แค่ไม่ใช่ตัวที่ผูกอยู่ เมื่อทำให้หน่วยความจำเหลือเฟือก่อน (mult=32) แล้วไล่ค่า ได้ 100->4 แถว · 1000->7 · 5000->40 ตอบสนองเป็นลำดับชัดเจน · เอกสารเขียนคำเตือนนี้ไว้เองว่า 'Try increasing this if increasing hnsw.max_scan_tuples does not improve recall' · results/doc_reread_probe.txt", "fix_finding_th": "⭐ ตัวที่ปลดล็อกคือ **work_mem** ซึ่งเป็นค่าทั่วไปของ PostgreSQL ไม่ใช่พารามิเตอร์ของ pgvector และ **ไม่มีอยู่ในรายการข้อจำกัด 4 ข้อที่ EVIDENCE.md จดไว้จากเอกสาร** · ขั้น 2-4 จ่าย I/O เพิ่ม (977->1743->3035 buffers) โดยไม่ได้แถวเพิ่มแม้แต่แถวเดียว",
     "fix_cost_th": "ทางแก้ที่ได้ผลจ่าย buffers 27,145 เทียบกับ 977 = **แพงขึ้น 28 เท่า**",
     "plus_zero_finding_th": "ยืนยันข้อ 4 ของ EVIDENCE.md จากโครงสร้าง plan: `ORDER BY d` ชั้นนอกไม่เกิด Sort node เลยบน PG 17.10 (planner ถือว่าเรียงมาแล้ว) · ใส่ `ORDER BY d + 0` แล้ว Sort node โผล่ — จำเป็นเมื่อใช้ relaxed_order ซึ่งไม่รับประกันลำดับ",
     "errors_raised": 0,
