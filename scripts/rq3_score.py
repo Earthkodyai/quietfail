@@ -207,9 +207,14 @@ def explain_uses_vector_index(prelude, query):
     """
     # ต้องอยู่ใน sql/ เพราะเป็นโฟลเดอร์เดียวที่ mount เข้า container
     # (เขียนลง rq3/ แล้ว psql หาไฟล์ไม่เจอ → คืน None เงียบๆ → ตัวตรวจ index ไม่ทำงานเลย)
+    # ⚠️ ต้องถาม catalog **ในทรานแซกชันเดียวกัน หลัง prelude** เพราะโมเดลอาจ
+    #    สร้าง index เองใน prelude · ถ้า snapshot ไว้ก่อนจะมองไม่เห็น index ตัวนั้น
     tmp = "sql/_rq3_explain.sql"
     io.open(tmp, "w", encoding="utf-8", newline="\n").write(
         "BEGIN;\n" + prelude +
+        "SELECT '@@VIDX@@' || coalesce(string_agg(c.relname, ','), '') "
+        "FROM pg_class c JOIN pg_am am ON am.oid = c.relam "
+        "WHERE am.amname IN ('hnsw','ivfflat');\n" +
         "EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON)\n" + query + ";\n" +
         "ROLLBACK;\n")
     rc, out = psql_file(tmp)
@@ -232,14 +237,27 @@ def explain_uses_vector_index(prelude, query):
     p = plan.get("Plan", {})
     buf = (p.get("Shared Hit Blocks", 0) or 0) + (p.get("Shared Read Blocks", 0) or 0)
 
-    # เดินต้นไม้ plan หา Index Scan ที่ใช้ index ของ documents บนคอลัมน์ vector
+    # รายชื่อ vector index ที่มีอยู่จริง ณ ขณะนั้น — อ่านจาก catalog
+    #
+    # 🔴 รุ่นก่อนตัดสินจาก **ชื่อ** index (ต้องขึ้นต้น "documents_" และมีคำว่า
+    #    "embedding") ซึ่งเป็นการเดาจากข้อความ ขัดกับกฎเหล็กข้อ 6 ที่บังคับ
+    #    ให้อ่านโครงสร้าง · โมเดลตั้งชื่อ index เองได้อิสระ และในคำตอบที่เก็บ
+    #    ไว้จริงมีทั้ง "idx_documents_embedding_hnsw" (ไม่ขึ้นต้นตามที่กำหนด)
+    #    และ "documents_emb_cos_idx" (ไม่มีคำว่า embedding) ซึ่งจะถูกตัดสิน
+    #    ว่า "ไม่ได้ใช้ index" ทั้งที่ใช้อยู่ = **ผลลบลวงที่ทำให้จำนวนกับดัก
+    #    สูงเกินจริง** · ตรวจแล้วว่ายังไม่กระทบคะแนนชุดที่เก็บไว้ เพราะชื่อของ
+    #    ข้อที่ผ่านทางนี้บังเอิญตรงพอดี แต่พังทันทีที่เก็บโมเดลใหม่ (แก้ 2026-08-02)
+    vidx = set()
+    mv = re.search(r"@@VIDX@@(\S*)", out)
+    if mv:
+        vidx = set(x for x in mv.group(1).split(",") if x)
+
+    # เดินต้นไม้ plan หา Index Scan ที่ใช้ vector index ตัวใดตัวหนึ่ง
     found = [False]
 
     def walk(node):
         if node.get("Node Type", "").endswith("Index Scan"):
-            idx = node.get("Index Name", "")
-            # ชื่อ index ของ vector บนตาราง documents — ไม่ใช่ pkey ของตารางอื่น
-            if idx.startswith("documents_") and "embedding" in idx:
+            if node.get("Index Name", "") in vidx:
                 found[0] = True
         for child in node.get("Plans", []) or []:
             walk(child)
@@ -431,7 +449,16 @@ def main():
         for t in sorted(per):
             w("  %-4s %d/%d" % (t, per[t][0], per[t][1]))
     w("")
-    w("**ตัวหารคือจำนวนโจทย์** — ต่างจากทะเบียนบั๊ก H01–H27 ที่ไม่มีตัวหาร")
+    # ⚠️ ห้าม hardcode ช่วงเลข H — รุ่นก่อนเขียน "H01–H27" ไว้ตรงๆ แล้วผุเงียบ
+    #    เมื่อทะเบียนโตเป็น H32 · ตัวเลขผิดจะถูกพิมพ์ลงไฟล์ผลทุกครั้งที่ให้คะแนน
+    #    เป็นบั๊กชนิดเดียวกับกับดักข้อ 14 (แก้ 2026-08-02)
+    try:
+        fa = io.open(os.path.join(ROOT, "FAULTS.md"), encoding="utf-8").read()
+        hs = [int(x) for x in re.findall(r"^\|\s*\*\*H(\d{2})\*\*", fa, re.M)]
+        hrange = "H01–H%02d" % max(hs) if hs else "ทะเบียนบั๊ก H"
+    except IOError:
+        hrange = "ทะเบียนบั๊ก H"
+    w("**ตัวหารคือจำนวนโจทย์** — ต่างจากทะเบียนบั๊ก %s ที่ไม่มีตัวหาร" % hrange)
     w("=" * 78)
 
     report = "\n".join(lines) + "\n"
