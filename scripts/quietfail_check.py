@@ -215,14 +215,29 @@ def check_i01(db, rep, idxs):
         rep.add("I01", CANNOT, "ยังไม่มี query ที่ใช้ vector operator ในประวัติ — ให้แอปทำงานสักพักก่อน")
         return
 
+    # ⚠️ ตรวจว่า **มี index ที่ opclass ไม่ตรงกับ operator ใดที่โค้ดใช้เลย** หรือไม่
+    #    ไม่ใช่ถามว่า "operator ที่ใช้มี index รองรับไหม"
+    #
+    # 📌 เคยลองเปลี่ยนเป็นแบบหลังเมื่อ 2026-08-02 แล้ว **ปฏิเสธ** เพราะอ่านนิยาม
+    #    ของ I01 ใน FAULTS.md ผิด · ความเสียหายที่โครงงานนิยามไว้คือ
+    #    *"จ่ายค่า build เต็มราคา (HNSW 89 วิ · 195 MB ที่ 100k) แล้วไม่ได้อะไร
+    #    กลับมาเลย"* (FAULTS.md:465) และ *"I01 เสียทรัพยากรเปล่า"* (บรรทัด 959)
+    #    -> index ที่ไม่มีวันถูกใช้ **เป็นความเสียหายในตัวมันเอง** ต่อให้มี index
+    #    ตัวอื่นที่ตรง operator อยู่ด้วยก็ตาม · การแคบลงจะทำให้ตัวตรวจเงียบ
+    #    กับกรณีที่ผู้ใช้จ่ายค่า index ไปฟรีๆ ซึ่งเป็นอาการหลักของ fault นี้
+    #
+    #    บทเรียน: **อย่าปรับเกณฑ์ตามเหตุผลของตัวเอง ก่อนอ่านนิยามที่โครงงานเขียนไว้**
+    #    (กฎเหล็กข้อ 1 — ให้เอกสารเป็นคนตัดสิน ไม่ใช่ผู้ช่วย)
     wanted = {OPERATOR_OPCLASS[o][0] for o in ops if o in OPERATOR_OPCLASS}
     bad = [(t, i, opc) for _, t, i, _, opc, _ in idxs if opc not in wanted]
     if bad:
         rep.add("I01", DETECTED,
                 "index %s บนตาราง %s ใช้ opclass %s แต่โค้ดค้นด้วย %s (ต้องใช้ %s) "
-                "— index จะถูกข้ามไปเงียบๆ" % (
+                "— index จะถูกข้ามไปเงียบๆ และค่า build ที่จ่ายไปสูญเปล่า" % (
                     bad[0][1], bad[0][0], bad[0][2], " ".join(ops), " หรือ ".join(sorted(wanted))),
-                "สร้าง index ใหม่ด้วย opclass ที่ตรงกับ operator ที่ใช้จริง")
+                "สร้าง index ใหม่ด้วย opclass ที่ตรงกับ operator ที่ใช้จริง "
+                "· เอกสารระบุว่าต้องมี index แยกต่อหนึ่ง distance function "
+                "· ถ้าไม่ได้ใช้ operator นั้นแล้ว ให้ลบ index ทิ้งเพื่อคืนพื้นที่")
     else:
         rep.add("I01", NOT_DETECTED,
                 "vector index %d ตัว ใช้ opclass ตรงกับ operator ที่โค้ดใช้ (%s)"
@@ -284,7 +299,10 @@ def check_q06(db, rep, idxs, max_limit=None):
                 "hnsw.ef_search = %d แต่โค้ดขอ LIMIT ถึง %d → คืนได้ไม่เกิน %d แถว "
                 "ขาดไป %d โดยไม่มี error" % (ef, top, ef, top - ef),
                 "ตั้ง hnsw.ef_search ให้ >= LIMIT ที่ใหญ่ที่สุด "
-                "· ได้แถวครบไม่ได้แปลว่าถูกครบ ต้องวัด recall ต่างหาก")
+                "หรือเปิด hnsw.iterative_scan ซึ่งยกเพดานได้เช่นกันและถูกกว่า "
+                "· แต่ทั้งสองทาง **ได้แถวครบไม่ได้แปลว่าถูกครบ** "
+                "วัดแล้ว iterative_scan ให้ครบ 100 แถวที่ recall เพียง 0.76 "
+                "— ต้องวัด recall ต่างหากเสมอ")
     else:
         rep.add("Q06", NOT_DETECTED, "hnsw.ef_search = %d >= LIMIT สูงสุดที่ระบุ (%d)" % (ef, top))
 
