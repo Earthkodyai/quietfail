@@ -29,7 +29,7 @@
   "evidence_expectation": {
     "target_table": "qf_corpus",
     "vector_column": "embedding",
-    "calibrated_dim": 384,
+    "calibrated_dim": 384, "calibrated_dim_note_2026_08_01_th": "ข้อจำกัดนี้เป็นของ score.sql เท่านั้น และตั้งใจคงไว้ — score.sql เป็นตัวนับคะแนนของงานวิจัยที่วิ่งบน qf_corpus ซึ่งล็อกไว้ที่ 384 มิติและ mwm 64MB จุดที่ค่า 443 tuples/MB calibrate ไว้พอดี การจงใจใช้ค่าต่ำเพื่อเตือนเร็วจึงเหมาะสมกับบทบาทนี้ · ส่วนของส่งมอบ scripts/quietfail_check.py เลิกใช้ค่าคงที่แล้วเมื่อ 2026-08-01 เปลี่ยนเป็นสูตรจากซอร์ส 674 + MAXALIGN(8 + 4*dim) จึงตรวจได้ทุกมิติ และคิดแบบผ่อนปรนเพื่อไม่ให้เกิดผลบวกลวง (results/i05_capacity_model.txt)",
     "tuples_per_mb": 443,
     "detect_when": "จำนวนแถว > maintenance_work_mem(MB) x tuples_per_mb → build จะ spill"
   },
