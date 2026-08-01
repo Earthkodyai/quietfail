@@ -25,6 +25,17 @@ CREATE TABLE qfcheck_demo (id int PRIMARY KEY, embedding vector(384));
 INSERT INTO qfcheck_demo SELECT id, embedding FROM qf_corpus ORDER BY id LIMIT 2000;
 
 -- I01: index เป็น L2 แต่เดี๋ยวโค้ดจะค้นด้วย cosine
+--
+-- ⚠️ ฉากนี้มี index cosine (qfcheck_ivf ข้างล่าง) อยู่ด้วย เพราะ Q04 ต้องใช้
+--    จึงมีทั้ง index ที่ตรง operator และที่ไม่ตรงอยู่พร้อมกัน — **ตั้งใจ**
+--
+--    I01 ของโครงงานนี้นิยามความเสียหายไว้ว่า *"จ่ายค่า build เต็มราคา
+--    แล้วไม่ได้อะไรกลับมาเลย"* (FAULTS.md:465) ดังนั้น index ที่ไม่มีวัน
+--    ถูกใช้ = ความเสียหายในตัวมันเอง ต่อให้มีตัวอื่นที่ตรงอยู่ด้วยก็ตาม
+--
+--    🔴 อย่าเผลอแก้ตัวตรวจให้ถามว่า "operator ที่ใช้มี index รองรับไหม"
+--    เคยลองแล้วเมื่อ 2026-08-02 ตัวตรวจเงียบทันทีในฉากนี้ · ย้อนกลับแล้ว
+--    ดูกับดักข้อ 14ฎ ใน CLAUDE.md
 CREATE INDEX qfcheck_l2  ON qfcheck_demo USING hnsw (embedding vector_l2_ops);
 -- Q04: lists = 100 แต่ probes จะเหลือ 1
 CREATE INDEX qfcheck_ivf ON qfcheck_demo USING ivfflat (embedding vector_cosine_ops)

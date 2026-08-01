@@ -33,7 +33,14 @@ SELECT id FROM qfcheck_demo
 \o
 
 \qecho '=== แก้แล้ว (ค่าที่ connection ใหม่จะได้) ==='
+-- 🔴 คำสั่งเดิมอ้างคอลัมน์ `setting` ซึ่ง pg_db_role_setting ไม่มี
+--    (มีแค่ setdatabase · setrole · setconfig) จึง ERROR ทุกครั้งที่รัน
+--    **ERROR นั้นปรากฏอยู่ใน results/qfcheck_states.txt ที่ commit ไว้ตั้งแต่ต้น
+--    และไม่มีใครสังเกตเลย** — ตัวไฟล์หลักฐานเองมีข้อผิดพลาดโชว์อยู่
+--    ไม่กระทบผลการพิสูจน์ เพราะเป็นบรรทัดรายงานท้ายไฟล์ ไม่ใช่ตัวแก้
+--    (แก้ 2026-08-02)
 SELECT (SELECT count(*) FROM qfcheck_demo) AS rows_now,
-       (SELECT setting FROM pg_db_role_setting s, pg_database d
-         WHERE d.datname='faultlab' AND s.setdatabase=d.oid
-           AND 'hnsw.ef_search=100' = ANY(s.setconfig)) IS NOT NULL AS ef_ตั้งระดับ_db;
+       coalesce((SELECT 'hnsw.ef_search=100' = ANY(s.setconfig)
+                   FROM pg_db_role_setting s
+                   JOIN pg_database d ON d.oid = s.setdatabase
+                  WHERE d.datname = 'faultlab'), false) AS ef_ตั้งระดับ_db;
