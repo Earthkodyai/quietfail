@@ -883,9 +883,15 @@ BEGIN
 
             IF got_rows < ask_k THEN
                 INSERT INTO score_result VALUES (fid, 'DETECTED',
+                    -- ⚠️ รายการทางแก้ต้องครบ — เดิมบอกแค่ VACUUM
+                    --    วัดแล้ว (E43 · E45) มีอีกสองทางที่ดีกว่าในบางกรณี:
+                    --      REINDEX          3.4 วิ · index เหลือ 19.5 MB (เอกสารแนะนำเอง)
+                    --      VACUUM          12.8 วิ · index คงที่ 195.3 MB
+                    --      iterative_scan  แก้ได้โดยไม่ต้อง VACUUM แต่จ่ายทุก query
                     format('ขอ %s แถวโดย**ไม่มี filter เลย** ได้ %s (ขาด %s) '
                            'ทั้งที่ตารางมีแถวที่ยังอยู่ %s แถว → แถวที่ถูกลบยังค้างใน index '
-                           '· แก้ด้วย VACUUM %s',
+                           '· แก้ด้วย VACUUM %s หรือ REINDEX INDEX CONCURRENTLY '
+                           '(วัดแล้วเร็วกว่า 3.8 เท่าและลดขนาด index 10 เท่า)',
                            ask_k, got_rows, ask_k - got_rows, n_rows, rel),
                     doc ->> 'correct_diagnosis');
             ELSE
