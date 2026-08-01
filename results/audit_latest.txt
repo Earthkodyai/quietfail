@@ -1,7 +1,7 @@
 ==============================================================================
 QuietFail — ตรวจความพร้อมของ repo
-รันเมื่อ : 2026-08-01 19:22:05
-commit  : c5bfbb3  audit report: 34/34 pass
+รันเมื่อ : 2026-08-01 19:26:10
+commit  : e2f4490  แก้ escape ที่เพี้ยนตอนเขียนไฟล์ผ่าน heredoc
 baseline: scripts/audit_baseline.json (_updated = 2026-07-31)
 ==============================================================================
 
@@ -11,7 +11,7 @@ baseline: scripts/audit_baseline.json (_updated = 2026-07-31)
   3. ไม่ตรงกัน = มีอะไรเปลี่ยนหลัง audit ให้รัน  python scripts/audit.py  ใหม่
 
 ── 1 git ──
- FAIL  working tree                                   มีไฟล์ค้าง 7 รายการ ยังไม่ commit: CLAUDE.md, README.md, REPORT.md, scripts/audit.py
+ FAIL  working tree                                   มีไฟล์ค้าง 1 รายการ ยังไม่ commit: results/audit_numbers_states.txt
   ok   results ถูก track                              66 ไฟล์ · ยกเว้น csv ที่ตั้งใจไม่ track 3 ไฟล์
 ── 2 groundtruth ──
   ok   parse ได้ทุกไฟล์                               15 ไฟล์
