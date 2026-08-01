@@ -189,3 +189,11 @@ BEGIN
     END IF;
     RAISE NOTICE 'ไม่มี index ค้าง';
 END $$;
+
+-- 🔴 เก็บกวาดตารางทำงาน — เดิมลบแต่ตอนต้นไฟล์ (กับดักข้อ 14ฐ)
+--    ตารางเหล่านี้ใหญ่มาก (qf_q03r ราว 400 MB บนชุด 768 มิติ) และค้างสะสม
+--    จนฐานโตจาก 411 MB เป็น 2.7 GB · ผลจริงอยู่ใน results/ ไม่ใช่ในตาราง
+--    สร้างใหม่ได้เสมอด้วยไฟล์นี้เอง
+DROP TABLE IF EXISTS qf_q03r_sweep CASCADE;
+DROP TABLE IF EXISTS qf_q03r_fix   CASCADE;
+DROP TABLE IF EXISTS qf_q03r       CASCADE;

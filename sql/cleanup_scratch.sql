@@ -62,6 +62,18 @@ DROP TABLE IF EXISTS qf_i02r CASCADE;
 DROP TABLE IF EXISTS qf_l02r CASCADE;
 DROP TABLE IF EXISTS qf_q03r CASCADE;
 
+-- ⭐ ชุด 768 มิติ (รอบแบบจำลองที่สอง) — เพิ่ม 2026-08-02
+--    สร้างใหม่ได้เร็วจาก qf_real2 ด้วย sql/real2_{i02,l02,q03}.sql
+--    **ห้ามลบ qf_real2 เอง** เพราะต้องฝัง embedding ใหม่ด้วย mpnet (~10 นาที)
+--    สามตารางนี้กินรวมกัน 1.2 GB — เป็นสาเหตุหลักที่ฐานโตจาก 411 MB เป็น 2.7 GB
+DROP TABLE IF EXISTS qf_i02r2 CASCADE;
+DROP TABLE IF EXISTS qf_l02r2 CASCADE;
+DROP TABLE IF EXISTS qf_q03r2 CASCADE;
+DROP TABLE IF EXISTS qf_q03r2_fix    CASCADE;
+DROP TABLE IF EXISTS qf_q03r2_sweep  CASCADE;
+DROP TABLE IF EXISTS qf_q03r_fix     CASCADE;
+DROP TABLE IF EXISTS qf_q03r_sweep   CASCADE;
+
 -- ------------------------------------------------------------
 -- 4. พิสูจน์ว่าฐานที่ล็อกไว้ไม่ถูกแตะ
 -- ------------------------------------------------------------
