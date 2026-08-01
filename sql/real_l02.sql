@@ -25,6 +25,11 @@
 \timing on
 \set ON_ERROR_STOP on
 
+-- ⭐ guard ตารางต้นทาง — ไฟล์นี้ DELETE แถวเป็นชุดๆ ถ้าเผลอชี้ผิดตาราง
+--    จะทำลายของที่สร้างใหม่ต้องฝัง embedding ใหม่ทั้งชุด (เพิ่ม 2026-08-02)
+DROP TABLE IF EXISTS qf_l02r_guard;
+CREATE TABLE qf_l02r_guard AS SELECT count(*) AS n FROM qf_real;
+
 DROP INDEX IF EXISTS qf_l02r_idx;
 DROP TABLE IF EXISTS qf_l02r_obs;
 DROP TABLE IF EXISTS qf_l02r;
@@ -178,3 +183,20 @@ BEGIN
     END IF;
     RAISE NOTICE 'ไม่มี index ค้าง';
 END $$;
+
+-- 🔴 เก็บกวาด — เดิมลบแต่ตอนต้นไฟล์ (กับดักข้อ 14ฐ · ไฟล์ที่ 7 ที่เจอรูปแบบนี้)
+DO $$
+DECLARE n_before bigint; n_now bigint;
+BEGIN
+    SELECT n INTO n_before FROM qf_l02r_guard;
+    SELECT count(*) INTO n_now FROM qf_real;
+    IF n_before <> n_now THEN
+        RAISE EXCEPTION 'ตารางต้นทางเปลี่ยนจำนวนแถว! ก่อน % หลัง % — ไฟล์นี้ต้องอ่านอย่างเดียว',
+                        n_before, n_now;
+    END IF;
+    RAISE NOTICE 'ตารางต้นทางไม่ถูกแตะ (% แถวเท่าเดิม)', n_now;
+END $$;
+
+DROP TABLE IF EXISTS qf_l02r_guard;
+DROP TABLE IF EXISTS qf_l02r_obs CASCADE;
+DROP TABLE IF EXISTS qf_l02r CASCADE;
