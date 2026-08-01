@@ -37,10 +37,8 @@ def build_cases():
 _dirty = subprocess.run(["git", "status", "--porcelain"] + [f for _, f, _ in CASE_SPECS],
                         capture_output=True).stdout.decode("utf-8", "replace").strip()
 if _dirty and os.environ.get("QF_ALLOW_DIRTY") != "1":
-    sys.exit("หยุด: ไฟล์เอกสารยังมีงานค้างไม่ commit
-" + _dirty +
-             "
-(สคริปต์นี้แก้ไฟล์ชั่วคราว — commit ก่อน หรือตั้ง QF_ALLOW_DIRTY=1)")
+    sys.exit("หยุด: ไฟล์เอกสารยังมีงานค้างไม่ commit\n" + _dirty +
+             "\n(สคริปต์นี้แก้ไฟล์ชั่วคราว — commit ก่อน หรือตั้ง QF_ALLOW_DIRTY=1)")
 
 CASES = build_cases()
 def audit_group6():
@@ -68,8 +66,7 @@ def snapshot(fn):
         _ORIG[fn] = io.open(fn, encoding="utf-8").read()
 
 def git_restore(fn):
-    io.open(fn, "w", encoding="utf-8", newline="
-").write(_ORIG[fn])
+    io.open(fn, "w", encoding="utf-8", newline="\n").write(_ORIG[fn])
 
 rep = []
 w = rep.append
