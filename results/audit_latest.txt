@@ -1,7 +1,7 @@
 ==============================================================================
 QuietFail — ตรวจความพร้อมของ repo
-รันเมื่อ : 2026-08-02 01:24:17
-commit  : eef166b  ทวน scripts/audit.py: เอาสูตรข้อ 6 มาใช้กับตัว audit
+รันเมื่อ : 2026-08-02 01:28:06
+commit  : f109956  ทวน sql/score.sql: เติมทางแก้ที่ขาดของ L02 · และยืนย
 baseline: scripts/audit_baseline.json (_updated = 2026-07-31)
 ==============================================================================
 
@@ -42,7 +42,7 @@ baseline: scripts/audit_baseline.json (_updated = 2026-07-31)
 ── 5 score.sql ──
   ok   รันจบไม่มี error                               exit 0
   ok   ทุก fault มีสาขาที่ตอบได้                      15/15 ข้อ
-  ok   verdict ที่ได้ตอนนี้ (ข้อมูล ไม่ใช่เกณฑ์)      F01=NOT_DETECTED · F03=CANNOT_CHECK · F05=NOT_DETECTED · F10=CANNOT_CHECK · I01=CANNOT_CHECK · I02=CANNOT_CHECK · I03=NOT_DETECTED · I04=CANNOT_CHECK · I05=DETECTED · L02=CANNOT_CHECK · Q02=NOT_DETECTED · Q03=CANNOT_CHECK · Q04=CANNOT_CHECK · Q06=DETECTED · V07=DETECTED
+  ok   verdict ที่ได้ตอนนี้ (ข้อมูล ไม่ใช่เกณฑ์)      F01=NOT_DETECTED · F03=CANNOT_CHECK · F05=NOT_DETECTED · F10=CANNOT_CHECK · I01=CANNOT_CHECK · I02=CANNOT_CHECK · I03=NOT_DETECTED · I04=CANNOT_CHECK · I05=DETECTED · L02=CANNOT_CHECK · Q02=CANNOT_CHECK · Q03=CANNOT_CHECK · Q04=CANNOT_CHECK · Q06=DETECTED · V07=DETECTED
 ── 6 ตัวเลขในเอกสาร ──
   ok   จำนวนหัวข้อของ audit ที่เอกสารอ้าง             36 · ตรงกันทั้ง 9 ที่
   ok   จำนวนไฟล์ใน results/ ที่เอกสารอ้าง             68 · ตรงกันทั้ง 4 ที่
