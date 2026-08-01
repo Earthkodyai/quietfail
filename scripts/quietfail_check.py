@@ -54,8 +54,39 @@ OPERATOR_OPCLASS = {
     "<#>": ("vector_ip_ops", "inner product"),
 }
 
-# ความจุที่ **วัดเอง** ที่ 384 มิติ (ดู groundtruth/i05.json) — ไม่ใช่สูตรจากเอกสาร
-TUPLES_PER_MB_384 = 443
+# ---------------------------------------------------------------------------
+# ความจุกราฟ HNSW ในหน่วยความจำ — สูตรจากซอร์ส pgvector v0.8.5
+# ---------------------------------------------------------------------------
+# เดิมใช้ค่าคงที่ TUPLES_PER_MB_384 = 443 ซึ่ง calibrate ที่ mwm = 64MB เท่านั้น
+# จึงคลาดที่ค่าอื่น และคลาดไปทาง **ประเมินความจุต่ำเกินจริง** = แจ้ง DETECTED
+# ทั้งที่กราฟยังพอ (ผลบวกลวง ซึ่งแย่กว่าตอบ CANNOT_CHECK สำหรับเครื่องมือที่ส่งมอบ)
+#
+#     mwm  32MB  ค่าคงที่ 14,176   วัดจริง 14,902   ต่ำไป 4.9%
+#     mwm  64MB  ค่าคงที่ 28,352   วัดจริง 28,364   ตรง
+#     mwm 128MB  ค่าคงที่ 56,704   วัดจริง 58,625   ต่ำไป 3.3%
+#
+# ต่อ element = 674 + MAXALIGN(8 + 4*dim) ไบต์  (hnsw.h · hnswutils.c)
+#   128 sizeof(HnswElementData) · 8 ตัวชี้รายการเพื่อนบ้าน
+#   520 HNSW_NEIGHBOR_ARRAY_SIZE(m*2=32) ชั้น 0 · 18 ชั้นสูงกว่า 0 เฉลี่ย
+# ทำนายล่วงหน้าแล้วตรง 5 จาก 5 เงื่อนไข คลาดไม่เกิน 16 tuple
+# หลักฐาน: results/i05_capacity_model.txt
+#
+# 🔴 ใช้ขอบเขต **ผ่อนปรนที่สุด** โดยตั้งใจ — เส้นทาง serial ได้งบเต็ม mwm
+#    ส่วน parallel ถูกหัก 4 MiB · เครื่องมือไม่ทราบว่าปลายทาง build ด้วยเส้นทางไหน
+#    จึงคิดแบบ serial เพื่อไม่ให้เกิดผลบวกลวง (ยอมพลาดดีกว่าเตือนผิด)
+HNSW_FIXED_BYTES_PER_ELEMENT = 674
+HNSW_M_DEFAULT = 16
+
+
+def hnsw_capacity(mwm_mb, dim):
+    """จำนวน tuple สูงสุดที่กราฟ HNSW น่าจะอยู่ใน maintenance_work_mem ได้
+
+    คืนค่าแบบผ่อนปรน (ประเมินสูงไว้ก่อน) ด้วยเหตุผลข้างบน
+    """
+    vec = 8 + 4 * int(dim)
+    vec = (vec + 7) // 8 * 8                      # MAXALIGN
+    per = HNSW_FIXED_BYTES_PER_ELEMENT + vec
+    return int(mwm_mb * 1024 * 1024 / per)
 
 
 class Db:
@@ -274,10 +305,10 @@ def check_i05(db, rep, cols):
         n = db.one('SELECT count(*) FROM %s.%s' % (q(sch), q(tbl)), "0")
         if dim is None or not str(dim).isdigit():
             continue
-        if int(dim) != 384:
-            # ความจุ calibrate ที่ 384 มิติเท่านั้น — มิติอื่นห้ามเดา (กฎเหล็กข้อ 10)
-            continue
-        cap = mwm * TUPLES_PER_MB_384
+        # ⭐ เดิมข้ามทุกมิติที่ไม่ใช่ 384 เพราะค่าความจุ calibrate ไว้ค่าเดียว
+        #    ตอนนี้มีสูตรจากซอร์สแล้ว จึงตรวจได้ทุกมิติ (ดูหมายเหตุบนสุดของไฟล์)
+        #    สูตรนี้ใช้กับ index ที่ opclass เป็นชนิด vector และ m = ค่าปริยาย 16
+        cap = hnsw_capacity(mwm, dim)
         if int(n) > cap and (worst is None or int(n) > worst[1]):
             worst = ("%s.%s" % (tbl, col), int(n), cap)
     if worst:

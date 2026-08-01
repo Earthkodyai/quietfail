@@ -143,7 +143,9 @@ SELECT qf_q03_fixstep('4', '+ scan_mem_multiplier 1 -> 8');
 
 RESET hnsw.scan_mem_multiplier;
 SET work_mem = '4MB';
-SELECT qf_q03_fixstep('5', '+ work_mem 64kB -> 4MB  <- ตัวที่ปลดล็อกจริง');
+-- ⚠️ ป้ายเดิมเขียนว่า "ตัวที่ปลดล็อกจริง" ซึ่งถอนแล้ว (E42) — work_mem กับ
+--    scan_mem_multiplier คูณกัน การเพิ่ม multiplier ถึง 32 ให้ผลเท่ากันเป๊ะ
+SELECT qf_q03_fixstep('5', '+ work_mem 64kB -> 4MB  (= mult 32 · ดู E42)');
 
 SET hnsw.iterative_scan = strict_order;
 SELECT qf_q03_fixstep('6', 'strict_order + work_mem 4MB');

@@ -146,7 +146,9 @@ SELECT qf_q03r2_fixstep('4', '+ scan_mem_multiplier 1 -> 8');
 
 RESET hnsw.scan_mem_multiplier;
 SET work_mem = '4MB';
-SELECT qf_q03r2_fixstep('5', '+ work_mem 64kB -> 4MB  <- ตัวที่เอกสารไม่ได้พูดถึง');
+-- ⚠️ ป้ายเดิมเขียนว่า "ตัวที่เอกสารไม่ได้พูดถึง" — ถอนแล้ว (E42)
+--    เอกสารนิยาม scan_mem_multiplier ว่าเป็นตัวคูณของ work_mem อยู่แล้ว
+SELECT qf_q03r2_fixstep('5', '+ work_mem 64kB -> 4MB  (= mult 32 · ดู E42)');
 
 RESET work_mem;
 RESET hnsw.iterative_scan;
