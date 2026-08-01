@@ -5,15 +5,44 @@ sys.stdout.reconfigure(encoding='utf-8')
 # อยู่ใน scripts/ จึงต้องขึ้นไปหนึ่งชั้นให้ path ของเอกสารเป็น root ของ repo
 os.chdir(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-CASES = [
-    ("จำนวนหัวข้อของ audit",  "CLAUDE.md",  "32 หัวข้อ 6 หมวด", "33 หัวข้อ 6 หมวด"),
-    ("จำนวนไฟล์ใน results/",  "REPORT.md",  "`results/` (46 ไฟล์)", "`results/` (45 ไฟล์)"),
-    ("แถวทะเบียนบั๊ก H",      "REPORT.md",  "**30 รายการ**", "**29 รายการ**"),
-    ("เลข H ตัวสุดท้าย",      "README.md",  "(H01–H30)", "(H01–H29)"),
-    ("assertion ของ reproduce","REPORT.md", "assertion 46/46", "assertion 45/45"),
-    ("เวลารวมของ reproduce",  "REPORT.md",  "32.4 นาที", "31.4 นาที"),
+# ⚠️ ห้าม hardcode ตัวเลข — รุ่นแรกเขียนเลขไว้ตรงๆ (32 หัวข้อ · 46 ไฟล์ · H01–H30)
+#    แล้วผุเงียบเมื่อตัวเลขจริงขยับ จนสคริปต์รันไม่ผ่านเพราะหาข้อความไม่เจอ
+#    ซึ่งเป็นบั๊กชนิดเดียวกับที่สคริปต์นี้มีไว้ตรวจ (เจอตอนทวนเล่ม 2026-08-01)
+#    จึงเปลี่ยนเป็นค้นเลขปัจจุบันจากเอกสารเอง แล้วบวกหนึ่ง
+CASE_SPECS = [
+    ("จำนวนหัวข้อของ audit",   "CLAUDE.md", r"(\d+)\s*หัวข้อ 6 หมวด"),
+    ("จำนวนไฟล์ใน results/",   "REPORT.md", r"`results/` \((\d+) ไฟล์\)"),
+    ("แถวทะเบียนบั๊ก H",       "REPORT.md", r"\*\*(\d+) รายการ\*\*"),
+    ("เลข H ตัวสุดท้าย",       "README.md", r"\(H01[–—-]H(\d{2})\)"),
+    ("assertion ของ reproduce","REPORT.md", r"assertion (\d+)/\d+"),
+    ("เวลารวมของ reproduce",   "REPORT.md", r"(\d+\.\d+) นาที"),
+    ("บันทึกการตัดสินใจ D",    "thesis/THESIS_TH.md", r"การตัดสินใจ (\d+) รายการ"),
+    ("บันทึกความผิดพลาด E",    "thesis/THESIS_TH.md", r"ความผิดพลาดที่เกิดขึ้นจริง (\d+) รายการ"),
 ]
 
+def build_cases():
+    """หาเลขปัจจุบันในเอกสาร แล้วสร้างคู่ (เดิม -> ผิด) โดยบวกหนึ่ง"""
+    cases = []
+    for name, fn, pat in CASE_SPECS:
+        src = io.open(fn, encoding="utf-8").read()
+        m = re.search(pat, src)
+        assert m, "หา pattern ของ %s ไม่เจอใน %s — ตัวพิสูจน์ใช้ไม่ได้" % (name, fn)
+        cur = m.group(1)
+        bad = ("%.1f" % (float(cur) + 1)) if "." in cur else str(int(cur) + 1).zfill(len(cur))
+        cases.append((name, fn, m.group(0), m.group(0).replace(cur, bad, 1)))
+    return cases
+
+# ด่านกัน: สคริปต์นี้แก้ไฟล์เอกสารชั่วคราว ถ้ามีงานค้างอยู่แล้วเกิดถูกขัดจังหวะ
+# กลางคัน จะแยกไม่ออกว่าอะไรเป็นของใคร จึงบังคับให้ working tree สะอาดก่อน
+_dirty = subprocess.run(["git", "status", "--porcelain"] + [f for _, f, _ in CASE_SPECS],
+                        capture_output=True).stdout.decode("utf-8", "replace").strip()
+if _dirty and os.environ.get("QF_ALLOW_DIRTY") != "1":
+    sys.exit("หยุด: ไฟล์เอกสารยังมีงานค้างไม่ commit
+" + _dirty +
+             "
+(สคริปต์นี้แก้ไฟล์ชั่วคราว — commit ก่อน หรือตั้ง QF_ALLOW_DIRTY=1)")
+
+CASES = build_cases()
 def audit_group6():
     p = subprocess.run([sys.executable, "scripts/audit.py"],
                        capture_output=True, env=dict(os.environ, PYTHONIOENCODING="utf-8"))
@@ -28,8 +57,19 @@ def audit_group6():
         if keep and l.strip(): lines.append(l.rstrip())
     return p.returncode, lines
 
+# 🔴 เดิมใช้ `git checkout -- <ไฟล์>` ซึ่ง **ลบงานที่ยังไม่ commit ทิ้ง**
+#    เกิดขึ้นจริง 2026-08-01: รันสคริปต์นี้ขณะกำลังแก้เล่มอยู่ แล้วงานหายทั้งหมด
+#    ตอนนี้เก็บเนื้อไฟล์เดิมไว้ในหน่วยความจำแล้วเขียนคืน จึงปลอดภัยไม่ว่า git
+#    จะอยู่สถานะใด · และมีด่านกันไม่ให้รันตอน working tree ไม่สะอาดด้วย
+_ORIG = {}
+
+def snapshot(fn):
+    if fn not in _ORIG:
+        _ORIG[fn] = io.open(fn, encoding="utf-8").read()
+
 def git_restore(fn):
-    subprocess.run(["git", "checkout", "--", fn], capture_output=True)
+    io.open(fn, "w", encoding="utf-8", newline="
+").write(_ORIG[fn])
 
 rep = []
 w = rep.append
@@ -53,6 +93,7 @@ w("── ก) แก้ตัวเลขให้ผิดทีละข้�
 w("")
 caught = 0
 for name, fn, old, new in CASES:
+    snapshot(fn)
     s = io.open(fn, encoding="utf-8").read()
     assert old in s, "ไม่พบข้อความที่จะแก้ใน %s: %s" % (fn, old)
     io.open(fn, "w", encoding="utf-8", newline="\n").write(s.replace(old, new, 1))

@@ -490,7 +490,7 @@ DOC_FILES = ["CLAUDE.md", "README.md", "REPORT.md", "PROJECT.md",
 
 # หมวดนี้ตรวจ "จำนวนหัวข้อของตัวเอง" ด้วย จึงต้องรู้ล่วงหน้าว่าตัวเองจะเพิ่มกี่หัวข้อ
 # ไม่งั้นจะนับตัวเองไม่ครบแล้วฟ้องผิด — มี assert กันไว้ข้างล่างถ้าแก้แล้วลืมอัปเดต
-N_NUMBER_CHECKS = 6
+N_NUMBER_CHECKS = 8
 
 
 def scan_claims(pattern, group=1, line_must_match=None):
@@ -524,6 +524,15 @@ def check_numbers(bl, n_topics, full_run):
     n_h = len(h_rows)
     max_h = max((int(x) for x in h_rows), default=0)
 
+    # ⚠️ D/E ใน DECISIONS.md — เล่มอ้างจำนวนนี้ที่ภาคผนวก ค แล้วเคยเก่าค้าง
+    #    (เจอตอนทวนเล่ม 2026-08-01: เล่มเขียน 19/35 ขณะที่ของจริงเป็น 20/46)
+    try:
+        de = read("DECISIONS.md")
+        n_d = len(re.findall(r"^## D\d+", de, re.M))
+        n_e = len(re.findall(r"^## E\d+", de, re.M))
+    except IOError:
+        n_d = n_e = 0
+
     rep = bl.get("reproduce", {})
     n_assert = sum(v.get("assertions", 0) for v in rep.values())
     minutes = round(sum(v.get("measured_seconds", 0) for v in rep.values()) / 60.0, 1)
@@ -550,6 +559,12 @@ def check_numbers(bl, n_topics, full_run):
          r"assertion\s*(\d+)/(\d+)", None),
         ("เวลารวมของ --reproduce ที่เอกสารอ้าง", minutes if minutes else None,
          r"(\d+\.\d+)\s*นาที", None),
+        # ⚠️ สองข้อนี้เพิ่มหลังทวนเล่มแล้วเจอว่าเก่าค้าง — ต้องบังคับให้บรรทัดพูดถึง
+        #    DECISIONS.md หรือคำว่า "การตัดสินใจ" ไม่งั้นจะไปโดนเลข "N รายการ" อื่น
+        ("จำนวนบันทึกการตัดสินใจ D ที่เอกสารอ้าง", n_d if n_d else None,
+         r"การตัดสินใจ\s*(\d+)\s*รายการ", None),
+        ("จำนวนบันทึกความผิดพลาด E ที่เอกสารอ้าง", n_e if n_e else None,
+         r"ความผิดพลาดที่เกิดขึ้นจริง\s*(\d+)\s*รายการ", None),
     ]
 
     assert len(rules) == N_NUMBER_CHECKS, \
