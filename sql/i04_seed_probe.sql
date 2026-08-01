@@ -1,6 +1,24 @@
 -- ============================================================
 -- I04 — ทดสอบสมมติฐาน "การสุ่มระดับชั้นตอน build คือกลไก"
 --
+-- 🔴🔴 อ่านก่อนใช้ไฟล์นี้อ้างอะไรก็ตาม — การทดลองนี้ **เล็งผิดตัวตั้งแต่ต้น** (E41)
+--
+--   หลังรันเสร็จจึงไปอ่านซอร์ส แล้วพบว่า
+--     pgvector  : #define RandomDouble() pg_prng_double(&pg_global_prng_state)
+--     PostgreSQL: static pg_prng_state prng_state;   <- setseed() คุมตัวนี้
+--   **คนละตัวกัน** · setseed() จึงไม่มีทางมีผลกับ HNSW ตั้งแต่แรก
+--   ผลลบที่ได้จึงเป็นสิ่งที่ทำนายได้จากซอร์ส ไม่ใช่ข้อค้นพบ
+--
+--   และ **กลไกของ I04 ทราบแล้ว** — HNSW สุ่มระดับชั้นให้ทุกจุดตอน build
+--   (int level = (int)(-log(RandomDouble()) * ml) ใน hnswutils.c)
+--   ซึ่งเป็นขั้นตอนมาตรฐานของอัลกอริทึม จึงต่างกันทุก build **โดยการออกแบบ**
+--
+--   สิ่งที่ไฟล์นี้ยังยืนยันได้จริง: **ไม่มีวิธีทำให้ build ซ้ำได้จากฝั่ง SQL**
+--   เพราะ pg_global_prng_state ไม่มีอินเทอร์เฟซให้ผู้ใช้ตั้งค่า
+--
+--   บทเรียน: กฎเหล็กข้อ 1 บอกให้ซอร์สเป็นคนตัดสิน รอบนี้ทำสลับลำดับ
+--   **ก่อนออกแบบการทดลองเพื่อหา "กลไก" ให้ค้นซอร์สก่อนเสมอ**
+--
 -- รัน:  MSYS_NO_PATHCONV=1 docker compose exec -T db \
 --         psql -U lab -d faultlab -v ON_ERROR_STOP=1 -f //sql/i04_seed_probe.sql
 --
@@ -32,10 +50,10 @@ DROP INDEX IF EXISTS qf_seed_idx;
 DROP TABLE IF EXISTS qf_seed_ans;
 DROP TABLE IF EXISTS qf_seed_guard;
 
+-- ⭐ เรียกนิยามกลาง ห้ามเขียนสูตรเอง (E40)
 CREATE TABLE qf_seed_guard AS
-SELECT count(*) AS rows,
-       md5(string_agg(embedding::text, '|' ORDER BY id)) AS fp
-FROM (SELECT id, embedding FROM qf_corpus ORDER BY id LIMIT 5000) s;
+SELECT (SELECT count(*) FROM qf_corpus) AS rows,
+       qf_fingerprint('qf_corpus') AS fp;
 
 DO $$
 DECLARE g record;
@@ -156,8 +174,7 @@ BEGIN
     -- ⚠️ plpgsql ไม่ยอมให้ตัวแปรชนิด record อยู่ใน INTO ร่วมกับตัวแปรอื่น
     --    เขียนแยกสองคำสั่งเสมอ (เจอตอนรันจริงครั้งแรก)
     SELECT * INTO g FROM qf_seed_guard;
-    SELECT md5(string_agg(embedding::text, '|' ORDER BY id)) INTO now_fp
-      FROM (SELECT id, embedding FROM qf_corpus ORDER BY id LIMIT 5000) s;
+    SELECT qf_fingerprint('qf_corpus') INTO now_fp;
     IF now_fp <> g.fp THEN
         RAISE EXCEPTION 'qf_corpus เปลี่ยนไป! ก่อน % · หลัง %', g.fp, now_fp;
     END IF;
@@ -170,4 +187,7 @@ BEGIN
     RAISE NOTICE '[3/3] OK qf_corpus ไม่ถูกแตะ · ไม่มี index ค้าง';
 END $$;
 
+-- 🔴 รุ่นก่อนลบแต่ qf_seed_guard ทิ้ง qf_seed_ans ค้างไว้ทุกครั้ง (240 kB)
+--    เจอตอนทวน 2026-08-02 · ตารางผลไม่ใช่หลักฐาน (ผลจริงอยู่ใน results/)
 DROP TABLE IF EXISTS qf_seed_guard;
+DROP TABLE IF EXISTS qf_seed_ans;
