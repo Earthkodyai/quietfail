@@ -1723,7 +1723,7 @@ MSYS_NO_PATHCONV=1 docker compose exec -T db psql -U lab -d faultlab -f //sql/sc
 | `results/audit_latest.txt` | ผล audit ครั้งล่าสุด พร้อม commit ที่ตรวจ | **ตอนเริ่ม session — อ่านแทนการตรวจเอง** |
 | **`REPORT.md`** | **รายงานสรุปผล — ผล / อภิปราย / ภัยคุกคามต่อความสมเหตุสมผล / งานต่อ** ตามรูปแบบวิทยานิพนธ์ (`PROJECT.md` ข้อ 8 ของส่งมอบที่ 3) | เมื่อต้องสรุปผลให้คนนอกอ่าน |
 | **`thesis/THESIS_TH.md`** | **ร่างเล่มวิทยานิพนธ์** 5 บท — รูปแบบยังรอยืนยันกับภาควิชา | เมื่อจะส่งเล่ม |
-| **`slides/proposal.html`** | **สไลด์สอบเสนอหัวข้อ** 19 หน้า ไฟล์เดียว เปิด offline ได้ | เมื่อจะนำเสนอ |
+| **`slides/proposal.html`** | **สไลด์สอบเสนอหัวข้อ** 20 หน้า ไฟล์เดียว เปิด offline ได้ | เมื่อจะนำเสนอ |
 | `rq3/assignments.md` | โจทย์ RQ3 แยกแชทละข้อ พร้อม copy ไปวาง | เมื่อจะทดสอบโมเดลที่สอง |
 | `.github/workflows/quietfail-check.yml` | GitHub Action ของ `quietfail_check.py` · **ผ่านแล้ว** — เคยแดงถาวรตั้งแต่วันแรก ดู H31 | เมื่อจะต่อ CI หรือ CI ตก |
 | `sql/i02b_harder_corpus.sql` | corpus ที่ยากขึ้น — ทดสอบว่า I02 รอดบนข้อมูลที่ไม่สะอาดไหม (E36) | เมื่อจะตรวจข้อจำกัดของ I02 |
