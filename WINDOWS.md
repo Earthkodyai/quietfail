@@ -29,6 +29,7 @@ dir     # ต้องเห็น docker-compose.yml
 | `make reset` | `docker compose down -v` แล้ว `docker compose up -d` |
 | `make version` | ดูหัวข้อ "จดเวอร์ชัน" ข้างล่าง |
 | `make check` | ดูหัวข้อ "เช็ค config" ข้างล่าง |
+| — | `python scripts/audit.py` — ตรวจทั้ง repo (ไม่มีใน make เดิม) |
 | `make seed-small` | ดูหัวข้อ "ใส่ข้อมูล" ข้างล่าง |
 | `make seed` | ดูหัวข้อ "ใส่ข้อมูล" ข้างล่าง |
 | `make psql` | `docker compose exec db psql -U lab -d faultlab` |
@@ -122,6 +123,47 @@ docker compose exec db bash -c "tr -d '\r' < /faults/f01_idle_in_transaction.sh 
 ```
 
 > `PGPORT=5432` เพราะข้างใน container ใช้พอร์ตจริง ส่วน 5433 คือพอร์ตที่เห็นจาก Windows
+
+---
+
+## ตรวจสอบ — คำสั่งที่ใช้บ่อยที่สุด แต่ไฟล์นี้เคยไม่มี
+
+> เพิ่มเมื่อ 2026-08-01 ตอนทวนเอกสาร · หัวไฟล์เขียนว่า *"ใช้ตารางนี้แทนได้ทุกคำสั่ง"*
+> ซึ่งไม่จริงมานาน เพราะเครื่องมือตรวจสอบทั้งชุดเกิดขึ้นทีหลังและไม่เคยถูกเพิ่มเข้ามา
+
+**ตรวจทั้ง repo ก่อน commit ทุกครั้ง** (~30 วินาที)
+
+```powershell
+python scripts/audit.py
+```
+
+`exit 0` = ผ่านหมด · `exit 1` = มีข้อไม่ผ่าน **หรือตรวจไม่ได้** แล้วมันจะบอกว่าข้อไหน
+
+**ดูว่าตอนนี้มี fault อะไรอยู่ในฐานข้อมูล**
+
+```powershell
+docker compose exec -T db psql -U lab -d faultlab -v ON_ERROR_STOP=1 -f /sql/score.sql
+```
+
+> ⚠️ ถ้ารันผ่าน **Git Bash** ต้องเป็น `MSYS_NO_PATHCONV=1 ... -f //sql/score.sql`
+> เพราะ Git Bash แปลง path ที่ขึ้นต้นด้วย `/` เป็น path ของ Windows
+> **ใช้ PowerShell ตามไฟล์นี้จะไม่เจอปัญหานี้เลย** (กับดักข้อ 10)
+
+**ตรวจฐานข้อมูลอื่นด้วยของส่งมอบ**
+
+```powershell
+python scripts/quietfail_check.py --docker
+```
+
+`0` = ไม่พบปัญหา · `1` = **พบปัญหา** · `2` = มีข้อที่ตรวจไม่ได้
+
+**รันตัวฉีดจริงซ้ำทั้งชุด** (~32 นาที · แตะฐานข้อมูลจริง)
+
+```powershell
+python scripts/audit.py --reproduce
+```
+
+รันเฉพาะบางข้อ: `python scripts/audit.py --reproduce I04,Q06`
 
 ---
 
