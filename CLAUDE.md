@@ -1601,6 +1601,18 @@ DETECTED 2-3 · NOT_DETECTED 3-4 · CANNOT_CHECK 9
 แล้วบล็อก `TRUNCATE` จนงานถัดไปได้ corpus ว่าง (E16, E23)
 
 **3ก. 🔴 แต่ห้ามฆ่า parallel worker เด็ดขาด**
+
+> 🔴 **กฎนี้เคยถูกละเมิดอยู่เงียบๆ ในไฟล์เดียว — เจอตอนทวน `faults/` 2026-08-01**
+> `f05_lock_queue.sh` ใช้ `pg_terminate_backend` และ**ไม่มีตัวกรอง `backend_type`**
+> ขณะที่ `i03_*.sh` แก้ไปตั้งแต่ E29 แล้ว · **ไม่มีใครย้อนกลับมาดูไฟล์อื่น**
+> ตรงกับกับดักข้อ 9 พอดี
+>
+> ความเสี่ยงจริงต่ำเพราะ `ALTER TABLE ADD COLUMN` ไม่ใช้ parallel worker
+> **แต่ `pg_stat_activity.query` ของ worker เหมือน leader ทุกตัวอักษร**
+> การกรองด้วย `query` อย่างเดียวจึงไม่ปลอดภัยโดยตัวมันเอง
+> แก้แล้ว (cancel ก่อน · terminate ทีหลัง · กรอง `backend_type` ทั้งสองขั้น)
+> และรัน F05 ซ้ำยืนยันว่ายังจับได้และเก็บกวาดสะอาด
+
 ต้องเล็งเฉพาะ leader (`backend_type = 'client backend'`)
 และใช้ **`pg_cancel_backend()`** ไม่ใช่ `pg_terminate_backend()`
 ฆ่า worker → leader ตาย exit 2 → **postmaster รีเซ็ตทั้งคลัสเตอร์** (E29)

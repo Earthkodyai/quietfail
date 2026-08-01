@@ -55,10 +55,29 @@ cleanup() {
   # เคยพลาดมาแล้ว: kill psql ฝั่ง client ไม่ได้ยกเลิก query ที่ค้างในคิว
   # พอ A ตาย B ได้ lock แล้วรัน ALTER สำเร็จ = แก้ schema จริงโดยไม่ตั้งใจ
   # (รอบแรกโดนจริง ตาข่าย DROP COLUMN ข้างล่างรับไว้ทัน — ดู E15)
+  # ⚠️ ต้องเล็งเฉพาะ leader (backend_type = 'client backend') และใช้ cancel ก่อน
+  #    ห้ามแตะ parallel worker — ฆ่า worker ทำให้ leader ตาย exit 2 แล้ว
+  #    postmaster ถือว่า crash แล้วรีเซ็ตทั้งคลัสเตอร์ (E29 · กับดักข้อ 3ก)
+  #
+  #    🔴 ไฟล์นี้เคยไม่มีทั้งสองอย่าง — เจอตอนทวน faults/ เมื่อ 2026-08-01
+  #    ความเสี่ยงจริงต่ำ เพราะ ALTER TABLE ADD COLUMN ไม่ใช้ parallel worker
+  #    แต่ `pg_stat_activity.query` ของ worker เหมือน leader ทุกตัวอักษร
+  #    ตัวกรองด้วย query จึงไม่ปลอดภัยโดยตัวมันเอง — และ i03_*.sh แก้ไปแล้ว
+  #    ตั้งแต่ E29 โดยไม่มีใครย้อนมาดูไฟล์นี้ (ตรงกับกับดักข้อ 9 พอดี)
+  admin -c "
+    SELECT pg_cancel_backend(pid)
+    FROM pg_stat_activity
+    WHERE datname = current_database()
+      AND backend_type = 'client backend'
+      AND query ILIKE 'ALTER TABLE ${TABLE} ADD COLUMN ${TMP_COL}%'
+      AND pid <> pg_backend_pid()" >/dev/null 2>&1
+  sleep 1
+  # ถ้า cancel ไม่พอ (ยังค้างอยู่) จึงค่อย terminate — ยังคงเล็งเฉพาะ leader
   admin -c "
     SELECT pg_terminate_backend(pid)
     FROM pg_stat_activity
     WHERE datname = current_database()
+      AND backend_type = 'client backend'
       AND query ILIKE 'ALTER TABLE ${TABLE} ADD COLUMN ${TMP_COL}%'
       AND pid <> pg_backend_pid()" >/dev/null 2>&1
 
