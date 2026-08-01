@@ -1764,6 +1764,20 @@ MSYS_NO_PATHCONV=1 docker compose exec -T db psql -U lab -d faultlab -f //sql/sc
 
 ---
 
+### ⭐ รูปแบบร่วม — เครื่องมือมีอยู่แล้ว แต่ปริยายปิด (E46 · 2026-08-01)
+
+| fault | กลไกที่ช่วยได้ | ปริยาย |
+|---|---|---|
+| Q03 · L02 · Q06 | `hnsw.iterative_scan` | **off** |
+| **F03** | `lock_timeout` | **0** |
+| **F01** | `idle_in_transaction_session_timeout` | **0** |
+
+**"ค่าเริ่มต้นคือปัญหา" ครอบคลุมทั้ง pgvector และ PostgreSQL** ไม่ใช่แค่ฝั่งเดียว
+เจอจากการไล่เทียบเอกสารเท่านั้น ไม่มีเครื่องมือใดในโครงงานจับให้ได้
+`results/doc_crosscheck_f.txt`
+
+---
+
 ## คำศัพท์ที่ต้องใช้ให้ถูก
 
 | ห้ามพูด | ให้พูด |

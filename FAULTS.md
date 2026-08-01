@@ -24,7 +24,19 @@
 | **อาการที่เห็น** | `FATAL: remaining connection slots are reserved for roles with the SUPERUSER attribute` ← **ยืนยันด้วยการรันจริง** · เดิมเขียนไว้ว่า `sorry, too many clients already` ซึ่งผิด (ดู E13) |
 | **คนมักแก้ผิด** | เพิ่ม `max_connections` → กิน RAM มากขึ้น แล้วเต็มอีกอยู่ดี |
 | **ต้นเหตุจริง** | โค้ดเปิด transaction แล้วไม่ commit/rollback |
+| **ทางแก้ที่ถูก** | แก้โค้ดให้ปิด transaction · กันไว้ด้วย `idle_in_transaction_session_timeout` (**ปริยาย 0 = ปิด**) |
 | **ทำไม dev ไม่เจอ** | dev มี connection เดียว ไม่มีวันเต็ม |
+
+> 📌 **เติมแถว "ทางแก้ที่ถูก" แล้ว (E46)** — เดิมไม่มี ทั้งที่ fault อื่นมีครบ
+> เอกสารระบุตรงตัวว่า *"This option can be used to ensure that idle sessions
+> do not hold locks for an unreasonable amount of time"* · ตัวฉีดพูดถึงอยู่แล้ว
+> (`faults/f01_idle_in_transaction.sh:130`) แต่ทะเบียนไม่ได้บันทึก
+>
+> **ค่าปริยายเป็น 0 (ปิด) อีกเช่นกัน** — รูปแบบเดียวกับ `lock_timeout` และ
+> `hnsw.iterative_scan`
+>
+> 📌 PG16 เพิ่ม `reserved_connections` แยกจาก `superuser_reserved_connections`
+> บนโปรไฟล์นี้เป็น 0 ตัวเลข **17 slot** จึงยังถูก (20 − 3 − 0)
 
 **วิธีฉีด** — เปิด N connection แต่ละอันสั่ง `BEGIN; SELECT 1;` แล้วปล่อยค้าง
 โดยที่ท่อ stdin ยังเปิดอยู่
@@ -83,6 +95,38 @@ ORDER BY state_change ASC;
 
 **นี่คือข้อที่พิสูจน์วิทยานิพนธ์ของโปรเจคทั้งหมด** เพราะต้องทำคู่กับ F03b
 ซึ่งให้ **ข้อความ error เหมือนกันเป๊ะ แต่คนละสาเหตุ**
+
+> ### 🔴 ต้องระบุเงื่อนไข — "เหมือนกันเป๊ะ" จริงเฉพาะที่ค่าเริ่มต้น (E46 · 2026-08-01)
+>
+> `lock_timeout` **ไม่เคยปรากฏในทะเบียนนี้เลยสักครั้ง** ทั้งที่เอกสารเขียนว่า
+>
+> > *"**Unlike `statement_timeout`, this timeout can only occur while waiting
+> > for locks.**"*
+>
+> คือพารามิเตอร์ที่ออกแบบมาแยก "รอ lock" ออกจาก "ทำงานช้า" โดยตรง — เส้นแบ่ง
+> F03/F03b พอดี · **วัดจริงแล้ว**
+>
+> | เงื่อนไข | ข้อความ error |
+> |---|---|
+> | F03 · `lock_timeout` = 0 *(ค่าปริยาย)* | `... due to statement timeout` |
+> | **F03 · `lock_timeout` = 500ms** | **`... due to lock timeout`** |
+> | F03b · `lock_timeout` = 50ms | `... due to statement timeout` |
+>
+> **ตั้ง `lock_timeout` แล้วแยกได้จากข้อความล้วนๆ** ไม่ต้องใช้ `pg_blocking_pids()`
+>
+> | | |
+> |---|---|
+> | ❌ ห้ามเขียน | "ให้ข้อความเหมือนกันเป๊ะ แยกไม่ออก" แบบลอยๆ |
+> | ✅ ให้เขียน | "**ภายใต้ค่าเริ่มต้น** (`lock_timeout = 0`) แยกไม่ออก · PostgreSQL **มีตัวแยกให้แล้ว แต่ปิดไว้โดยปริยาย**" |
+>
+> ⭐ **รูปแบบนี้แข็งกว่าเดิม เพราะไปตรงกับ Q06 พอดี** — `hnsw.iterative_scan`
+> ก็ปริยาย `off` เหมือนกัน → **ทั้งสองระบบมีเครื่องมือแก้อยู่แล้ว แต่ปิดไว้**
+> ข้อสรุป *"ค่าเริ่มต้นคือปัญหา"* จึงครอบคลุมทั้งสองฝั่งของโครงงาน
+>
+> ⚠️ ข้อแม้จากเอกสาร: `lock_timeout` ต้อง**ต่ำกว่า** `statement_timeout`
+> ไม่งั้น statement timeout จะยิงก่อนเสมอ
+>
+> `results/doc_crosscheck_f.txt`
 
 | | F03 | F03b |
 |---|---|---|
@@ -187,6 +231,22 @@ FROM pg_stat_activity WHERE pid = <victim>;
 
 **จุดที่หลอกที่สุด:** `ALTER TABLE` ยัง**ไม่ได้เริ่มทำงานเลย** มันแค่รอ
 แต่การรอของมันทำให้ SELECT ที่ควรเสร็จใน 1ms ค้างไปด้วย
+
+> ### ⚠️ เอกสารเงียบตรงส่วนนี้พอดี — ระบุให้ถูก (E46 · 2026-08-01)
+>
+> **ตารางความขัดแย้งของ lock ตรงกับเอกสารทุกตัว**
+> `ACCESS EXCLUSIVE` *"Conflicts with locks of all modes"* · `ACCESS SHARE`
+> *"Conflicts with the ACCESS EXCLUSIVE lock mode only"*
+>
+> **แต่พฤติกรรมของ "คิว" ซึ่งเป็นหัวใจของ F05 ไม่ปรากฏในเอกสาร** — ค้นหน้าเต็ม
+> ของ `explicit-locking` · `mvcc-intro` · `sql-altertable` · `sql-createindex`
+> เองแล้ว ไม่พบประโยคที่ระบุว่า**ผู้รอ lock บล็อกผู้ที่มาทีหลัง**
+> เอกสารให้แค่ตารางคู่ต่อคู่ ซึ่งอนุมานผลของคิวไม่ได้โดยตรง
+>
+> → **F05 เป็นข้อที่สองต่อจาก I04 ที่เอกสารเงียบ** พิสูจน์ด้วยการรันเอง
+>
+> ✅ ให้เขียนว่า *"เอกสารให้ตารางความขัดแย้ง **แต่ไม่ได้อธิบายผลของการเข้าคิว**"*
+> ❌ ห้ามเขียนว่า *"เอกสารไม่พูดถึง lock"*
 
 **วิธีฉีด**
 ```
