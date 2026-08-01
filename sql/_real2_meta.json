@@ -1,0 +1,10 @@
+{
+  "dataset": "BEIR/quora (Thakur et al. 2021)",
+  "model": "sentence-transformers/all-mpnet-base-v2",
+  "dim": 768,
+  "corpus_rows": 100000,
+  "query_rows": 200,
+  "normalized": true,
+  "corpus_fingerprint_first5k": "e46cf2512adf8c10a6c36a8c29891eb0",
+  "selection": "เรียงตาม _id แล้วตัดหัว — กำหนดได้แน่นอน ไม่ได้สุ่ม"
+}

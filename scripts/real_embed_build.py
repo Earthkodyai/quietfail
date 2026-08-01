@@ -38,11 +38,14 @@ SCRATCH = os.environ.get(
     r"\23780dd6-988f-4dde-884e-5937cb3d7707\scratchpad")
 
 URL = "https://public.ukp.informatik.tu-darmstadt.de/thakur/BEIR/datasets/quora.zip"
-MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+# รับจาก env เพื่อให้ทดสอบโมเดลที่สองได้โดยไม่ต้องแก้ไฟล์ (เล่ม 6.5 ข้อ 2)
+#   QF_MODEL=sentence-transformers/all-mpnet-base-v2 QF_DIM=768 QF_TAG=2
+MODEL = os.environ.get("QF_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
+TAG = os.environ.get("QF_TAG", "")        # ต่อท้ายชื่อไฟล์ TSV เช่น _real2_corpus.tsv
 
 N_CORPUS = 100000    # เท่ากับ qf_corpus เป๊ะ เพื่อให้เทียบกันได้
 N_QUERY = 200        # เท่ากับ qf_queries เป๊ะ
-DIM = 384
+DIM = int(os.environ.get("QF_DIM", "384"))
 
 
 def say(msg):
@@ -160,8 +163,8 @@ def main():
     dv = embed([d[1] for d in docs], "corpus")
     qv = embed([q[1] for q in queries], "query")
 
-    write_tsv("sql/_real_corpus.tsv", docs, dv)
-    write_tsv("sql/_real_queries.tsv", queries, qv)
+    write_tsv("sql/_real%s_corpus.tsv" % TAG, docs, dv)
+    write_tsv("sql/_real%s_queries.tsv" % TAG, queries, qv)
 
     fp = fingerprint(dv)
     meta = {
@@ -174,7 +177,7 @@ def main():
         "corpus_fingerprint_first5k": fp,
         "selection": "เรียงตาม _id แล้วตัดหัว — กำหนดได้แน่นอน ไม่ได้สุ่ม",
     }
-    with io.open("sql/_real_meta.json", "w", encoding="utf-8", newline="\n") as f:
+    with io.open("sql/_real%s_meta.json" % TAG, "w", encoding="utf-8", newline="\n") as f:
         json.dump(meta, f, ensure_ascii=False, indent=2)
     say("")
     say("fingerprint (5,000 แถวแรก) = %s" % fp)
