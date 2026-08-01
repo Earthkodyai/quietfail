@@ -1765,7 +1765,8 @@ MSYS_NO_PATHCONV=1 docker compose exec -T db psql -U lab -d faultlab -f //sql/sc
 | **`thesis/THESIS_TH.md`** | **ร่างเล่มวิทยานิพนธ์** 5 บท — รูปแบบยังรอยืนยันกับภาควิชา | เมื่อจะส่งเล่ม |
 | **`slides/proposal.html`** | **สไลด์สอบเสนอหัวข้อ** 20 หน้า ไฟล์เดียว เปิด offline ได้ | เมื่อจะนำเสนอ |
 | `rq3/assignments.md` | โจทย์ RQ3 แยกแชทละข้อ พร้อม copy ไปวาง | เมื่อจะทดสอบโมเดลที่สอง |
-| `.github/workflows/quietfail-check.yml` | GitHub Action ของ `quietfail_check.py` · **ผ่านแล้ว** — เคยแดงถาวรตั้งแต่วันแรก ดู H31 | เมื่อจะต่อ CI หรือ CI ตก |
+| `.github/workflows/quietfail-check.yml` | GitHub Action ของ `quietfail_check.py` · **ผ่านแล้ว** — เคยแดงถาวรตั้งแต่วันแรก ดู H31 · action อัปเป็น v7 หมดแล้ว (node24) | เมื่อจะต่อ CI หรือ CI ตก |
+| `results/auto_explain_overhead.txt` | **หลักฐานว่า `auto_explain` เพิ่มต้นทุน 13.1% ให้ทุก query** — เงื่อนไขของตัวเลขเวลาทุกตัวในเล่ม | ก่อนอ้างตัวเลขเวลาไปเทียบกับระบบอื่น |
 | `sql/i02b_harder_corpus.sql` | corpus ที่ยากขึ้น — ทดสอบว่า I02 รอดบนข้อมูลที่ไม่สะอาดไหม (E36) | เมื่อจะตรวจข้อจำกัดของ I02 |
 | `sql/i02_cost_control.sql` · `i02b_buffers_control.sql` | วัด **ต้นทุน** ของเงื่อนไข I02 — ตัวที่เปิดโปง E36 | เมื่อจะเทียบ recall ต้องดูคู่กับ buffers |
 | `results/` | ผลการทดลองดิบ ห้ามแก้ด้วยมือ | เมื่อวิเคราะห์ผล |
@@ -1792,6 +1793,25 @@ MSYS_NO_PATHCONV=1 docker compose exec -T db psql -U lab -d faultlab -f //sql/sc
 
 **7. ใช้ buffers เป็นตัวชี้วัดหลักด้าน I/O ไม่ใช่เวลา**
 เวลาแกว่งตามเครื่อง buffers นิ่ง
+
+> 🔴 **และในโปรเจคนี้มีเหตุผลเพิ่มอีกข้อ ที่เพิ่งพบตอนทวน `config/` (2026-08-01)**
+>
+> ทั้งสองโปรไฟล์เปิด `auto_explain.log_analyze = on` และ `log_timing = on`
+> เอกสาร PostgreSQL เขียนไว้ตรงๆ ว่า *"per-plan-node timing occurs for **all
+> statements executed, whether or not they run long enough to actually get
+> logged**. This can have an extremely negative impact on performance."*
+>
+> **`log_min_duration = 200ms` ไม่ได้จำกัดต้นทุน** มันจำกัดแค่ว่าจะเขียน log ไหม
+> การจับเวลาเกิดกับ **ทุก query** เพราะต้องวัดก่อนถึงจะรู้ว่าเกิน 200ms หรือไม่
+>
+> **วัดแล้ว 4 รอบ: ต้นทุนเพิ่ม 13.1% · on > off ทุกคู่**
+> (88.6 ms เทียบ 78.3 ms) · `results/auto_explain_overhead.txt`
+>
+> **ไม่กระทบข้อสรุปใดของโครงงาน** เพราะ buffers · recall · จำนวนแถว ·
+> จำนวน tuple ไม่ถูกแตะ และการเทียบเวลาทุกคู่ในเล่มวัดใต้ overhead เดียวกัน
+> **แต่ต้องบันทึกเป็นเงื่อนไขของการวัด** — ผู้ทำซ้ำที่ใช้ค่าปริยายของ PostgreSQL
+> จะได้เวลาต่างจากในเล่ม · **ไม่เปลี่ยนค่า config** เพราะจะทำให้ตัวเลขเวลา
+> ที่บันทึกไว้ทั้งหมดเทียบกับของใหม่ไม่ได้
 
 **7ก. ถ้า plan มี Bitmap Heap Scan ต้องดู `Heap Blocks` และ
 `Rows Removed by Index Recheck` ควบกับ buffers เสมอ**
@@ -1881,6 +1901,7 @@ extensions : vector, pg_trgm, btree_gin, pg_stat_statements, plpgsql
 roles      : lab (superuser), app, observer
 config     : fragile — max_connections=20, work_mem=64kB,
              deadlock_timeout=200ms, lc_messages=C, shared_buffers=128MB
+             **auto_explain preload + log_analyze=on + log_timing=on**
 dataset    : orders 200,000 แถว (23 MB) — seed แก้แล้ว 2026-07-26 ดู E17
 ```
 
