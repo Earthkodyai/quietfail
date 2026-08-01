@@ -84,6 +84,10 @@ DROP TABLE IF EXISTS qf_q06p;
 DROP TABLE IF EXISTS qf_probe_qv;
 DROP FUNCTION IF EXISTS qf_q06p_run(text, text, int, int);
 
+-- 🔴 เดิมลบ qf_q06p_obs แต่ตอนต้นไฟล์เท่านั้น (กับดักข้อ 14ฐ)
+--    ต้นไฟล์กันรอบถัดไป ไม่ได้เก็บของรอบนี้ · ผลจริงอยู่ใน results/
+DROP TABLE IF EXISTS qf_q06p_obs;
+
 SELECT qf_fingerprint('qf_corpus') AS fp_after \gset
 SET quietfail.fp_before = :'fp_before';
 SET quietfail.fp_after  = :'fp_after';
@@ -99,3 +103,7 @@ BEGIN
     IF n <> 0 THEN RAISE EXCEPTION 'มี vector index ค้าง % ตัว', n; END IF;
     RAISE NOTICE 'ผ่าน: fingerprint เดิม · ไม่มี index ค้าง';
 END $$;
+
+-- client_min_messages = warning ทำให้ NOTICE ข้างบนไม่โผล่ (กับดักข้อ 14ฑ)
+\echo ''
+\echo '✅ assertion ปิดท้ายผ่าน — qf_corpus fingerprint เดิม · ไม่มี vector index ค้าง'

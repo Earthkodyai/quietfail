@@ -1742,8 +1742,9 @@ Q03 ไล่ `scan_mem_multiplier` ถึงแค่ 8 (ได้ 17/40) แ�
 **ก่อนรันสคริปต์ที่แก้ไฟล์เอกสาร ต้อง commit งานค้างก่อนเสมอ**
 
 **14ฐ. 🔴 สคริปต์ทดลองทิ้งตารางค้างเป็นรูปแบบ ไม่ใช่อุบัติเหตุ**
-ทวนสองไฟล์ติดกันแล้วเจอเหมือนกันทั้งคู่ — `i04_seed_probe.sql` ทิ้ง `qf_seed_ans`
+ทวน **4 ไฟล์ติดกันแล้วเจอเหมือนกันทุกไฟล์** — `i04_seed_probe.sql` ทิ้ง `qf_seed_ans`
 · `doc_reread_probe.sql` ทิ้ง `qf_probe_a` กับ `qf_probe_b`
+· `q06_iterative_probe.sql` ทิ้ง `qf_q06p_obs` · `q06_iterative_recall.sql` ทิ้ง `qf_q06r_obs`
 **สาเหตุเดียวกัน: เขียน `DROP ... IF EXISTS` ไว้ตอน*ต้น*ไฟล์เพื่อกันรอบก่อนค้าง
 (กับดักข้อ 4) แล้วเข้าใจว่าเก็บกวาดแล้ว** ทั้งที่ต้นไฟล์กันรอบถัดไป ไม่ได้เก็บของรอบนี้
 → **ทุกสคริปต์ต้องมี `DROP` ทั้งต้นและท้าย** · แก้ทั้งสองไฟล์แล้ว
@@ -1930,7 +1931,7 @@ MSYS_NO_PATHCONV=1 docker compose exec -T db psql -U lab -d faultlab -f //sql/sc
 | `sql/i04_seed_probe.sql` | ทดสอบว่า `setseed` ทำให้ HNSW build ซ้ำได้ไหม — **ไม่ได้** | เมื่อจะไล่กลไกของ I04 ต่อ |
 | `sql/i04_kmeans_nondeterminism.sql` | **ชื่อไฟล์ล้าสมัย** (E32 หักล้าง k-means แล้ว) · ไม่เปลี่ยนชื่อเพราะ groundtruth/baseline/results อ้างอยู่ | เมื่อสงสัยว่าทำไมชื่อไม่ตรงเนื้อหา |
 | **`sql/doc_reread_probe.sql`** | **ตรวจว่าปุ่มที่สรุปว่า "ไม่ทำงาน" ตายจริงไหม** — `max_scan_tuples` + `iterative_scan` กับ L02 (E43) · **รันซ้ำได้จริง ทดสอบแล้ว 2026-08-02** | ก่อนเขียนว่าพารามิเตอร์ใดไม่มีผล |
-| `sql/q06_iterative_probe.sql` · `_recall.sql` | Q06 กับ `iterative_scan` — ยกเพดานได้ แต่ recall ยังขาด (E44) | เมื่อจะอ้างทางแก้ของ Q06 |
+| `sql/q06_iterative_probe.sql` · `_recall.sql` | Q06 กับ `iterative_scan` — ยกเพดานได้ แต่ recall ยังขาด (E44) · **รันซ้ำได้จริง ทดสอบแล้ว 2026-08-02** | เมื่อจะอ้างทางแก้ของ Q06 |
 | **`sql/i05_capacity_model.sql`** | **สูตรความจุ HNSW ที่ตรวจกับซอร์สแล้ว** — ทำนายล่วงหน้าตรง 5/5 | เมื่อจะอ้างตัวเลขความจุของ I05 |
 | `sql/doc_crosscheck_probe.sql` | ตรวจ Q04 ว่า plan ใช้ index จริงไหม + REINDEX เทียบ VACUUM (E45) | ก่อนอ้างตัวเลขปลายตารางของ Q04 หรือทางแก้ของ L02 |
 | **`results/doc_crosscheck.txt`** · **`_f.txt`** | **ผลไล่เทียบทุก fault กับเอกสาร 16 ข้อ** | **ก่อนเขียนอะไรก็ตามที่พาดพิงเอกสารทางการ** |
