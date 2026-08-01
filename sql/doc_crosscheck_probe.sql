@@ -129,14 +129,54 @@ INSERT INTO qf_l02x_obs
 SELECT 'VACUUM (หลัง REINDEX)', qf_l02x_got(),
        round(pg_relation_size('qf_l02x_idx')/1048576.0,1), :'vac_secs'::numeric;
 
+-- ============================================================================
+-- C. VACUUM **เดี่ยว** บนตารางสภาพเดียวกัน — ตัวเทียบที่ขาดไป
+-- ============================================================================
+-- 🔴 เดิมไฟล์นี้วัดแต่ REINDEX แล้วตามด้วย VACUUM ซึ่งเหลืองานน้อยมาก (0.4 วิ)
+--    ส่วนตัวเลข "VACUUM เดี่ยว 12.8 วิ" ที่ทั้งโครงงานใช้อ้างว่า REINDEX
+--    เร็วกว่า 3.8 เท่า ถูกวัดในไฟล์ชั่วคราวที่ไม่เคย commit
+--    -> ข้ออ้างหลักของ E45 **ทำซ้ำจากสคริปต์ในรีโปไม่ได้** (เจอตอนทวน 2026-08-02)
+--    ตอนนี้ย้ายเข้ามาไว้ในไฟล์เดียวกัน ทั้งการเทียบจึงทำซ้ำได้จบในสคริปต์เดียว
+\echo ''
+\echo '-- C. VACUUM เดี่ยว บนตารางที่สร้างใหม่ให้สภาพเหมือนกันเป๊ะ --'
+
+DROP TABLE IF EXISTS qf_l02y;
+CREATE TABLE qf_l02y AS SELECT id, embedding FROM qf_corpus;
+ALTER TABLE qf_l02y SET (autovacuum_enabled = false);
+ALTER TABLE qf_l02y ADD PRIMARY KEY (id);
+DROP INDEX IF EXISTS qf_l02y_idx;
+CREATE INDEX qf_l02y_idx ON qf_l02y USING hnsw (embedding vector_cosine_ops);
+DELETE FROM qf_l02y WHERE id % 10 <> 0;
+
+INSERT INTO qf_l02x_obs
+SELECT 'ก่อนแก้ (ตาราง C)', NULL, round(pg_relation_size('qf_l02y_idx')/1048576.0,1), NULL;
+
+SELECT clock_timestamp() AS t1 \gset
+VACUUM qf_l02y;
+SELECT round(EXTRACT(epoch FROM clock_timestamp() - :'t1'::timestamptz)::numeric,1) AS vac_only \gset
+INSERT INTO qf_l02x_obs
+SELECT 'VACUUM เดี่ยว (ไม่ REINDEX ก่อน)', NULL,
+       round(pg_relation_size('qf_l02y_idx')/1048576.0,1), :'vac_only'::numeric;
+
 SELECT step AS "ขั้น", got AS "ได้/10", idx_mb AS "index MB", secs AS "วินาที"
 FROM qf_l02x_obs ORDER BY ctid;
 
+\echo ''
+\echo 'อ่านผล: เทียบ "REINDEX อย่างเดียว" กับ "VACUUM เดี่ยว" — สภาพตั้งต้นเดียวกัน'
+\echo '        REINDEX ลดขนาด index ด้วย · VACUUM ไม่ลด'
+
+DROP INDEX IF EXISTS qf_l02y_idx;
+DROP TABLE IF EXISTS qf_l02y;
 DROP INDEX IF EXISTS qf_l02x_idx;
 DROP TABLE IF EXISTS qf_l02x;
 DROP TABLE IF EXISTS qf_probe_qv;
 DROP FUNCTION IF EXISTS qf_q04x_run(int);
 DROP FUNCTION IF EXISTS qf_l02x_got();
+
+-- 🔴 เดิมทิ้ง qf_q04x_obs กับ qf_l02x_obs ค้างไว้ — DROP อยู่แต่ต้นไฟล์
+--    (กับดักข้อ 14ฐ · เจอเหมือนกันแล้ว 5 ไฟล์) ผลจริงอยู่ที่ results/
+DROP TABLE IF EXISTS qf_q04x_obs;
+DROP TABLE IF EXISTS qf_l02x_obs;
 
 SELECT qf_fingerprint('qf_corpus') AS fp_after \gset
 SET quietfail.fp_before = :'fp_before';
@@ -153,3 +193,7 @@ BEGIN
     IF n <> 0 THEN RAISE EXCEPTION 'มี vector index ค้าง % ตัว', n; END IF;
     RAISE NOTICE 'ผ่าน: fingerprint เดิม · ไม่มี index ค้าง';
 END $$;
+
+-- client_min_messages = warning ทำให้ NOTICE ข้างบนไม่โผล่ (กับดักข้อ 14ฑ)
+\echo ''
+\echo '✅ assertion ปิดท้ายผ่าน — qf_corpus fingerprint เดิม · ไม่มี vector index ค้าง'

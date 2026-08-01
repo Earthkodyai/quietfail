@@ -891,7 +891,7 @@ BEGIN
                     format('ขอ %s แถวโดย**ไม่มี filter เลย** ได้ %s (ขาด %s) '
                            'ทั้งที่ตารางมีแถวที่ยังอยู่ %s แถว → แถวที่ถูกลบยังค้างใน index '
                            '· แก้ด้วย VACUUM %s หรือ REINDEX INDEX CONCURRENTLY '
-                           '(วัดแล้วเร็วกว่า 3.8 เท่าและลดขนาด index 10 เท่า)',
+                           '(วัดแล้วลดขนาด index 10 เท่า และเร็วกว่าชัดเจน)',
                            ask_k, got_rows, ask_k - got_rows, n_rows, rel),
                     doc ->> 'correct_diagnosis');
             ELSE
