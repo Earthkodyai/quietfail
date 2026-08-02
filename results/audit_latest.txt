@@ -1,7 +1,7 @@
 ==============================================================================
 QuietFail — ตรวจความพร้อมของ repo
-รันเมื่อ : 2026-08-02 13:52:41
-commit  : 02eccbd  ยืนยัน --reproduce ซ้ำหลังแก้ไฟล์ในชุดไป 7 จาก 9 ไฟล
+รันเมื่อ : 2026-08-02 14:01:05
+commit  : af30895  🔴 real2_*.sql ทั้ง 9 ไฟล์ มีคำสั่งรันในหัวไฟล์ที่ชี้
 baseline: scripts/audit_baseline.json (_updated = 2026-07-31)
 ==============================================================================
 
@@ -42,7 +42,7 @@ baseline: scripts/audit_baseline.json (_updated = 2026-07-31)
 ── 5 score.sql ──
   ok   รันจบไม่มี error                               exit 0
   ok   ทุก fault มีสาขาที่ตอบได้                      15/15 ข้อ
-  ok   verdict ที่ได้ตอนนี้ (ข้อมูล ไม่ใช่เกณฑ์)      F01=NOT_DETECTED · F03=CANNOT_CHECK · F05=NOT_DETECTED · F10=CANNOT_CHECK · I01=CANNOT_CHECK · I02=CANNOT_CHECK · I03=NOT_DETECTED · I04=CANNOT_CHECK · I05=DETECTED · L02=CANNOT_CHECK · Q02=DETECTED · Q03=CANNOT_CHECK · Q04=CANNOT_CHECK · Q06=DETECTED · V07=DETECTED
+  ok   verdict ที่ได้ตอนนี้ (ข้อมูล ไม่ใช่เกณฑ์)      F01=NOT_DETECTED · F03=CANNOT_CHECK · F05=NOT_DETECTED · F10=CANNOT_CHECK · I01=CANNOT_CHECK · I02=CANNOT_CHECK · I03=NOT_DETECTED · I04=CANNOT_CHECK · I05=DETECTED · L02=CANNOT_CHECK · Q02=CANNOT_CHECK · Q03=CANNOT_CHECK · Q04=CANNOT_CHECK · Q06=DETECTED · V07=DETECTED
 ── 6 ตัวเลขในเอกสาร ──
   ok   จำนวนหัวข้อของ audit ที่เอกสารอ้าง             36 · ตรงกันทั้ง 9 ที่
   ok   จำนวนไฟล์ใน results/ ที่เอกสารอ้าง             69 · ตรงกันทั้ง 4 ที่
