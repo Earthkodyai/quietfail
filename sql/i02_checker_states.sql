@@ -16,6 +16,8 @@ LOAD 'vector';
 SET temp_file_limit = '2GB';
 SET ivfflat.probes = 1;
 
+\i /sql/states_lib.sql
+
 DROP INDEX IF EXISTS qf_i02_idx;
 DROP TABLE IF EXISTS qf_i02;
 CREATE TABLE qf_i02 (id int PRIMARY KEY, cluster_id int, embedding vector(384));
@@ -24,6 +26,8 @@ CREATE TABLE qf_i02 (id int PRIMARY KEY, cluster_id int, embedding vector(384));
 \qecho '    (กฎเหล็กข้อ 10 — ไม่มีอะไรให้เทียบ ไม่ใช่ "ผ่าน")'
 INSERT INTO qf_i02 SELECT id, cluster_id, embedding FROM qf_corpus;
 \i /sql/score.sql
+\set note 'มีตารางแต่ยังไม่มี ivfflat index'
+\i /sql/states_capture.sql
 
 \qecho ''
 \qecho '=== สร้าง index บนข้อมูลครบ (วิธีที่ถูก) ==='
@@ -34,6 +38,8 @@ CREATE INDEX qf_i02_idx ON qf_i02 USING ivfflat (embedding vector_cosine_ops)
 \qecho '=== สถานะ 2: index build บนข้อมูลครบ -> NOT_DETECTED ==='
 \qecho '    recall ควรอยู่ราว 0.72-0.81 ซึ่งคือฐานปกติของ probes=1 (Q04 · I04)'
 \i /sql/score.sql
+\set note 'build บนข้อมูลครบ 50 กลุ่ม'
+\i /sql/states_capture.sql
 
 \qecho ''
 \qecho '=== สร้างใหม่แบบผิด: build ตอนมีแค่ 5 กลุ่มจาก 50 แล้วค่อยเติมให้ครบ ==='
@@ -54,6 +60,11 @@ SELECT count(*) AS rows_now, count(DISTINCT cluster_id) AS clusters_now FROM qf_
 \qecho '=== สถานะ 3: index build บนตัวอย่างเอียง -> DETECTED ==='
 \qecho '    ข้อมูลในตารางเหมือนสถานะ 2 ทุกแถว ต่างแค่ตอนที่ build index'
 \i /sql/score.sql
+\set note 'build ตอนเห็นแค่ 5 กลุ่มจาก 50'
+\i /sql/states_capture.sql
+
+\set expect 'CANNOT_CHECK,NOT_DETECTED,DETECTED'
+\i /sql/states_assert.sql
 
 \qecho ''
 \qecho '=== เก็บกวาด ==='
@@ -62,10 +73,27 @@ DROP TABLE IF EXISTS qf_i02;
 RESET ivfflat.probes;
 RESET temp_file_limit;
 
-SELECT count(*) AS vector_index_ค้าง
-FROM pg_index i JOIN pg_class c ON c.oid = i.indexrelid
-JOIN pg_am am ON am.oid = c.relam WHERE am.amname IN ('hnsw', 'ivfflat');
+-- ============================================================
+-- ด่านปิดท้าย — เดิมพิมพ์ตัวเลขออกมาเฉยๆ ไม่ได้ตรวจอะไร (แก้ 2026-08-02)
+-- ใช้ qf_fingerprint() แทนการเขียนสูตรเอง (E40)
+-- ============================================================
+DO $$
+DECLARE n int; fp text; want text;
+BEGIN
+    SELECT count(*) INTO n FROM pg_class c JOIN pg_am a ON a.oid = c.relam
+    WHERE a.amname IN ('hnsw','ivfflat');
+    IF n > 0 THEN
+        RAISE EXCEPTION 'มี vector index ค้าง % ตัว — ต้องไม่เหลือเลยหลังไฟล์นี้จบ', n;
+    END IF;
 
-SELECT count(*) AS corpus_rows,
-       md5(string_agg(embedding::text, '|' ORDER BY id)) AS corpus_fingerprint
-FROM (SELECT id, embedding FROM qf_corpus ORDER BY id LIMIT 5000) s;
+    fp   := qf_fingerprint('qf_corpus');
+    SELECT value INTO want FROM qf_manifest WHERE item = 'corpus_fingerprint_first5k';
+    IF fp IS DISTINCT FROM want THEN
+        RAISE EXCEPTION E'qf_corpus ถูกแตะ!
+  ได้   : %
+  ต้องได้: %', fp, want;
+    END IF;
+    RAISE NOTICE 'ไม่มี index ค้าง · qf_corpus fingerprint เดิม';
+END $$;
+
+\qecho '✅ เก็บกวาดครบ · qf_corpus ไม่ถูกแตะ'

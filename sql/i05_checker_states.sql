@@ -19,7 +19,21 @@
 \set ON_ERROR_STOP on
 LOAD 'vector';
 
-\qecho '=== I05 checker states — ค่าความจุที่ calibrate ไว้: 443 tuples/MB ที่ 384 มิติ ==='
+\i /sql/states_lib.sql
+
+\qecho '=== I05 checker states — ค่าความจุที่ตัวตรวจใช้: 443 tuples/MB ที่ 384 มิติ ==='
+\qecho ''
+\qecho '🔴 อ่านก่อนตีความเลขในไฟล์นี้ (เติม 2026-08-02)'
+\qecho '   443 tuples/MB เป็นค่าที่ score.sql **จงใจใช้ให้ต่ำกว่าความจุจริง**'
+\qecho '   เพื่อเตือนเร็วกว่าจริงเล็กน้อย — ไม่ใช่ความจุที่วัดได้'
+\qecho '   ความจุจริงมีสูตรจากซอร์สแล้ว (674 + MAXALIGN(8+4*dim)) และงบจริง'
+\qecho '   คือ mwm - 4MiB บนเส้นทาง parallel · results/i05_capacity_model.txt'
+\qecho '   ที่ 225MB สูตรให้ราว 104,000 tuples ซึ่ง **ไม่ spill** แต่ตัวตรวจตอบ'
+\qecho '   DETECTED — นั่นคืออคติเชิงระวังที่ตั้งใจ ไม่ใช่ความคลาด'
+\qecho '   scripts/quietfail_check.py เลิกใช้ค่านี้แล้วเพราะเป็นของส่งมอบ'
+\qecho '   ที่เตือนผิดไม่ได้ · เจตนาต่างกัน ดูคอมเมนต์ใน sql/score.sql'
+\qecho ''
+\qecho '   เลข 225/226MB ข้างล่างจึงเป็น **ขอบของตัวตรวจ** ไม่ใช่ขอบทางกายภาพ'
 \qecho ''
 
 SELECT count(*)                        AS corpus_rows,
@@ -32,6 +46,8 @@ FROM qf_corpus;
 \qecho '    ความจุ 64 x 443 = 28,352 tuples < 100,000 แถว -> ทำนายว่า spill'
 SET maintenance_work_mem = '64MB';
 \i /sql/score.sql
+\set note 'mwm 64MB (โปรไฟล์ fragile)'
+\i /sql/states_capture.sql
 
 \qecho ''
 \qecho '--- สถานะ 2: maintenance_work_mem = 256MB -> NOT_DETECTED ---'
@@ -39,23 +55,54 @@ SET maintenance_work_mem = '64MB';
 \qecho '    ตรงกับที่วัดจริง: 256MB คือค่าเดียวใน 3 ค่าที่ไม่มี NOTICE'
 SET maintenance_work_mem = '256MB';
 \i /sql/score.sql
+\set note 'mwm 256MB'
+\i /sql/states_capture.sql
 
 \qecho ''
 \qecho '--- สถานะ 3: 225MB — ตรงขอบที่ตัวตรวจพลิก ---'
 \qecho '    ความจุ 225 x 443 = 99,675 < 100,000 -> ยังต้อง DETECTED'
 SET maintenance_work_mem = '225MB';
 \i /sql/score.sql
+\set note 'mwm 225MB — ใต้ขอบของตัวตรวจ'
+\i /sql/states_capture.sql
 
 \qecho ''
 \qecho '--- สถานะ 4: 226MB — อีก 1MB เดียว ---'
 \qecho '    ความจุ 226 x 443 = 100,118 > 100,000 -> ต้องพลิกเป็น NOT_DETECTED'
 SET maintenance_work_mem = '226MB';
 \i /sql/score.sql
+\set note 'mwm 226MB — เหนือขอบของตัวตรวจ 1MB'
+\i /sql/states_capture.sql
+
+\set expect 'DETECTED,NOT_DETECTED,DETECTED,NOT_DETECTED'
+\i /sql/states_assert.sql
 
 \qecho ''
 \qecho '=== คืนค่าเดิมของโปรไฟล์ fragile ==='
 RESET maintenance_work_mem;
-SELECT current_setting('maintenance_work_mem') AS mwm_restored;
+
+DO $$
+DECLARE m text; v text;
+BEGIN
+    m := current_setting('maintenance_work_mem');
+    IF pg_size_bytes(m) <> pg_size_bytes('64MB') THEN
+        RAISE EXCEPTION 'ไม่ได้คืนค่าเดิม — maintenance_work_mem = % ควรเป็น 64MB', m;
+    END IF;
+    RAISE NOTICE 'คืนค่าเดิมครบ — maintenance_work_mem = %', m;
+END $$;
+
+\i /sql/score.sql
+
+DO $$
+DECLARE v text;
+BEGIN
+    SELECT verdict INTO v FROM score_result WHERE fault_id = 'I05';
+    IF v IS DISTINCT FROM 'DETECTED' THEN
+        RAISE EXCEPTION 'I05 ได้ ''%'' ที่ mwm 64MB ควรเป็น DETECTED ตามสภาพสะอาด', v;
+    END IF;
+END $$;
+
+\qecho '✅ คืนสภาพครบ'
 
 \qecho ''
 \qecho '=== ข้อจำกัดที่ต้องพูดตรงๆ (กฎเหล็กข้อ 10) ==='
