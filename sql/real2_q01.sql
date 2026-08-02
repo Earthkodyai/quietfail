@@ -2,7 +2,7 @@
 -- Q01 บน embedding จริง — recall ตกเหมือนบน corpus สังเคราะห์ไหม
 --
 -- รัน:  MSYS_NO_PATHCONV=1 docker compose exec -T db \
---         psql -U lab -d faultlab -v ON_ERROR_STOP=1 -v builds=1 -f //sql/real_q01.sql
+--         psql -U lab -d faultlab -v ON_ERROR_STOP=1 -v builds=1 -f //sql/real2_q01.sql
 --
 -- ต้องรัน real_load.sql ก่อน
 --

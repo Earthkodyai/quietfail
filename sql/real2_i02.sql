@@ -2,7 +2,7 @@
 -- I02 บน embedding จริง — ข้อสรุปรอดนอก corpus สังเคราะห์ไหม
 --
 -- รัน:  MSYS_NO_PATHCONV=1 docker compose exec -T db \
---         psql -U lab -d faultlab -v ON_ERROR_STOP=1 -v rounds=3 -f //sql/real_i02.sql
+--         psql -U lab -d faultlab -v ON_ERROR_STOP=1 -v rounds=3 -f //sql/real2_i02.sql
 --
 -- ต้องรัน real_load.sql ก่อน
 --

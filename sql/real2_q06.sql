@@ -5,7 +5,7 @@
 --    -> เป็นค่าเชิงโครงสร้าง ไม่ขึ้นกับทั้งข้อมูลและมิติ
 --
 -- รัน:  MSYS_NO_PATHCONV=1 docker compose exec -T db \
---         psql -U lab -d faultlab -v ON_ERROR_STOP=1 -f //sql/real_q06.sql
+--         psql -U lab -d faultlab -v ON_ERROR_STOP=1 -f //sql/real2_q06.sql
 --
 -- ข้ออ้างเดิม (corpus สังเคราะห์ · ef_search = 40):
 --   ขอ 39 -> ได้ 39 ครบ · ขอ 40 -> ได้ 40 ครบ

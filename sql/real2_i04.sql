@@ -2,7 +2,7 @@
 -- I04 บน embedding จริง — สร้าง index ใหม่แล้วได้คำตอบไม่เหมือนเดิม
 --
 -- รัน:  MSYS_NO_PATHCONV=1 docker compose exec -T db \
---         psql -U lab -d faultlab -v ON_ERROR_STOP=1 -f //sql/real_i04.sql
+--         psql -U lab -d faultlab -v ON_ERROR_STOP=1 -f //sql/real2_i04.sql
 --
 -- ข้ออ้างเดิม (corpus สังเคราะห์ · 5 build · ข้อมูลเดิมเป๊ะ · พารามิเตอร์เดิมเป๊ะ):
 --   IVFFlat probes=1   ช่วง recall 9.4%  · **query ที่เปลี่ยนคำตอบ 196/200**

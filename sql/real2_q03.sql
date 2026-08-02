@@ -2,7 +2,7 @@
 -- Q03 บน embedding จริง — filter ทำงานหลังสแกน index
 --
 -- รัน:  MSYS_NO_PATHCONV=1 docker compose exec -T db \
---         psql -U lab -d faultlab -v ON_ERROR_STOP=1 -f //sql/real_q03.sql
+--         psql -U lab -d faultlab -v ON_ERROR_STOP=1 -f //sql/real2_q03.sql
 --
 -- ต้องรัน real_load.sql ก่อน
 --

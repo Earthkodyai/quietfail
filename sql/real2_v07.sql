@@ -2,7 +2,7 @@
 -- V07 บน embedding จริง — แถวหายถาวรเพราะคุณภาพข้อมูล
 --
 -- รัน:  MSYS_NO_PATHCONV=1 docker compose exec -T db \
---         psql -U lab -d faultlab -v ON_ERROR_STOP=1 -f //sql/real_v07.sql
+--         psql -U lab -d faultlab -v ON_ERROR_STOP=1 -f //sql/real2_v07.sql
 --
 -- ข้ออ้างเดิม (corpus สังเคราะห์ · 500 ปกติ + 5 NULL + 5 zero = 510):
 --   ไม่มี index (exact)        ขอ 510 ได้ 510

@@ -3,7 +3,7 @@
 -- ทดสอบว่าเส้นแบ่งกลไก/ปริมาณยังอยู่ไหมเมื่อเปลี่ยนทั้งโมเดลและมิติ (เล่ม 6.5 ข้อ 2)
 --
 -- รัน:  MSYS_NO_PATHCONV=1 docker compose exec -T db \
---         psql -U lab -d faultlab -v ON_ERROR_STOP=1 -f //sql/real_load.sql
+--         psql -U lab -d faultlab -v ON_ERROR_STOP=1 -f //sql/real2_load.sql
 --
 -- ต้องรัน scripts/real_embed_build.py ก่อน เพื่อสร้าง
 --   sql/_real2_corpus.tsv · sql/_real2_queries.tsv
