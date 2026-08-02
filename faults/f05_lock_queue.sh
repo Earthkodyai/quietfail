@@ -46,6 +46,13 @@ admin() {
 A_PID=""; B_PID=""; C_PID=""
 C_TIME_FILE="$(mktemp)"
 
+# 🔴 เดิม session A/B/C ทิ้ง stderr ด้วย 2>/dev/null ทั้งสามตัว
+#    ตัวที่สำคัญคือ **B ซึ่งรัน ALTER TABLE** — เป็นคำสั่งเปลี่ยนสภาพระบบ
+#    ถ้ามันล้ม (สิทธิ์ไม่พอ · คอลัมน์ค้างจากรอบก่อน) จะเงียบสนิท แล้ว assertion
+#    รายงานว่า "fault ไม่เกิด" โดยไม่บอกสาเหตุ = กับดักข้อ 1
+#    ตอนนี้เก็บลงไฟล์แล้วโชว์เมื่อ assertion ตก (แก้ 2026-08-02)
+A_ERR="$(mktemp)"; B_ERR="$(mktemp)"; C_ERR="$(mktemp)"
+
 cleanup() {
   echo
   echo "--- เก็บกวาด ---"
@@ -98,7 +105,7 @@ cleanup() {
     admin -c "ALTER TABLE ${TABLE} DROP COLUMN IF EXISTS ${TMP_COL}" >/dev/null
   fi
 
-  rm -f "$C_TIME_FILE"
+  rm -f "$C_TIME_FILE" "$A_ERR" "$B_ERR" "$C_ERR"
 }
 trap cleanup EXIT
 
@@ -118,7 +125,7 @@ fi
 echo "-- A: BEGIN แล้ว SELECT ค้างไว้ (ถือ ACCESS SHARE)"
 ( echo "BEGIN; SELECT * FROM ${TABLE} LIMIT 1;"; sleep 120 ) \
   | PGPASSWORD="$APP_PW" psql -h "$HOST" -p "$PORT" -U "$APP_USER" -d "$DB" \
-      -q -o /dev/null 2>/dev/null &
+      -q -o /dev/null 2>"$A_ERR" &
 A_PID=$!
 sleep 2
 
@@ -134,7 +141,7 @@ sleep 2
 #    ทีมแอปกับทีม DB มักโทษกันไปมาแทนที่จะเห็นคิว lock
 echo "-- B: ALTER TABLE ADD COLUMN โดย role เจ้าของ (ต้องการ ACCESS EXCLUSIVE จึงต้องรอ A)"
 PGPASSWORD="$ADMIN_PW" psql -h "$HOST" -p "$PORT" -U "$ADMIN_USER" -d "$DB" \
-  -q -o /dev/null -c "ALTER TABLE ${TABLE} ADD COLUMN ${TMP_COL} int" 2>/dev/null &
+  -q -o /dev/null -c "ALTER TABLE ${TABLE} ADD COLUMN ${TMP_COL} int" 2>"$B_ERR" &
 B_PID=$!
 sleep 2
 
@@ -143,7 +150,7 @@ echo "-- C: SELECT ธรรมดา — นี่คือ query ที่แ�
 (
   start=$(date +%s.%N)
   PGPASSWORD="$APP_PW" psql -h "$HOST" -p "$PORT" -U "$APP_USER" -d "$DB" \
-    -q -o /dev/null -c "SELECT * FROM ${TABLE} LIMIT 1" 2>/dev/null
+    -q -o /dev/null -c "SELECT * FROM ${TABLE} LIMIT 1" 2>"$C_ERR"
   end=$(date +%s.%N)
   echo "$start $end" > "$C_TIME_FILE"
 ) &
@@ -156,6 +163,15 @@ sleep "$C_WAIT"
 # assertion — กฎเหล็กข้อ 3
 # =============================================================
 FAIL=0
+
+# ---- ถ้า B ล้ม fault ไม่มีทางเกิด — ต้องบอกก่อนไปวัดอย่างอื่น ----
+if [[ -s "$B_ERR" ]]; then
+  echo "!! session B (ALTER TABLE) มี stderr — fault อาจไม่เกิดเพราะเหตุนี้:"
+  sed 's/^/!!   /' "$B_ERR"
+fi
+if [[ -s "$A_ERR" ]]; then
+  echo "!! session A มี stderr:"; sed 's/^/!!   /' "$A_ERR"
+fi
 
 # ---- ข้อ 1: C ต้องยังค้างอยู่ (query ที่ปกติเสร็จใน < 10ms) ----
 if kill -0 "$C_PID" 2>/dev/null; then
