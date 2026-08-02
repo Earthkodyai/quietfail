@@ -129,7 +129,11 @@ BEGIN
         ORDER BY c.embedding <=> (SELECT embedding FROM qf_queries WHERE id = 1)
         LIMIT 10) w;
 
-    -- IVFFlat วัดที่ probes 1 (ค่าเริ่มต้น) และ 5 (ค่าที่ Q04 พบว่าได้ recall เต็ม)
+    -- IVFFlat วัดที่ probes 1 (ค่าเริ่มต้น) และ 5
+    -- ⚠️ เดิมคอมเมนต์บรรทัดนี้เขียนว่า 5 คือ "ค่าที่ Q04 พบว่าได้ recall เต็ม"
+    --    ซึ่ง **ถอนแล้ว** — จริงเฉพาะบน corpus สังเคราะห์ (ไฟล์นี้ใช้ชุดนั้น)
+    --    บน embedding จริง probes=5 ได้ 0.9068 ส่วน 10 ได้ 0.9527
+    --    สูตร sqrt(lists) ของเอกสารจึงเหมาะสม (results/real_q04.txt · แก้ 2026-08-02)
     -- HNSW วัดที่ ef_search 40 (ค่าเริ่มต้น) และ 200
     IF p_kind = 'ivfflat' THEN
         params := ARRAY[1, 5];

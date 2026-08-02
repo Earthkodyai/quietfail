@@ -82,7 +82,9 @@ BEGIN
         PERFORM qf_i04r2_record('IVFFlat probes=1', b);
     END LOOP;
 
-    -- IVFFlat probes = 5 — ของเดิมพบว่ากลบความไม่แน่นอนได้หมดจด
+    -- IVFFlat probes = 5 — ของเดิม (corpus สังเคราะห์) พบว่ากลบความไม่แน่นอนได้หมดจด
+    -- 🔴 **ไฟล์นี้เองเป็นตัวหักล้าง** — บน embedding จริงยังมี 121/200 (60.5%)
+    --    ที่เปลี่ยนคำตอบ · probes=5 ช่วยลดจาก 91.5% แต่ไม่กำจัด (แก้ 2026-08-02)
     PERFORM set_config('ivfflat.probes', '5', false);
     FOR b IN 1..5 LOOP
         EXECUTE 'DROP INDEX IF EXISTS qf_i04r2_idx';
