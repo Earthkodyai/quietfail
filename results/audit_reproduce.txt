@@ -1,7 +1,7 @@
 ==============================================================================
 QuietFail — รันตัวฉีดจริงซ้ำ (--reproduce)
-รันเมื่อ : 2026-08-02 13:19:11
-commit  : 4dabe70
+รันเมื่อ : 2026-08-03 00:02:28
+commit  : cd2088f
 ==============================================================================
 
 โหมดนี้ตอบคำถามที่ audit ปกติตอบไม่ได้ — 'ผลยังเกิดซ้ำได้จริงไหม'
@@ -13,31 +13,31 @@ commit  : 4dabe70
 qf_corpus ก่อนรัน : 5000|5a32cba54ea2be4ed022fe8bfedae9b0
 
 ── I01 : sql/i01_opclass_mismatch.sql ──
-   ok   exit 0 · assertion 4/4 ข้อ · 341 วินาที
+   ok   exit 0 · assertion 4/4 ข้อ · 323 วินาที
 
 ── I04 : sql/i04_kmeans_nondeterminism.sql ──
-   ok   exit 0 · assertion 5/5 ข้อ · 522 วินาที
+   ok   exit 0 · assertion 5/5 ข้อ · 578 วินาที
 
 ── Q02 : sql/q02_wrong_query_shape.sql ──
-   ok   exit 0 · assertion 5/5 ข้อ · 32 วินาที
+   ok   exit 0 · assertion 5/5 ข้อ · 33 วินาที
 
 ── Q04 : sql/q04_default_params.sql ──
-   ok   exit 0 · assertion 5/5 ข้อ · 203 วินาที
+   ok   exit 0 · assertion 5/5 ข้อ · 208 วินาที
 
 ── Q06 : sql/q06_limit_exceeds_ef.sql ──
-   ok   exit 0 · assertion 5/5 ข้อ · 47 วินาที
+   ok   exit 0 · assertion 5/5 ข้อ · 50 วินาที
 
 ── V07 : sql/v07_null_zero_vectors.sql ──
-   ok   exit 0 · assertion 4/4 ข้อ · 1 วินาที
+   ok   exit 0 · assertion 5/5 ข้อ · 1 วินาที
 
 ── I02 : sql/i02_index_built_too_early.sql ──
-   ok   exit 0 · assertion 6/6 ข้อ · 97 วินาที
-
-── Q03 : sql/q03_filter_after_scan.sql ──
    ok   exit 0 · assertion 6/6 ข้อ · 106 วินาที
 
+── Q03 : sql/q03_filter_after_scan.sql ──
+   ok   exit 0 · assertion 6/6 ข้อ · 114 วินาที
+
 ── L02 : sql/l02_dead_tuples.sql ──
-   ok   exit 0 · assertion 6/6 ข้อ · 471 วินาที
+   ok   exit 0 · assertion 6/6 ข้อ · 416 วินาที
 
 qf_corpus หลังรัน : 5000|5a32cba54ea2be4ed022fe8bfedae9b0
    ok   qf_corpus ไม่เปลี่ยน
