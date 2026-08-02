@@ -30,6 +30,16 @@ LOAD 'vector';
 
 DROP INDEX IF EXISTS qf_i04_idx;
 DROP TABLE IF EXISTS qf_i04_ser;
+DROP TABLE IF EXISTS qf_i04p_guard;
+
+-- ด่านกัน qf_corpus ถูกแตะ — ฝาแฝด i04_kmeans_nondeterminism.sql มีแล้ว
+-- ไฟล์นี้ไม่เคยมี ทั้งที่สร้าง index บนตารางเดียวกัน (กับดักข้อ 14บ · เพิ่ม 2026-08-02)
+-- ⚠️ ต้องมี FROM qf_corpus — เขียนครั้งแรกลืมไป แล้ว count(*) คืน 1 (ไม่ใช่ 100,000)
+--    ด่านจึงฟ้องว่า "qf_corpus เปลี่ยน! แถว 1->100000" ทั้งที่ fingerprint ตรงเป๊ะ
+--    = ด่านที่เพิ่งเขียนเพื่อจับความล้มเหลวเงียบ กลับให้ผลบวกลวงเสียเอง
+CREATE TABLE qf_i04p_guard AS
+SELECT count(*) AS rows_before, qf_fingerprint('qf_corpus') AS fp_before
+FROM qf_corpus;
 
 CREATE TABLE qf_i04_ser (
     build_no int, kind text, query_id int, recall numeric, build_ms numeric
@@ -41,6 +51,18 @@ SET max_parallel_maintenance_workers = 0;
 \qecho '=== ยืนยันว่าปิด parallel แล้วจริง ==='
 SELECT current_setting('max_parallel_maintenance_workers') AS par_maint_now,
        current_setting('maintenance_work_mem')             AS mwm;
+
+-- 🔴 เดิม**พิมพ์ค่าออกมาเฉยๆ ไม่ได้ตรวจ** — ถ้าตั้งไม่ติด กลุ่มควบคุมทั้งไฟล์เป็นโมฆะ
+--    โดยไม่มีอะไรบอก · ตัวแปรเดียวที่ไฟล์นี้เปลี่ยนคือค่านี้ (เพิ่ม 2026-08-02)
+DO $$
+BEGIN
+    IF current_setting('max_parallel_maintenance_workers') <> '0' THEN
+        RAISE EXCEPTION 'ตรวจไม่ได้: max_parallel_maintenance_workers = % ไม่ใช่ 0 '
+                        '— ตัวแปรที่ตั้งใจควบคุมไม่ได้ถูกควบคุม',
+                        current_setting('max_parallel_maintenance_workers');
+    END IF;
+    RAISE NOTICE 'ปิด parallel build แล้วจริง';
+END $$;
 
 CREATE OR REPLACE FUNCTION qf_i04_serial_one(p_build int, p_kind text)
 RETURNS void AS $$
@@ -135,8 +157,24 @@ FROM qf_i04_ser GROUP BY kind, build_no ORDER BY kind, build_no;
 \qecho '=== ข้อสรุปที่ข้อมูลรองรับ ==='
 DO $$
 DECLARE
-    ivf_q int; hnsw_q int;
+    ivf_q int; hnsw_q int; n_ivf int; n_hnsw int;
+    rows_now bigint; fp_now text; g record;
 BEGIN
+    -- 🔴 ด่านนี้สำคัญที่สุดในไฟล์ (เพิ่ม 2026-08-02)
+    --
+    --    ถ้า qf_i04_ser ว่างหรือไม่ครบ ตัวแปร ivf_q กับ hnsw_q จะเป็น 0 ทั้งคู่
+    --    แล้วสาขาที่สองข้างล่างจะพิมพ์ข้อสรุปที่ **แรงที่สุด** ของทั้งการทดลอง
+    --    คือ "parallel build คือต้นเหตุร่วม ไม่ใช่ k-means"
+    --    **จากข้อมูลศูนย์แถว** โดยไม่มีอะไรเตือน
+    --
+    --    เป็นความล้มเหลวเงียบชนิดเดียวกับที่โครงงานนี้ศึกษาอยู่ · กฎเหล็กข้อ 10
+    SELECT count(DISTINCT build_no) INTO n_ivf  FROM qf_i04_ser WHERE kind = 'ivfflat';
+    SELECT count(DISTINCT build_no) INTO n_hnsw FROM qf_i04_ser WHERE kind = 'hnsw';
+    IF n_ivf < 5 OR n_hnsw < 5 THEN
+        RAISE EXCEPTION 'ตรวจไม่ได้: วัดได้ IVFFlat % build · HNSW % build (ต้องอย่างละ 5) '
+                        '— ห้ามสรุปว่า "นิ่ง" จากข้อมูลที่ไม่ครบ', n_ivf, n_hnsw;
+    END IF;
+
     SELECT count(*) INTO ivf_q FROM (
         SELECT query_id FROM qf_i04_ser WHERE kind = 'ivfflat'
         GROUP BY query_id HAVING count(DISTINCT recall) > 1) s;
@@ -157,11 +195,22 @@ BEGIN
     ELSE
         RAISE NOTICE '-> IVFFlat นิ่งแต่ HNSW แกว่ง = ผลกลับด้านจากที่ตั้งสมมติฐานไว้';
     END IF;
+
+    -- qf_corpus ต้องไม่ถูกแตะ
+    SELECT count(*) INTO rows_now FROM qf_corpus;
+    fp_now := qf_fingerprint('qf_corpus');
+    SELECT * INTO g FROM qf_i04p_guard;
+    IF rows_now <> g.rows_before OR fp_now IS DISTINCT FROM g.fp_before THEN
+        RAISE EXCEPTION 'qf_corpus เปลี่ยน! แถว %->% fingerprint %->%',
+                        g.rows_before, rows_now, g.fp_before, fp_now;
+    END IF;
+    RAISE NOTICE 'qf_corpus ไม่ถูกแตะ (% แถว · fingerprint เดิม)', rows_now;
 END $$;
 
 \qecho ''
 \qecho '=== เก็บกวาด ==='
 DROP INDEX IF EXISTS qf_i04_idx;
+DROP TABLE IF EXISTS qf_i04p_guard;
 DROP FUNCTION IF EXISTS qf_i04_serial_one(int, text);
 RESET max_parallel_maintenance_workers;
 SELECT count(*) AS vector_index_ค้าง
