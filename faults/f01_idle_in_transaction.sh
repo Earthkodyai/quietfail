@@ -20,8 +20,11 @@ DB="${PGDATABASE:-faultlab}"
 ADMIN_USER="${ADMIN_USER:-lab}";  ADMIN_PW="${ADMIN_PW:-labpass}"
 APP_USER="${APP_USER:-app}";      APP_PW="${APP_PW:-apppass}"
 
-# max_connections=20, superuser_reserved=3 -> non-superuser ใช้ได้ 17
-LEAKS="${LEAKS:-17}"
+# 🔴 เดิม hardcode LEAKS=17 ซึ่งมาจาก max_connections=20 - superuser_reserved=3
+#    ของโปรไฟล์ fragile · ถ้ารันบนโปรไฟล์อื่นค่านี้จะไม่พอ แล้ว fault ไม่เกิด
+#    สคริปต์เดิมจับได้ **หลังฉีดเสร็จ** แล้วบอกให้เพิ่ม LEAKS เอง
+#    ตอนนี้คำนวณจาก config จริงตั้งแต่ต้น และตรวจก่อนฉีด (แก้ 2026-08-02)
+#    ยังตั้ง LEAKS เองทับได้เหมือนเดิม
 HOLD="${HOLD:-45}"
 
 # ค้าง fault ไว้กี่วินาทีหลัง assert ผ่าน ก่อนเก็บกวาด
@@ -53,6 +56,27 @@ admin() {
   PGPASSWORD="$ADMIN_PW" psql -h "$HOST" -p "$PORT" -U "$ADMIN_USER" -d "$DB" \
     -v ON_ERROR_STOP=1 -qAt "$@"
 }
+
+# ---------- คำนวณโควตาจาก config จริง + ด่านตรวจก่อนฉีด ----------
+MAXC="$(admin -c 'SHOW max_connections' 2>/dev/null || echo '')"
+RESV="$(admin -c 'SHOW superuser_reserved_connections' 2>/dev/null || echo '')"
+if [[ -z "$MAXC" || -z "$RESV" ]]; then
+  echo "!! ตรวจไม่ได้: อ่าน max_connections / superuser_reserved_connections ไม่ได้"
+  echo "!! (กฎเหล็กข้อ 10 — ไม่รู้ ต้องบอกว่าไม่รู้ ห้ามเดาแล้วฉีดต่อ)"
+  exit 1
+fi
+# ผู้ใช้ธรรมดาต่อได้ = max_connections - superuser_reserved - ที่ใช้อยู่แล้ว
+INUSE="$(admin -c 'SELECT count(*) FROM pg_stat_activity WHERE backend_type = '"'"'client backend'"'"'' 2>/dev/null || echo 0)"
+QUOTA=$(( MAXC - RESV ))
+LEAKS="${LEAKS:-$QUOTA}"
+
+echo "=== โควตา connection ที่คำนวณจาก config จริง ==="
+printf '    max_connections=%s · superuser_reserved=%s · ใช้อยู่แล้ว=%s -> ฉีด %s session\n' \
+       "$MAXC" "$RESV" "$INUSE" "$LEAKS"
+if (( LEAKS + INUSE <= QUOTA )); then
+  echo "!! เตือน: ฉีด $LEAKS + ที่ใช้อยู่ $INUSE ยังไม่เกินโควตา $QUOTA"
+  echo "!!        fault อาจไม่เกิด — ตั้ง LEAKS ให้สูงกว่านี้"
+fi
 
 PIDS=()
 cleanup() {
