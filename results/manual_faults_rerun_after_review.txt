@@ -1,0 +1,167 @@
+==============================================================================
+QuietFail — รัน fault ที่ต้องรันด้วยมือ ซ้ำหลังรอบทวน sql/ + faults/
+รันเมื่อ : 2026-08-03 00:47:26
+commit  : 8479b0f
+==============================================================================
+
+เหตุผล: รอบทวนแก้ไฟล์ในกลุ่มนี้ไป 3 จาก 6 ข้อ จึงต้องยืนยันว่ายังเกิดซ้ำได้
+  F01  คำนวณ LEAKS จาก config แทน hardcode 17 + ด่านตรวจก่อนฉีด
+  F10  เลิกกลบ stderr ของ DROP FUNCTION
+  I05  เพิ่ม trap เก็บกวาด (เดิมเป็น .sh ตัวเดียวที่ไม่มี)
+  (F03 · F05 · I03 รันไปแล้วระหว่างทวน — ดู commit ในรอบเดียวกัน)
+
+════════ I05 ════════
+=== I05: build HNSW ที่ maintenance_work_mem หลายค่า ===
+    corpus: 100000 แถว
+
+NOTICE:  table "qf_i05_results" does not exist, skipping
+-- maintenance_work_mem = 64MB
+   NOTICE: กราฟไม่พอดีหน่วยความจำหลังจาก 28367 tuples
+-- maintenance_work_mem = 128MB
+   NOTICE: กราฟไม่พอดีหน่วยความจำหลังจาก 58627 tuples
+-- maintenance_work_mem = 256MB
+   ไม่มี NOTICE — กราฟอยู่ในหน่วยความจำได้ทั้งหมด
+
+=== ผลการวัด ===
++-------+--------+-------------+----------+------------------+------------+
+|  mwm  | mwm_kb | corpus_rows | build_ms | slower_than_best | index_size |
++-------+--------+-------------+----------+------------------+------------+
+| 64MB  |  65536 |      100000 |  95591.4 |             2.54 | 195 MB     |
+| 128MB | 131072 |      100000 |  77056.2 |             2.04 | 195 MB     |
+| 256MB | 262144 |      100000 |  37704.0 |             1.00 | 195 MB     |
++-------+--------+-------------+----------+------------------+------------+
+(3 rows)
+
+
+[1/3] ✅ ที่ 64MB ได้ NOTICE ตามที่เอกสารระบุ (หลัง 28367 tuples)
+[2/3] ✅ ที่ 256MB ไม่มี NOTICE → ยืนยันว่าตัวแปรคือ maintenance_work_mem จริง
+[3/3] ✅ build ที่ 64MB ช้ากว่าที่ 256MB 2.54 เท่า
+
+=== หลักฐาน: pgvector เตือนตรงๆ แต่เตือนทาง stderr ===
+=== ไม่มีใครอ่าน log ตอน migration ที่ 'ผ่าน' → เตือนแล้วก็เท่านั้น ===
+=== ต่างจาก Q01/I01 ที่เงียบสนิท — ข้อนี้คือ 'เตือนแล้วไม่มีใครอ่าน' ===
+NOTICE:  index "qf_i05_idx" does not exist, skipping
+EXIT(I05)=0
+
+════════ F10 ════════
+=== F10: bulk insert แล้วไม่ ANALYZE (300000 แถว) ===
+Timing is on.
+SET
+Time: 0.480 ms
+psql:/sql/f10_stale_stats.sql:31: NOTICE:  table "qf_f10_obs" does not exist, skipping
+psql:/sql/f10_stale_stats.sql:31: NOTICE:  table "qf_f10_big" does not exist, skipping
+psql:/sql/f10_stale_stats.sql:31: NOTICE:  table "qf_f10_lookup" does not exist, skipping
+DROP TABLE
+Time: 0.562 ms
+CREATE TABLE
+Time: 8.440 ms
+INSERT 0 200000
+Time: 581.003 ms
+ANALYZE
+Time: 81.536 ms
+CREATE TABLE
+Time: 8.713 ms
+INSERT 0 100000
+Time: 342.568 ms
+ANALYZE
+Time: 36.972 ms
+ALTER TABLE
+Time: 3.885 ms
+CREATE TABLE
+Time: 5.678 ms
+INSERT 0 300000
+Time: 822.813 ms
+CREATE FUNCTION
+Time: 4.789 ms
+ qf_f10_measure 
+----------------
+ 
+(1 row)
+
+Time: 1037.477 ms (00:01.037)
+ANALYZE
+Time: 47.586 ms
+ qf_f10_measure 
+----------------
+ 
+(1 row)
+
+Time: 468.996 ms
+psql:/sql/f10_stale_stats.sql:191: NOTICE:  --- ก่อน ANALYZE: ประมาณ 200 จริง 300000 (คลาด 1500.0x) · buffers 1202548 · Nested Loop · 500.2 ms
+psql:/sql/f10_stale_stats.sql:191: NOTICE:  --- หลัง ANALYZE: ประมาณ 298227 จริง 300000 (คลาด 1.0x) · buffers 3726 · Hash Join · 227.5 ms
+psql:/sql/f10_stale_stats.sql:191: NOTICE:  [1/3] OK ก่อน ANALYZE ประมาณคลาด 1500.0x (ต้อง >= 10x)
+psql:/sql/f10_stale_stats.sql:191: NOTICE:  [2/3] OK หลัง ANALYZE ประมาณคลาด 1.0x (ต้อง <= 2x)
+psql:/sql/f10_stale_stats.sql:191: NOTICE:  [3/3] OK buffers ลดลง 322.7x (ต้อง >= 5x)
+psql:/sql/f10_stale_stats.sql:191: NOTICE:  assertion ผ่านครบ 3 ข้อ
+DO
+Time: 1.886 ms
+
+=== หลักฐาน: query เดิมทุกตัวอักษร ต่างกันแค่ ANALYZE ===
+     phase      | planner คิดว่า | ของจริง | คลาดกี่เท่า | buffers | plan ที่เลือก  |  ms   | reltuples ที่ planner เห็น 
+----------------+--------------+--------+----------+---------+-------------+-------+-------------------------
+ before_analyze |          200 | 300000 |   1500.0 | 1202548 | Nested Loop | 500.2 |                  100000
+ after_analyze  |       298227 | 300000 |      1.0 |    3726 | Hash Join   | 227.5 |                  400000
+(2 rows)
+
+Time: 0.651 ms
+
+=== ANALYZE แล้วหาย = ยืนยันสาเหตุแบบเถียงไม่ได้ ===
+=== ทางแก้ผิดที่คนมักทำ: rewrite query / เพิ่ม index ที่ไม่จำเป็น ===
+
+=== ข้อสังเกตที่สำคัญกว่าตัวเลขความเร็ว ===
+| before_analyze | 1202548 | 500.2 | Nested Loop |
+| after_analyze  |    3726 | 227.5 | Hash Join   |
++----------------+---------+-------+-------------+
+
+
+=== นาฬิกาบอกว่าช้าลงไม่กี่เท่า แต่ buffers บอกว่าทำงานเพิ่มหลายร้อยเท่า ===
+=== เพราะข้อมูลชุดนี้อยู่ใน cache หมด — บนเครื่องที่ข้อมูลไม่พอใส่ RAM
+=== buffers ส่วนเกินทั้งหมดนั้นจะกลายเป็นการอ่านดิสก์จริง ===
+=== นี่คือเหตุผลของกฎเหล็กข้อ 7 ===
+
+--- เก็บกวาด ---
+   (KEEP_OBS=1 — เก็บ qf_f10_obs ไว้ให้ตัวนับคะแนน)
+EXIT(F10)=0
+
+════════ F01 ════════
+=== โควตา connection ที่คำนวณจาก config จริง ===
+    max_connections=20 · superuser_reserved=3 · ใช้อยู่แล้ว=1 -> ฉีด 17 session
+=== F01: ฉีด 17 session ที่ค้างสถานะ idle in transaction ===
+
+--- ลองต่อ connection ใหม่แบบผู้ใช้ธรรมดา (นี่คือสิ่งที่แอปจริงเจอ) ---
+psql: error: connection to server at "localhost" (::1), port 5432 failed: FATAL:  remaining connection slots are reserved for roles with the SUPERUSER attribute
+>> รูปแบบ A: โควตาผู้ใช้ธรรมดาเต็ม slot สำรองของ superuser ยังเหลือ
+
+=== หลักฐาน: ต้นเหตุจริงอยู่ตรงนี้ ไม่ใช่ที่ max_connections ===
+| idle in transaction |       17 | 00:00:03      |
++---------------------+----------+---------------+
+
+
+=== ค้าง fault ไว้ 90 วินาที ให้ตัวนับคะแนนมาตรวจ ===
+
+=== ถ้าเห็น idle in transaction เป็นก้อนใหญ่ = ยืนยันสาเหตุ ===
+=== วิธีแก้ที่ถูก: ไล่หา code path ที่ลืม commit/rollback ===
+=== แก้บรรเทาชั่วคราวได้ด้วย idle_in_transaction_session_timeout ===
+=== แต่นั่นคือการตัด session ทิ้ง ไม่ใช่การแก้ต้นเหตุ ===
+
+--- เก็บกวาด: ปิด session ที่ค้างไว้ ---
+EXIT(F01)=0
+
+
+==============================================================================
+สภาพฐานหลังรันครบและคืนสภาพ
+==============================================================================
+  score.sql            : DETECTED 3 · NOT_DETECTED 3 · CANNOT_CHECK 9
+  qf_corpus            : 100,000 แถว · fingerprint 5a32cba54ea2be4ed022fe8bfedae9b0
+  orders               : 200,000 แถว
+  vector index ค้าง     : 0
+  idle in transaction  : 0
+  ตาราง qf_i05* ค้าง    : ไม่มี  <- ยืนยันว่า trap ที่เพิ่มให้ i05 ทำงาน
+  ขนาดฐาน              : 822 MB
+
+⚠️ ต้องคืนสภาพด้วยมือหลัง KEEP_OBS=1 (ทำแล้วในรอบนี้):
+     DROP TABLE IF EXISTS qf_f10_obs;  SELECT pg_stat_statements_reset();
+
+📌 F01 ใช้ assertion แบบ exit 1 ไม่ใช่รูปแบบ [n/n] จึงไม่มีบรรทัดนับ
+   ตัวชี้ขาดคือ exit code (กฎเหล็กข้อ 6) — ได้ 0 = assertion ผ่านครบ
+   และค่าที่คำนวณจาก config ได้ 17 เท่ากับที่เคย hardcode ไว้พอดี
