@@ -229,13 +229,28 @@ BEGIN
     END IF;
     RAISE NOTICE '[3/4] OK catalog อ่าน opclass ได้ → ตรวจแบบ static ได้จริง';
 
-    -- opclass ผิด ต้องช้าพอๆ กับไม่มี index (ต่างไม่เกิน 2 เท่า)
-    IF b.query_ms > a.query_ms * 2 OR a.query_ms > b.query_ms * 2 THEN
-        RAISE EXCEPTION
-            'ข้อ 4 ตก: เวลาต่างกันมากเกินคาด (ไม่มี index % ms · opclass ผิด % ms)',
-            a.query_ms, b.query_ms;
+    -- opclass ผิด ต้องอ่าน block เท่ากับไม่มี index
+    --
+    -- 🔴 เดิม assert ด้วย **เวลา** (ต่างไม่เกิน 2 เท่า) ซึ่งขัดกฎเหล็กข้อ 7 ที่บังคับ
+    --    ให้ใช้ buffers เป็นตัวชี้วัดหลัก · และวัดแล้วว่าเวลาในโปรเจคนี้แกว่งจริง
+    --    (--reproduce รวม 30.3 vs 33.8 นาที = 11% · REINDEX/VACUUM 3.8 vs 8.7 เท่า)
+    --    assertion ที่ผูกกับเวลาจึงพร้อมจะตกแบบสุ่มโดยที่ fault ไม่ได้เปลี่ยน
+    --
+    --    ตารางนี้บันทึก buffers ไว้อยู่แล้วแต่ไม่เคยถูกใช้ assert
+    --    บนข้อมูลจริง I01 ให้ buffers **เท่ากันเป๊ะทุกบล็อก** (23,388 = 23,388)
+    --    ซึ่งเป็นหลักฐานที่แข็งกว่าเวลามาก (แก้ 2026-08-02)
+    IF a.buffers IS NULL OR b.buffers IS NULL THEN
+        RAISE EXCEPTION 'ข้อ 4 ตรวจไม่ได้: ไม่มีค่า buffers (กฎเหล็กข้อ 10)';
     END IF;
-    RAISE NOTICE '[4/4] OK opclass ผิดช้าพอๆ กับไม่มี index (% ms vs % ms)',
+    IF abs(b.buffers - a.buffers) > greatest(a.buffers, 1) * 0.10 THEN
+        RAISE EXCEPTION
+            'ข้อ 4 ตก: buffers ต่างกันเกิน 10%% (ไม่มี index % · opclass ผิด %) '
+            '→ opclass ผิดไม่ได้อ่านเท่ากับไม่มี index จริง',
+            a.buffers, b.buffers;
+    END IF;
+    RAISE NOTICE '[4/4] OK opclass ผิดอ่าน block เท่ากับไม่มี index (% vs %)',
+        a.buffers, b.buffers;
+    RAISE NOTICE '        เวลาเป็นข้อมูลประกอบเท่านั้น: % ms vs % ms (กฎเหล็กข้อ 7)',
         a.query_ms, b.query_ms;
 
     RAISE NOTICE 'assertion ผ่านครบ 4 ข้อ';

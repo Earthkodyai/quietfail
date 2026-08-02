@@ -182,13 +182,29 @@ BEGIN
         d_hnsw.mean_recall, m_hnsw.mean_recall;
 
     -- ข้อ 4: ต้นทุนของการเพิ่มค่าต้องมีจริง — ไม่งั้นค่าเริ่มต้นไม่มีเหตุผลเลย
-    IF a_ivf.query_ms <= d_ivf.query_ms THEN
-        RAISE EXCEPTION
-            'ข้อ 4 ตก: probes=100 ไม่ได้ช้ากว่า probes=1 (% vs % ms) — การแลกไม่มีอยู่จริง',
-            a_ivf.query_ms, d_ivf.query_ms;
+    --
+    -- 🔴 เดิมเทียบ probes=100 กับ probes=1 ด้วยเวลา · **E45 พบว่าวัดผิดสิ่ง**
+    --    ที่ probes = lists (=100) planner **เลิกใช้ index** ตามที่เอกสารเขียนไว้เอง
+    --    ("at which point the planner won't use the index")
+    --    assertion เดิมจึงเทียบ IVFFlat scan กับ Seq Scan ไม่ใช่ต้นทุนของการเพิ่ม probes
+    --    E45 บันทึกข้อนี้ไว้ตั้งแต่ 2026-08-01 แต่ **ไม่เคยแก้ในสคริปต์**
+    --    (แก้ 2026-08-02 ตอนไล่อ่านทีละบรรทัด)
+    --
+    --    ตัวเทียบที่ถูกคือ probes=10 (สูตร sqrt(lists) ที่เอกสารแนะนำ) ซึ่งยังใช้ index จริง
+    SELECT * INTO r_ivf FROM qf_q04_results
+     WHERE index_kind = 'ivfflat' AND param_value = 10;
+    IF r_ivf.query_ms IS NULL THEN
+        RAISE EXCEPTION 'ข้อ 4 ตรวจไม่ได้: ไม่มีผลของ probes=10 (กฎเหล็กข้อ 10)';
     END IF;
-    RAISE NOTICE '[4/5] OK การแลกมีจริง: probes=1 ใช้ % ms · probes=100 ใช้ % ms (ช้าลง % เท่า)',
-        d_ivf.query_ms, a_ivf.query_ms, round(a_ivf.query_ms / d_ivf.query_ms, 1);
+    IF r_ivf.query_ms <= d_ivf.query_ms THEN
+        RAISE EXCEPTION
+            'ข้อ 4 ตก: probes=10 ไม่ได้ช้ากว่า probes=1 (% vs % ms) — การแลกไม่มีอยู่จริง',
+            r_ivf.query_ms, d_ivf.query_ms;
+    END IF;
+    RAISE NOTICE '[4/5] OK การแลกมีจริง: probes=1 ใช้ % ms · probes=10 ใช้ % ms (ช้าลง % เท่า)',
+        d_ivf.query_ms, r_ivf.query_ms, round(r_ivf.query_ms / d_ivf.query_ms, 1);
+    RAISE NOTICE '        ⚠️ แถว probes=50 และ 100 ในตารางข้างบน **planner ไม่ใช้ index**';
+    RAISE NOTICE '        เวลาของสองแถวนั้นเป็นของ exact search เทียบข้ามแถวไม่ได้ (E45)';
 
     -- ข้อ 5: ทุกค่าต้องไม่มี error — ค่าที่แย่ก็ยัง "ทำงานได้"
     IF EXISTS (SELECT 1 FROM qf_q04_results WHERE mean_recall IS NULL) THEN
