@@ -21,7 +21,9 @@
 set -uo pipefail
 
 HOST="${PGHOST:-localhost}"
-PORT="${PGPORT:-5432}"
+# 5433 = พอร์ตที่ docker-compose map ออกมา (รันในคอนเทนเนอร์ให้ส่ง PGPORT=5432
+# ตามที่ WINDOWS.md เขียนไว้) — เดิมตั้ง 5432 ต่างจาก f01/f03/f05/f10 ทุกไฟล์
+PORT="${PGPORT:-5433}"
 DB="${PGDATABASE:-faultlab}"
 ADMIN_USER="${ADMIN_USER:-lab}"; ADMIN_PW="${ADMIN_PW:-labpass}"
 APP_USER="${APP_USER:-app}";     APP_PW="${APP_PW:-apppass}"
@@ -63,21 +65,34 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# วัดเวลาของคำสั่งหนึ่ง (ms) — คืน 'BLOCKED' ถ้าเกิน WAIT_LIMIT
+# วัดเวลาของคำสั่งหนึ่ง (ms) — คืน 'BLOCKED' ถ้าเกิน WAIT_LIMIT · 'ERROR' ถ้าคำสั่งล้ม
+#
+# 🔴 แก้ 2026-08-02 — เดิมดูแค่ exit 124 แล้วที่เหลือคืนเป็น "เวลา"
+#    คำสั่งที่ **error ทันที** (สิทธิ์ไม่พอ · ตารางหาย · syntax) จึงคืนเลขน้อยๆ
+#    แล้ว assertion ข้อ 4 ซึ่งเป็น**กลุ่มควบคุม** อ่านว่า "ไม่ถูกบล็อก ✅"
+#    = ผ่านเพราะคำสั่งล้ม ไม่ใช่เพราะ CONCURRENTLY ทำงาน (ผลบวกลวงของกลุ่มควบคุม)
+#    ตอนนี้แยก rc ออกมา และเก็บ stderr ไว้ให้ดูตอน assertion ตก
+LAST_ERR=""
 time_stmt() {
   local sql="$1"
-  local s e rc
+  local s e rc errf
+  errf="$(mktemp)"
   s=$(date +%s%3N)
-  timeout "$WAIT_LIMIT" env PGPASSWORD="$APP_PW" \
-    psql -h "$HOST" -p "$PORT" -U "$APP_USER" -d "$DB" -qAt -c "$sql" >/dev/null 2>&1
+  timeout "$WAIT_LIMIT" env PGPASSWORD="$APP_PW"     psql -h "$HOST" -p "$PORT" -U "$APP_USER" -d "$DB"       -v ON_ERROR_STOP=1 -qAt -c "$sql" >/dev/null 2>"$errf"
   rc=$?
   e=$(date +%s%3N)
+  LAST_ERR="$(cat "$errf")"; rm -f "$errf"
   if (( rc == 124 )); then
     echo "BLOCKED"
+  elif (( rc != 0 )); then
+    echo "ERROR"
   else
     echo $(( e - s ))
   fi
 }
+
+# เรียกทันทีหลัง time_stmt — เก็บ stderr ไว้โชว์ตอน assertion ตก
+keep_err() { printf '%s' "$LAST_ERR"; }
 
 # INSERT ที่ต้อง rollback เสมอ ไม่งั้น corpus ที่ล็อกไว้เปลี่ยน
 INSERT_SQL="BEGIN; INSERT INTO qf_corpus (id, cluster_id, embedding)
@@ -111,8 +126,8 @@ LOCK_ROWS="$(admin -c "
   SELECT count(*) FROM pg_locks
   WHERE relation = 'qf_corpus'::regclass AND mode = 'ShareLock' AND granted")"
 
-B_SELECT="$(time_stmt "$SELECT_SQL")"
-B_INSERT="$(time_stmt "$INSERT_SQL")"
+B_SELECT="$(time_stmt "$SELECT_SQL")"; B_SELECT_ERR="$(keep_err)"
+B_INSERT="$(time_stmt "$INSERT_SQL")"; B_INSERT_ERR="$(keep_err)"
 echo "   SELECT ${B_SELECT} ms · INSERT ${B_INSERT} ms"
 echo "   ShareLock ที่ได้รับแล้วบน qf_corpus: ${LOCK_ROWS} แถว"
 
@@ -146,8 +161,8 @@ admin -v concurrently=yes -f /sql/i03_build_index.sql >/dev/null 2>/tmp/i03_c.er
 BUILD_PID=$!
 sleep 6
 
-C_SELECT="$(time_stmt "$SELECT_SQL")"
-C_INSERT="$(time_stmt "$INSERT_SQL")"
+C_SELECT="$(time_stmt "$SELECT_SQL")"; C_SELECT_ERR="$(keep_err)"
+C_INSERT="$(time_stmt "$INSERT_SQL")"; C_INSERT_ERR="$(keep_err)"
 echo "   SELECT ${C_SELECT} ms · INSERT ${C_INSERT} ms"
 
 wait "$BUILD_PID" 2>/dev/null; BUILD_PID=""
@@ -160,7 +175,11 @@ echo
 FAIL=0
 
 # ---- ข้อ 1: ระหว่าง build ธรรมดา การเขียนต้องถูกบล็อก ----
-if [[ "$B_INSERT" == "BLOCKED" ]] || (( B_INSERT > MIN_BLOCK_MS )); then
+if [[ "$B_INSERT" == "ERROR" ]]; then
+  echo "[1/4] ❌ ตรวจไม่ได้: การเขียนล้มด้วย error ไม่ใช่ถูกบล็อก (กฎเหล็กข้อ 10)"
+  sed 's/^/          /' <<< "$B_INSERT_ERR"
+  FAIL=1
+elif [[ "$B_INSERT" == "BLOCKED" ]] || (( B_INSERT > MIN_BLOCK_MS )); then
   echo "[1/4] ✅ ระหว่าง CREATE INDEX ธรรมดา การเขียนถูกบล็อก (${B_INSERT})"
 else
   echo "[1/4] ❌ การเขียนไม่ถูกบล็อก (${B_INSERT} ms) — fault ไม่เกิด"
@@ -168,7 +187,11 @@ else
 fi
 
 # ---- ข้อ 2: การอ่านต้องยังทำงานได้ — นี่คือจุดที่ทำให้ไม่มีใครเจอ ----
-if [[ "$B_SELECT" != "BLOCKED" ]] && (( B_SELECT < MIN_BLOCK_MS )); then
+if [[ "$B_SELECT" == "ERROR" ]]; then
+  echo "[2/4] ❌ ตรวจไม่ได้: การอ่านล้มด้วย error"
+  sed 's/^/          /' <<< "$B_SELECT_ERR"
+  FAIL=1
+elif [[ "$B_SELECT" != "BLOCKED" ]] && (( B_SELECT < MIN_BLOCK_MS )); then
   echo "[2/4] ✅ การอ่านยังทำงานปกติระหว่าง build (${B_SELECT} ms) — staging อ่านอย่างเดียวจึงไม่เจอ"
 else
   echo "[2/4] ❌ การอ่านถูกบล็อกด้วย (${B_SELECT}) — กลไกไม่ตรงกับที่ตั้งใจ"
@@ -185,7 +208,13 @@ else
 fi
 
 # ---- ข้อ 4: CONCURRENTLY ต้องไม่บล็อกการเขียน (กลุ่มควบคุม) ----
-if [[ "$C_INSERT" != "BLOCKED" ]] && (( C_INSERT < MIN_BLOCK_MS )); then
+# 🔴 ข้อนี้เป็นกลุ่มควบคุม — ถ้าคำสั่งล้ม จะ "ไม่ถูกบล็อก" แบบว่างเปล่า
+if [[ "$C_INSERT" == "ERROR" ]]; then
+  echo "[4/4] ❌ ตรวจไม่ได้: การเขียนตอน CONCURRENTLY ล้มด้วย error"
+  echo "        ห้ามอ่านว่า 'ไม่ถูกบล็อก' — กลุ่มควบคุมต้องสำเร็จจริงถึงจะยืนยันอะไรได้"
+  sed 's/^/          /' <<< "$C_INSERT_ERR"
+  FAIL=1
+elif [[ "$C_INSERT" != "BLOCKED" ]] && (( C_INSERT < MIN_BLOCK_MS )); then
   echo "[4/4] ✅ CONCURRENTLY ไม่บล็อกการเขียน (${C_INSERT} ms) → ยืนยันว่าทางแก้ใช้ได้จริง"
 else
   echo "[4/4] ❌ CONCURRENTLY ยังบล็อกการเขียน (${C_INSERT}) — กลุ่มควบคุมไม่ผ่าน"
