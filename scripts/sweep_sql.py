@@ -8,7 +8,7 @@
 เดียวกันไม่กี่เรื่อง แต่ไม่มีอะไรตรวจให้ จึงหลุดมาเรื่อยๆ จนต้องมีคนไล่อ่านเอง
 สคริปต์นี้ทำให้การทวนนั้น **รันซ้ำได้ในไม่กี่วินาที**
 
-ตรวจ 4 ข้อ
+ตรวจ 7 ข้อ
 ----------
 1. ตารางที่สร้างแล้วไม่ถูก DROP ในครึ่งหลังของไฟล์ **และยังค้างอยู่ในฐานจริง**
    (กับดักข้อ 14ฐ — DROP ที่ต้นไฟล์กันรอบถัดไป ไม่ได้เก็บของรอบนี้)
@@ -17,6 +17,16 @@
 3. เขียนสูตร fingerprint เองแทนที่จะเรียก qf_fingerprint() (E40)
 4. ตั้ง client_min_messages = warning จน RAISE NOTICE ที่ยืนยันว่า assertion
    ผ่านไม่โผล่ (กับดักข้อ 14ฑ — "เงียบ = ผ่าน" คือรูปแบบที่โครงงานนี้ศึกษาอยู่)
+
+เพิ่ม 2026-08-02 หลังพบว่าเกณฑ์เดิมตอบ "ไม่มีข้อสังเกต" ทั้งที่มีของจริง
+(บทเรียนกับดักข้อ 14ฟ — การกวาดที่ได้ 0 ต้องถามว่าเกณฑ์ครอบคลุมจริงไหม)
+
+5. ยิง score.sql หลายรอบเพื่อพิสูจน์การพลิก **แต่ไม่มีอะไรตรวจ verdict**
+   (กับดักข้อ 14ว — 9 ใน 10 ไฟล์ *_checker_states เคยเป็นแบบนี้)
+6. ทำลายตารางที่เอกสารระบุว่าห้ามลบ **โดยไม่สร้างคืนในไฟล์เดียวกัน**
+   (กับดักข้อ 14ษ — v07_checker_states ลบ qf_v07 ทิ้งทุกครั้งที่รัน)
+7. reset pg_stat_statements ตอนต้นแล้วยิง query ทดสอบ **แต่ไม่ล้างท้ายไฟล์**
+   (กับดักข้อ 14ษ — ทำให้ Q02 ค้าง DETECTED ไม่ตรงกับสภาพสะอาดที่บันทึกไว้)
 
 รัน
 ---
@@ -46,6 +56,8 @@ KEEP_EXACT = {
 # ตารางบันทึกผล — CLAUDE.md ระบุว่าขนาด kB ไม่ต้องเก็บกวาด
 RESULT_MAX_BYTES = 2 * 1024 * 1024
 LOCKED = ("qf_corpus", "qf_real", "qf_real2")
+# ตัวสร้างฐานที่ล็อกไว้ — ดูเหตุผลที่ข้อ 6
+BASE_BUILDER = re.compile(r"^qf1\d_")
 
 
 def live_tables():
@@ -112,6 +124,42 @@ def main():
                 and "RAISE NOTICE" in s
                 and not re.search(r"\\echo.*(✅|assertion)", s)):
             flags.append("assertion ที่ผ่านแล้วไม่มีอะไรยืนยันให้เห็น")
+
+        # ---- 5. พิสูจน์การพลิกโดยไม่ตรวจ verdict ----
+        # ยิง score.sql ตั้งแต่ 2 รอบขึ้นไป = ตั้งใจแสดงการพลิก
+        # ถ้าไม่มีอะไรบังคับผล ไฟล์ผลจะถูก commit เป็นหลักฐานไม่ว่าข้างในเขียนอะไร
+        n_score = len(re.findall(r"\\i\s+/sql/score\.sql", s))
+        has_enforce = ("states_assert.sql" in s
+                       or "RAISE EXCEPTION" in s
+                       or re.search(r"\bASSERT\b", s))
+        if n_score >= 2 and not has_enforce:
+            flags.append("ยิง score.sql %d รอบเพื่อแสดงการพลิก "
+                         "แต่ไม่มีอะไรตรวจ verdict (สูตรข้อ 6)" % n_score)
+
+        # ---- 6. ทำลายตารางที่ห้ามลบ โดยไม่สร้างคืน ----
+        #
+        # ยกเว้นชุด qf1x_* — **มันคือตัวสร้างฐานที่ล็อกไว้เอง** ไม่ใช่ผู้ใช้ฐาน
+        # CLAUDE.md ระบุลำดับไว้ว่า qf10 -> qf11 -> qf12 -> qf13 คือวิธีสร้างใหม่
+        # การ TRUNCATE แล้วเติมข้ามไฟล์จึงเป็นการออกแบบ ไม่ใช่ข้อบกพร่อง
+        # (เขียนเป็นข้อยกเว้นที่มีเหตุผลกำกับ ไม่ใช่ปิดเสียงเฉยๆ)
+        for t in (() if BASE_BUILDER.match(base) else sorted(KEEP_EXACT)):
+            hit = re.search(r"(DROP TABLE(?: IF EXISTS)?|DELETE FROM|TRUNCATE)\s+%s\b" % t, s)
+            if not hit:
+                continue
+            after = s[hit.end():]
+            # สร้างคืนนับได้ 3 ทาง: CREATE ใหม่ · INSERT เติมกลับ · \i ตัวฉีดตัวจริง
+            restored = (re.search(r"CREATE TABLE(?: IF NOT EXISTS)?\s+%s\b" % t, after)
+                        or re.search(r"INSERT INTO\s+%s\b" % t, after)
+                        or re.search(r"\\i\s+/sql/\w+\.sql", after))
+            if not restored:
+                flags.append("ทำลาย %s (%s) โดยไม่สร้างคืน — "
+                             "เอกสารระบุว่าห้ามลบ" % (t, hit.group(1)))
+
+        # ---- 7. reset สถิติตอนต้นอย่างเดียว ----
+        resets = [m.start() for m in re.finditer(r"pg_stat_statements_reset\(\)", s)]
+        if resets and resets[-1] < len(s) * 0.6 and "score.sql" in s:
+            flags.append("reset pg_stat_statements แต่ไม่ล้างท้ายไฟล์ "
+                         "-> Q02 ค้างไม่ตรงสภาพสะอาด")
 
         if flags:
             issues.append((base, flags))
