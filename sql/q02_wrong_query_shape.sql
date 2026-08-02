@@ -50,7 +50,11 @@ CREATE TABLE qf_q02_results (
     rows_got    bigint,
     ms          numeric,
     buffers     bigint,
-    got_error   boolean
+    got_error   boolean,
+    -- 🔴 เพิ่ม 2026-08-02 — เดิมจับ error แล้วทิ้งข้อความทิ้ง
+    --    assertion ข้อ 5 มีไว้จับ "ต้องไม่มี error เลย" โดยเฉพาะ
+    --    แต่ตอนมันฟ้อง ผู้รันไม่มีทางรู้ว่า error อะไร = รูปแบบเดียวกับกับดักข้อ 1
+    err_msg     text
 );
 
 SET temp_file_limit = '2GB';
@@ -69,6 +73,7 @@ RETURNS void LANGUAGE plpgsql AS $$
 DECLARE
     plan_txt text := ''; line text; node text; used boolean;
     t0 timestamptz; ms numeric; n bigint; buf bigint; err boolean := false; j json;
+    emsg text;
 BEGIN
     BEGIN
         -- อุ่น cache (กฎเหล็กข้อ 8)
@@ -82,11 +87,13 @@ BEGIN
             plan_txt := plan_txt || line || E'\n';
         END LOOP;
     EXCEPTION WHEN OTHERS THEN
-        err := true;
+        err  := true;
+        emsg := SQLSTATE || ': ' || SQLERRM;
     END;
 
     IF err THEN
-        INSERT INTO qf_q02_results VALUES (p_variant, p_shape, NULL, 'ERROR', NULL, NULL, NULL, true);
+        INSERT INTO qf_q02_results
+        VALUES (p_variant, p_shape, NULL, 'ERROR', NULL, NULL, NULL, true, emsg);
         RETURN;
     END IF;
 
@@ -107,7 +114,8 @@ BEGIN
     buf := coalesce((j -> 0 -> 'Plan' ->> 'Shared Hit Blocks')::bigint, 0)
          + coalesce((j -> 0 -> 'Plan' ->> 'Shared Read Blocks')::bigint, 0);
 
-    INSERT INTO qf_q02_results VALUES (p_variant, p_shape, used, node, n, ms, buf, false);
+    INSERT INTO qf_q02_results
+    VALUES (p_variant, p_shape, used, node, n, ms, buf, false, NULL);
 END $$;
 
 -- ============================================================
@@ -159,6 +167,10 @@ FROM qf_q02_results ORDER BY variant;
 
 DROP INDEX qf_q02_idx;
 
+-- เก็บกวาดฟังก์ชันตัววัด — เดิมค้างอยู่ในฐานหลังไฟล์จบ
+-- วางไว้ **ก่อน** assertion เพราะถ้า assertion ตก บรรทัดหลังจากนั้นจะไม่ถูกรัน
+DROP FUNCTION IF EXISTS qf_q02_probe(text, text, text);
+
 -- ============================================================
 -- assertion — กฎเหล็กข้อ 3
 -- ============================================================
@@ -208,7 +220,13 @@ BEGIN
     -- ข้อ 5: ต้องไม่มี error เลย — เขียนผิดแล้วยังทำงานได้ คือหัวใจของความเงียบ
     SELECT count(*) INTO n_err FROM qf_q02_results WHERE got_error;
     IF n_err > 0 THEN
-        RAISE EXCEPTION 'ข้อ 5 ตก: มี error % กรณี — ถ้ามี error แปลว่าไม่เงียบ', n_err;
+        RAISE EXCEPTION E'ข้อ 5 ตก: มี error % กรณี — ถ้ามี error แปลว่าไม่เงียบ
+%',
+            n_err,
+            (SELECT string_agg('  ' || variant || ' -> ' || coalesce(err_msg, '(ไม่ทราบ)'),
+                               E'
+' ORDER BY variant)
+             FROM qf_q02_results WHERE got_error);
     END IF;
     RAISE NOTICE '[5/5] OK ไม่มี error เลยสักรูปแบบ → ทุกแบบ "ทำงานได้" เหมือนกันหมด';
 
