@@ -261,7 +261,10 @@ BEGIN
 END $$;
 
 \qecho ''
-\qecho '=== เก็บกวาด: ทิ้ง index กับตารางข้อมูล เก็บตารางผลไว้ให้ตัวตรวจอ่าน ==='
+\qecho '=== เก็บกวาด: ทิ้ง index · **เก็บ qf_q03 ไว้** · เก็บตารางผลไว้ให้ตัวตรวจอ่าน ==='
+\qecho '    🔴 แก้ข้อความ 2026-08-02 — เดิมเขียนว่า "ทิ้ง index กับตารางข้อมูล"'
+\qecho '       ซึ่ง **ไม่จริง** qf_q03 ถูก DROP แค่ตอน*ต้น*ไฟล์ (กับดักข้อ 14ฐ)'
+\qecho '       เป็นตารางสำเนา corpus ~159 MB · ลบด้วย //sql/cleanup_scratch.sql'
 DROP INDEX IF EXISTS qf_q03_idx;
 DROP TABLE IF EXISTS qf_q03_guard;
 DROP FUNCTION IF EXISTS qf_q03_probe(int, int);

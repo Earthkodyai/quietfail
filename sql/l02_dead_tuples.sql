@@ -285,7 +285,14 @@ BEGIN
 END $$;
 
 \qecho ''
-\qecho '=== เก็บกวาด: ทิ้ง index กับตารางข้อมูล เก็บตารางผลไว้ ==='
+\qecho '=== เก็บกวาด: ทิ้ง index · **เก็บ qf_l02 ไว้** · เก็บตารางผลไว้ ==='
+\qecho '    🔴 แก้ข้อความ 2026-08-02 — เดิมเขียนว่า "ทิ้ง index กับตารางข้อมูล"'
+\qecho '       ซึ่ง **ไม่จริง** qf_l02 ถูก DROP แค่ตอน*ต้น*ไฟล์เพื่อกันรอบก่อนค้าง'
+\qecho '       ไม่เคยถูกลบตอนจบ (กับดักข้อ 14ฐ) · เป็นตารางสำเนา corpus ~159 MB'
+\qecho '       และประวัติบันทึกว่ามันเคยบวมถึง 396 MB จนต้องตามลบด้วยมือ'
+\qecho '    เก็บไว้โดยตั้งใจเพื่อให้ตรวจผลย้อนหลังได้ · ลบเมื่อไม่ต้องการแล้วด้วย'
+\qecho '       MSYS_NO_PATHCONV=1 docker compose exec -T db \'
+\qecho '         psql -U lab -d faultlab -v ON_ERROR_STOP=1 -f //sql/cleanup_scratch.sql'
 DROP INDEX IF EXISTS qf_l02_idx;
 DROP TABLE IF EXISTS qf_l02_guard;
 DROP TABLE IF EXISTS qf_l02_vac;
