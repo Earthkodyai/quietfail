@@ -98,7 +98,15 @@ def _sql(stmt):
 
 
 def _restore_fingerprint():
-    """คืนนิยามกลางจากไฟล์ต้นทาง — ห้ามพิมพ์สูตรซ้ำที่นี่ (E40)"""
+    """คืนนิยามกลางจากไฟล์ต้นทาง — ห้ามพิมพ์สูตรซ้ำที่นี่ (E40)
+
+    🔴 ต้อง DROP ตัวที่การทดสอบสร้างก่อน
+       ของจริงคือ qf_fingerprint(regclass, int) · การทดสอบสร้าง (text, int)
+       ซึ่งเป็น **overload คนละลายเซ็น** · CREATE OR REPLACE จึงไม่ทับตัวเดิม
+       และ PostgreSQL จะเลือกตัว text เมื่อเรียกด้วย string literal
+       -> รอบแรกฟังก์ชันปลอมค้างในฐานหลังการทดสอบจบ จนหัวข้อ audit ฟ้อง
+    """
+    _sql("DROP FUNCTION IF EXISTS qf_fingerprint(text, int);")
     body = read("init/03_fingerprint.sql")
     subprocess.run(["docker", "compose", "exec", "-T", "db", "psql", "-U", "lab",
                     "-d", "faultlab", "-q"], input=body,
