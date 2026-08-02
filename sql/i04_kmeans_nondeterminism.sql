@@ -332,7 +332,13 @@ BEGIN
         RAISE NOTICE '  -> HNSW นิ่งสนิท : ชี้ไปที่ k-means ของ IVFFlat โดยเฉพาะ';
     ELSE
         RAISE NOTICE '  -> HNSW แกว่งด้วย : ห้ามสรุปว่าเป็นเรื่องของ k-means อย่างเดียว';
+        RAISE NOTICE '     ⚠️ ข้อโต้แย้งนี้ยกไปใช้ทั่วไปไม่ได้ — บน embedding จริง';
+        RAISE NOTICE '        HNSW แกว่งแค่ 6/200 (3%%) ขณะที่ IVFFlat แกว่ง 91.5%%';
+        RAISE NOTICE '        ซึ่งสอดคล้องกับสมมติฐาน k-means มากกว่า (results/real_i04.txt)';
     END IF;
+    RAISE NOTICE '';
+    RAISE NOTICE '📌 กลไกทราบแล้วจากซอร์ส (E41) — HNSW สุ่มระดับชั้นทุกจุดตอน build';
+    RAISE NOTICE '   ไฟล์นี้ยืนยัน **ว่ามันเกิดจริงและวัดได้** ไม่ใช่ยืนยันว่ากลไกคืออะไร';
 END $$;
 
 \qecho ''

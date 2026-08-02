@@ -11,7 +11,8 @@
 --    ตั้ง lists=100 แล้ว build ตอนมี 1,000 แถว = **ไม่มีคำเตือนใดๆ**
 --    ซึ่งคือกรณีที่เกิดจริงในทีม (ไม่มีใคร build index บน 50 แถวแล้วขึ้น production)
 --
--- 3 เงื่อนไข · ข้อมูลปลายทางเหมือนกันเป๊ะ 100,000 แถว · เปลี่ยนแค่ "ตอนที่ build"
+-- 4 เงื่อนไข · ข้อมูลปลายทางเหมือนกันเป๊ะ 100,000 แถว · เปลี่ยนแค่ "ตอนที่ build"
+-- (เดิมเขียนว่า 3 — เศษจากตอนที่ยังไม่มีเงื่อนไข D · แก้ 2026-08-02)
 --   A  build ตอนมี     50 แถว  (rows < lists -> **มี NOTICE**)  แล้วโตเป็น 100,000
 --   B  build ตอนมี  1,000 แถว  (rows > lists -> **เงียบสนิท**)  แล้วโตเป็น 100,000
 --   C  build ตอนมี 100,000 แถว (วิธีที่เอกสารบอกให้ทำ)          <- กลุ่มควบคุม
@@ -376,17 +377,35 @@ BEGIN
                  round(a_mean,4), round(b_mean,4), round(c_mean,4), round(d_mean,4);
     RAISE NOTICE 'pgvector เตือนเฉพาะ A ซึ่งได้ recall % · และเงียบสนิทกับ D ซึ่งได้ %',
                  round(a_mean,4), round(d_mean,4);
+    -- 🔴 ข้อความสาขาที่สองเคยเขียนว่า "กลับด้านจาก HINT ของ pgvector"
+    --    ซึ่ง **ถอนไปแล้ว 2026-07-30** · บน embedding จริงเงื่อนไข A ได้ 0.4520
+    --    แย่เป็นอันดับสอง คำเตือนจึงออกถูกกรณี และข้อความ This will cause low
+    --    recall **เป็นจริง** · ที่ A ได้ recall สูงบน corpus สังเคราะห์เป็นเพราะ
+    --    corpus เรียง id สลับกลุ่ม 50 แถวแรกจึงครบ 50 กลุ่มพอดี ซึ่งหัวไฟล์นี้
+    --    อธิบายไว้เองอยู่แล้ว — เป็นคุณสมบัติของข้อมูลชุดนี้ ไม่ใช่กฎทั่วไป
     IF a_mean < c_mean AND b_mean < c_mean THEN
         RAISE NOTICE '-> ตรงกับที่ HINT ของ pgvector บอก: build ตอนข้อมูลน้อยแล้ว recall แย่ลง';
     ELSIF a_mean > c_mean AND b_mean > c_mean THEN
-        RAISE NOTICE '-> ⭐ กลับด้านจาก HINT ของ pgvector ที่เขียนว่า This will cause low recall';
+        RAISE NOTICE '-> A และ B ได้ recall สูงกว่า C บน corpus สังเคราะห์ชุดนี้';
+        RAISE NOTICE '   ⚠️ **ห้ามอ่านว่า HINT ของ pgvector ผิด** — ข้ออ้างนั้นถอนแล้ว';
+        RAISE NOTICE '   บน embedding จริง A ได้ 0.4520 แย่เป็นอันดับสอง คำเตือนออกถูกกรณี';
+        RAISE NOTICE '   สาเหตุที่นี่ได้กลับกัน: corpus เรียง id สลับกลุ่ม 50 แถวแรกครบ 50 กลุ่ม';
+        RAISE NOTICE '   ดู results/real_i02.txt และ EVIDENCE.md';
     ELSE
         RAISE NOTICE '-> ผลไม่ไปทางเดียวกันทั้งสองเงื่อนไข ต้องดูตารางเทียบเป็นคู่';
     END IF;
+    RAISE NOTICE '';
+    RAISE NOTICE '⭐ ข้อสรุปที่ยังยืนของไฟล์นี้: **ความเป็นตัวแทนสำคัญกว่าจำนวนแถว**';
+    RAISE NOTICE '   B (1,000 กระจาย) เทียบ D (1,000 กระจุก) จำนวนแถวเท่ากันเป๊ะ';
+    RAISE NOTICE '   และไม่มีคำเตือนใดๆ สำหรับตัวอย่างที่ไม่เป็นตัวแทน';
 END $$;
 
 \qecho ''
-\qecho '=== เก็บกวาด: ทิ้ง index กับตารางทดสอบ เก็บตารางผลไว้ให้ตัวตรวจอ่าน ==='
+-- ⚠️ ข้อความเดิมเขียนว่า "ทิ้ง index กับตารางทดสอบ" แต่ **ไม่ได้ทิ้ง qf_i02**
+--    ซึ่งเป็นสำเนา embedding 159 MB · ตั้งใจเก็บไว้เพราะ score.sql อ่านมัน
+--    (ถ้าลบ I02 จะเปลี่ยนจาก "ไม่มี index" เป็น "หาตารางไม่เจอ" ซึ่งยังเป็น
+--    CANNOT_CHECK เหมือนกัน) · ลบได้ด้วย sql/cleanup_scratch.sql เมื่อต้องการพื้นที่
+\qecho '=== เก็บกวาด: ทิ้ง index · เก็บ qf_i02 และตารางผลไว้ให้ score.sql อ่าน ==='
 DROP INDEX IF EXISTS qf_i02_idx;
 DROP TABLE IF EXISTS qf_i02_guard;
 DROP FUNCTION IF EXISTS qf_i02_measure(int, text, int, numeric);

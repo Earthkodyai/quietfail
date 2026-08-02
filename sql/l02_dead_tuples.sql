@@ -235,8 +235,12 @@ BEGIN
     END IF;
     SELECT * INTO cliff FROM qf_l02_obs
      WHERE stage NOT LIKE '8%' AND got_index < asked ORDER BY dead_pct ASC LIMIT 1;
-    RAISE NOTICE '[3/6] OK มี % ขั้นที่คืนไม่ครบ · หน้าผาเริ่มที่ตาย %%% (ได้ % จาก %)',
+    RAISE NOTICE '[3/6] OK มี % ขั้นที่คืนไม่ครบ · เริ่มที่ตาย %%% (ได้ % จาก %)',
                  n_broken, cliff.dead_pct, cliff.got_index, cliff.asked;
+    RAISE NOTICE '        ⚠️ เดิมเรียกจุดนี้ว่า "หน้าผา" — **ถอนแล้ว 2026-07-30**';
+    RAISE NOTICE '        บน embedding จริงได้ครบ 10 จนถึงตาย 80%% และที่ 90%% ยังได้ 5';
+    RAISE NOTICE '        ไม่เคยถึง 0 -> ลักษณะขั้นบันไดเป็นของ corpus สังเคราะห์เท่านั้น';
+    RAISE NOTICE '        ส่วน **กลไก** (แถวที่ลบแล้วยังค้างใน index) ยืนยันได้ทั้งสองชุด';
 
     -- 4) VACUUM ต้องแก้ได้
     SELECT got_index INTO after_vac FROM qf_l02_obs WHERE stage LIKE '8%';
@@ -270,6 +274,14 @@ BEGIN
     ELSE
         RAISE NOTICE 'UPDATE ก็ทำให้เกิดเหมือนกัน (น้อยสุด % จาก 10) — ชื่อในทะเบียนถูกแล้ว', ctl_min;
     END IF;
+
+    RAISE NOTICE '';
+    RAISE NOTICE '📌 ไฟล์นี้วัดทางแก้เดียวคือ VACUUM · **มีอีกสองทางที่วัดแล้วเช่นกัน**';
+    RAISE NOTICE '   REINDEX         ลดขนาด index 10 เท่า (195.3 -> 19.5 MB) และเร็วกว่า';
+    RAISE NOTICE '                   เอกสาร pgvector แนะนำไว้ตรงๆ (E45)';
+    RAISE NOTICE '   iterative_scan  + scan_mem_multiplier=32 ได้ครบโดยไม่ต้อง VACUUM (E43)';
+    RAISE NOTICE '                   แพงกว่า 11 เท่าต่อ query — เป็นหลักฐานกลไก ไม่ใช่คำแนะนำ';
+    RAISE NOTICE '   ดู sql/doc_crosscheck_probe.sql และ sql/doc_reread_probe.sql';
 END $$;
 
 \qecho ''
