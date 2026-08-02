@@ -93,7 +93,7 @@
       "script": "sql/v07_null_zero_vectors.sql",
       "minutes": 1,
       "measured_seconds": 1,
-      "assertions": 4
+      "assertions": 5
     },
     "I02": {
       "script": "sql/i02_index_built_too_early.sql",

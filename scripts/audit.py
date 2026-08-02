@@ -174,6 +174,34 @@ def check_groundtruth(bl):
           ", ".join(bad_field) if bad_field else "ครบ %d ข้อ" % len(found))
     check(g, "ไฟล์ที่ reproduce ชี้ไปมีจริง", FAIL if bad_repro else PASS,
           ", ".join(bad_repro) if bad_repro else "ครบ %d ข้อ" % len(found))
+
+    # ---- จำนวน assertion ใน baseline ต้องตรงกับที่นับได้จากสคริปต์จริง ----
+    #
+    # 🔴 เพิ่ม 2026-08-02 หลังเกิดจริง — เติมด่าน [0/4] ให้ v07_null_zero_vectors
+    #    แล้วลืมปรับ baseline · สคริปต์พ่น 5 ด่าน แต่ baseline บอก 4
+    #    และเอกสารทุกไฟล์ยังเขียน "assertion 46/46"
+    #
+    #    **ไม่มีอะไรจับได้เลย** เพราะ --reproduce ตัดสินด้วย exit code
+    #    ส่วนจำนวน assertion เป็นข้อมูลประกอบ · และหมวด 6 เทียบเอกสารกับ
+    #    baseline เท่านั้น ไม่ได้เทียบ baseline กับของจริง
+    #    -> ตัวเลขที่ทั้งเล่มใช้อ้างเคลื่อนได้เงียบๆ (กับดักข้อ 14 อีกครั้ง)
+    mismatch = []
+    for fid, meta in sorted(bl.get("reproduce", {}).items()):
+        want = meta.get("assertions")
+        try:
+            body = read(meta["script"])
+        except IOError:
+            mismatch.append("%s: อ่านสคริปต์ไม่ได้" % fid)
+            continue
+        got = len(re.findall(r"\[\d+/\d+\]", body))
+        if want is not None and got != want:
+            mismatch.append("%s: baseline %s · สคริปต์พ่น %d" % (fid, want, got))
+    check(g, "จำนวน assertion ตรงกับสคริปต์จริง",
+          FAIL if mismatch else PASS,
+          " · ".join(mismatch) if mismatch
+          else "ตรงครบ %d ข้อ (รวม %d assertion)" % (
+              len(bl.get("reproduce", {})),
+              sum(v.get("assertions", 0) for v in bl.get("reproduce", {}).values())))
     check(g, "สูตรข้อ 6 — พิสูจน์ว่าตัวตรวจพลิกได้",
           FAIL if bad_checker else PASS,
           ("ยังไม่มีหลักฐาน: " + ", ".join(bad_checker)) if bad_checker

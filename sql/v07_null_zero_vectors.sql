@@ -177,14 +177,7 @@ BEGIN
 
     SELECT count(*) INTO n_bad_total FROM qf_v07 WHERE kind <> 'good';
 
-    -- ข้อ 1: exact search ต้องเห็นครบทุกแถว รวมแถวเสีย
-    IF a.rows_got <> 510 THEN
-        RAISE EXCEPTION 'ข้อ 1 ตก: exact search ได้ % แถว (ต้อง 510)', a.rows_got;
-    END IF;
-    RAISE NOTICE '[1/4] OK exact search เห็นครบ 510 แถว (ปกติ % · NULL % · zero %)',
-        a.good_found, a.null_found, a.zero_found;
-
-    -- ข้อ 0: เส้นทาง index ต้องใช้ vector index จริง ไม่งั้นข้ออื่นไม่พิสูจน์อะไร
+    -- ข้อ 1: เส้นทาง index ต้องใช้ vector index จริง ไม่งั้นข้ออื่นไม่พิสูจน์อะไร
     -- กฎเหล็กข้อ 10: ไม่ได้ใช้ index = ตรวจไม่ได้ ไม่ใช่ "fault ไม่เกิด"
     IF b.used_index IS NOT TRUE THEN
         RAISE EXCEPTION
@@ -194,7 +187,15 @@ BEGIN
     IF a.used_index IS TRUE THEN
         RAISE EXCEPTION 'ตรวจไม่ได้: เส้นทาง A ควรเป็น exact แต่กลับใช้ index — กลุ่มควบคุมเสีย';
     END IF;
-    RAISE NOTICE '[0/4] OK เส้นทาง B ใช้ qf_v07_idx จริง · เส้นทาง A ไม่ใช้ (กลุ่มควบคุม)';
+    RAISE NOTICE '[1/5] OK เส้นทาง B ใช้ qf_v07_idx จริง · เส้นทาง A ไม่ใช้ (กลุ่มควบคุม)';
+
+    -- ข้อ 1: exact search ต้องเห็นครบทุกแถว รวมแถวเสีย
+    IF a.rows_got <> 510 THEN
+        RAISE EXCEPTION 'ข้อ 1 ตก: exact search ได้ % แถว (ต้อง 510)', a.rows_got;
+    END IF;
+    RAISE NOTICE '[2/5] OK exact search เห็นครบ 510 แถว (ปกติ % · NULL % · zero %)',
+        a.good_found, a.null_found, a.zero_found;
+
 
     -- ข้อ 2: index ต้อง **ไม่คืน** แถว NULL และ zero เลย
     IF b.null_found > 0 OR b.zero_found > 0 THEN
@@ -202,7 +203,7 @@ BEGIN
             'ข้อ 2 ตก: index ยังคืนแถวเสีย (NULL % · zero %) — fault ไม่เกิด',
             b.null_found, b.zero_found;
     END IF;
-    RAISE NOTICE '[2/4] OK index ไม่คืนแถว NULL และ zero เลยสักแถว';
+    RAISE NOTICE '[3/5] OK index ไม่คืนแถว NULL และ zero เลยสักแถว';
 
     -- ข้อ 3: index ต้องคืนแถวปกติครบ — พิสูจน์ว่าหายเฉพาะแถวเสีย ไม่ใช่หายทั่วไป
     IF b.good_found < a.good_found THEN
@@ -210,7 +211,7 @@ BEGIN
             'ข้อ 3 ตก: index คืนแถวปกติแค่ % จาก % — หายมากกว่าที่ควร แยก V07 จาก Q06 ไม่ได้',
             b.good_found, a.good_found;
     END IF;
-    RAISE NOTICE '[3/4] OK index คืนแถวปกติครบ % แถว → หายเฉพาะแถวเสียจริง', b.good_found;
+    RAISE NOTICE '[4/5] OK index คืนแถวปกติครบ % แถว → หายเฉพาะแถวเสียจริง', b.good_found;
 
     -- ข้อ 4: จำนวนที่หายต้องเท่ากับจำนวนแถวเสียพอดี
     IF (a.rows_got - b.rows_got) <> n_bad_total THEN
@@ -218,12 +219,12 @@ BEGIN
             'ข้อ 4 ตก: หายไป % แถว แต่มีแถวเสีย % แถว — ไม่ตรงกัน',
             a.rows_got - b.rows_got, n_bad_total;
     END IF;
-    RAISE NOTICE '[4/4] OK หายไป % แถว = จำนวนแถวเสียพอดี (NULL % + zero %)',
+    RAISE NOTICE '[5/5] OK หายไป % แถว = จำนวนแถวเสียพอดี (NULL % + zero %)',
         a.rows_got - b.rows_got,
         (SELECT count(*) FROM qf_v07 WHERE kind = 'null_vec'),
         (SELECT count(*) FROM qf_v07 WHERE kind = 'zero_vec');
 
-    RAISE NOTICE 'assertion ผ่านครบ 4 ข้อ';
+    RAISE NOTICE 'assertion ผ่านครบ 5 ข้อ';
 END $$;
 
 \qecho
