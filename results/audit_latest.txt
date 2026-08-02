@@ -1,7 +1,7 @@
 ==============================================================================
 QuietFail — ตรวจความพร้อมของ repo
-รันเมื่อ : 2026-08-03 01:19:57
-commit  : 5e54215  รัน probe 10 ไฟล์ซ้ำหลังรอบทวน: ผ่านครบ exit 0
+รันเมื่อ : 2026-08-03 02:09:54
+commit  : 92dc3f1  CLAUDE.md: พิสูจน์ว่าหัวข้อ audit ที่ 37 ตอบลบได้ (ส
 baseline: scripts/audit_baseline.json (_updated = 2026-07-31)
 ==============================================================================
 
@@ -11,8 +11,8 @@ baseline: scripts/audit_baseline.json (_updated = 2026-07-31)
   3. ไม่ตรงกัน = มีอะไรเปลี่ยนหลัง audit ให้รัน  python scripts/audit.py  ใหม่
 
 ── 1 git ──
- FAIL  working tree                                   มีไฟล์ค้าง 3 รายการ ยังไม่ commit: REPORT.md, slides/proposal.html, thesis/THESIS_TH.md
-  ok   results ถูก track                              71 ไฟล์ · ยกเว้น csv ที่ตั้งใจไม่ track 3 ไฟล์
+ FAIL  working tree                                   มีไฟล์ค้าง 1 รายการ ยังไม่ commit: scripts/audit_selfproof.py
+ FAIL  results ถูก track                              หลักฐานไม่ได้ถูก track: results/audit_selfproof.txt, results/audit_selfproof_coverage.txt  (results/ อยู่ใน .gitignore ต้อง git add -f)
 ── 2 groundtruth ──
   ok   parse ได้ทุกไฟล์                               15 ไฟล์
   ok   มี evidence_expectation + verified_on.date     ครบ 15 ข้อ
@@ -33,7 +33,7 @@ baseline: scripts/audit_baseline.json (_updated = 2026-07-31)
   ok   qf_corpus จำนวนแถว                             100000
   ok   qf_corpus มิติ                                 384
   ok   qf_corpus fingerprint (5,000 แถวแรก)           5a32cba54ea2be4ed022fe8bfedae9b0
-  ok   ฟังก์ชันกลาง qf_fingerprint()                  ให้ค่าตรงกับ baseline (5a32cba54ea2)…
+ FAIL  ฟังก์ชันกลาง qf_fingerprint()                  ให้ค่า สูตรที่ถูกแก้ให้ผิด แต่ baseline คือ 5a32cba54ea2be4ed022fe8bfedae9b0 — สูตรในฟังก์ชันถูกแก้? (E40)
   ok   qf_truth จำนวนแถว                              400
   ok   orders จำนวนแถว                                200000
   ok   ไม่มี vector index ค้าง                        0
@@ -55,7 +55,7 @@ baseline: scripts/audit_baseline.json (_updated = 2026-07-31)
   ok   จำนวนบันทึกความผิดพลาด E ที่เอกสารอ้าง         46 · ตรงกันทั้ง 1 ที่
 
 ==============================================================================
-ผ่าน 36 · ไม่ผ่าน 1 · ตรวจไม่ได้ 0   (รวม 37)
+ผ่าน 34 · ไม่ผ่าน 3 · ตรวจไม่ได้ 0   (รวม 37)
 
 ❌ ยังไม่พร้อม — แก้ให้ครบก่อนถือว่า CLAUDE.md เชื่อถือได้
    'ตรวจไม่ได้' ไม่ใช่ 'ผ่าน' (กฎเหล็กข้อ 10)
