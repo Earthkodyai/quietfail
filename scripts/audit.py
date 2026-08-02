@@ -373,6 +373,39 @@ def check_docs(bl):
         check(g, "นิยาม fingerprint ตรงกันทุกที่", PASS,
               "ตัวคั่น %r เหมือนกันทั้ง %d ที่" % (sep, len(seps[sep])))
 
+    # ---- ดัชนีหลักฐานต้องครบ ----
+    #
+    # 🔴 เพิ่ม 2026-08-03 หลังเกิดจริง — เพิ่มไฟล์หลักฐาน 4 ตัวในวันเดียว
+    #    แล้ว results/README.md ซึ่งเป็น **ดัชนีของหลักฐานทุกไฟล์** ไม่มีสักตัว
+    #
+    #    หมวด 6 ตรวจ **จำนวน** ไฟล์ที่เอกสารอ้าง แต่ไม่ได้ตรวจว่าดัชนี**ระบุถึง**
+    #    ไฟล์ไหนบ้าง · ดัชนีจึงเก่าค้างได้เงียบๆ ทั้งที่ตัวเลขถูก (กับดักข้อ 14ค)
+    idx_missing = []
+    try:
+        idx = read("results/README.md")
+        tracked = subprocess.run(["git", "ls-files", "results"],
+                                 capture_output=True, text=True,
+                                 encoding="utf-8").stdout.split(chr(10))
+        for f in tracked:
+            b = os.path.basename(f.strip())
+            if not b or b == "README.md" or not b.endswith((".txt", ".md")):
+                continue
+            if b not in idx:
+                idx_missing.append(b)
+    except Exception:
+        idx_missing = None
+
+    if idx_missing is None:
+        check(g, "ดัชนีหลักฐานใน results/README.md ครบ", CANNOT,
+              "อ่าน results/README.md หรือรายชื่อไฟล์ที่ track ไม่ได้")
+    elif idx_missing:
+        check(g, "ดัชนีหลักฐานใน results/README.md ครบ", FAIL,
+              "ไม่ได้ระบุถึง %d ไฟล์: %s"
+              % (len(idx_missing), ", ".join(sorted(idx_missing)[:5])))
+    else:
+        check(g, "ดัชนีหลักฐานใน results/README.md ครบ", PASS,
+              "ระบุถึงไฟล์หลักฐานครบทุกตัวที่ track ไว้")
+
     # ห้ามมี fault ที่ตัดไปแล้วโผล่กลับมาเป็นข้อที่ต้องทำ
     cut = ["Q05", "L01", "V08"]
     back = [c for c in cut if re.search(r"%s\s*✅" % c, cl)]

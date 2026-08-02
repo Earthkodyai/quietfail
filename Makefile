@@ -16,7 +16,7 @@ PSQL_ADMIN = PGPASSWORD=labpass psql -h localhost -p 5433 -U lab -d faultlab
 # (เคยตั้งเป็น 2000000 ซึ่งไม่ตรงกับผลที่บันทึกไว้ — ดู E09 ใน DECISIONS.md)
 ROWS ?= 200000
 
-.PHONY: up down reset seed seed-small psql logs version f01 check \n        audit reproduce score sweep qfcheck claims cleanup help
+.PHONY: up down reset seed seed-small psql logs version f01 check \n        audit reproduce score sweep selfproof qfcheck claims cleanup help
 
 up:            ## เปิด database
 	docker compose up -d
@@ -69,6 +69,9 @@ score:         ## ตอนนี้มี fault อะไรอยู่ (DETEC
 
 sweep:         ## กวาด sql/ ด้วยเกณฑ์ 8 ข้อที่ได้จากการทวนทีละไฟล์
 	python scripts/sweep_sql.py
+
+selfproof:     ## พิสูจน์ว่าหัวข้อของ audit ตอบลบได้จริง (สูตรข้อ 6 · ~20 นาที)
+	python scripts/audit_selfproof.py
 
 qfcheck:       ## ของส่งมอบ — ตรวจฐานข้อมูลของใครก็ได้ (ใช้ container ของ repo นี้)
 	python scripts/quietfail_check.py --docker
