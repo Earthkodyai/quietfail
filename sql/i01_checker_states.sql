@@ -28,21 +28,58 @@ SET temp_file_limit = '2GB';
 
 -- เก็บกวาดของค้างจากรอบก่อนที่อาจตายกลางคัน
 -- ถ้าไม่ทำ สถานะ 1 จะเริ่มจากสภาพที่มี index อยู่แล้ว แล้วรายงานผิด
+\i /sql/states_lib.sql
+
 DROP INDEX IF EXISTS qf_i01_state;
 
 \qecho '--- สถานะ 1: ไม่มี vector index เลย -> ต้องได้ CANNOT_CHECK ---'
 \i /sql/score.sql
+\set note 'ไม่มี vector index เลย'
+\i /sql/states_capture.sql
 
 \qecho
 \qecho '--- สถานะ 2: opclass ผิด -> ต้องได้ DETECTED ---'
 CREATE INDEX qf_i01_state ON qf_corpus USING :index_type (embedding vector_l2_ops);
 \i /sql/score.sql
+\set note 'opclass เป็น l2 แต่ query ใช้ cosine'
+\i /sql/states_capture.sql
 DROP INDEX qf_i01_state;
 
 \qecho
 \qecho '--- สถานะ 3: opclass ถูก -> ต้องได้ NOT_DETECTED ---'
 CREATE INDEX qf_i01_state ON qf_corpus USING :index_type (embedding vector_cosine_ops);
 \i /sql/score.sql
+\set note 'opclass ตรงกับ operator ที่ใช้'
+\i /sql/states_capture.sql
 DROP INDEX qf_i01_state;
 
+\set expect 'CANNOT_CHECK,DETECTED,NOT_DETECTED'
+\i /sql/states_assert.sql
+
 RESET temp_file_limit;
+
+-- ============================================================
+-- ด่านปิดท้าย — เดิมพิมพ์ตัวเลขออกมาเฉยๆ ไม่ได้ตรวจอะไร (แก้ 2026-08-02)
+-- ใช้ qf_fingerprint() แทนการเขียนสูตรเอง (E40)
+-- ============================================================
+DO $$
+DECLARE n int; fp text; want text;
+BEGIN
+    SELECT count(*) INTO n FROM pg_class c JOIN pg_am a ON a.oid = c.relam
+    WHERE a.amname IN ('hnsw','ivfflat');
+    IF n > 0 THEN
+        RAISE EXCEPTION 'มี vector index ค้าง % ตัว — ต้องไม่เหลือเลยหลังไฟล์นี้จบ', n;
+    END IF;
+
+    fp   := qf_fingerprint('qf_corpus');
+    SELECT value INTO want FROM qf_manifest WHERE item = 'corpus_fingerprint_first5k';
+    IF fp IS DISTINCT FROM want THEN
+        RAISE EXCEPTION E'qf_corpus ถูกแตะ!
+  ได้   : %
+  ต้องได้: %', fp, want;
+    END IF;
+    RAISE NOTICE 'ไม่มี index ค้าง · qf_corpus fingerprint เดิม';
+END $$;
+
+\qecho '✅ เก็บกวาดครบ · qf_corpus ไม่ถูกแตะ'
+
