@@ -1,7 +1,7 @@
 ==============================================================================
 QuietFail — ตรวจความพร้อมของ repo
-รันเมื่อ : 2026-08-03 00:46:50
-commit  : 8479b0f  CLAUDE.md: เลี่ยงเขียนเลขนาทีอื่นติดคำว่า 'นาที' — a
+รันเมื่อ : 2026-08-03 01:19:57
+commit  : 5e54215  รัน probe 10 ไฟล์ซ้ำหลังรอบทวน: ผ่านครบ exit 0
 baseline: scripts/audit_baseline.json (_updated = 2026-07-31)
 ==============================================================================
 
@@ -11,8 +11,8 @@ baseline: scripts/audit_baseline.json (_updated = 2026-07-31)
   3. ไม่ตรงกัน = มีอะไรเปลี่ยนหลัง audit ให้รัน  python scripts/audit.py  ใหม่
 
 ── 1 git ──
-  ok   working tree                                   สะอาด (ไม่นับรายงานของ audit เอง)
-  ok   results ถูก track                              69 ไฟล์ · ยกเว้น csv ที่ตั้งใจไม่ track 3 ไฟล์
+ FAIL  working tree                                   มีไฟล์ค้าง 3 รายการ ยังไม่ commit: REPORT.md, slides/proposal.html, thesis/THESIS_TH.md
+  ok   results ถูก track                              71 ไฟล์ · ยกเว้น csv ที่ตั้งใจไม่ track 3 ไฟล์
 ── 2 groundtruth ──
   ok   parse ได้ทุกไฟล์                               15 ไฟล์
   ok   มี evidence_expectation + verified_on.date     ครบ 15 ข้อ
@@ -46,7 +46,7 @@ baseline: scripts/audit_baseline.json (_updated = 2026-07-31)
   ok   verdict ที่ได้ตอนนี้ (ข้อมูล ไม่ใช่เกณฑ์)      F01=NOT_DETECTED · F03=CANNOT_CHECK · F05=NOT_DETECTED · F10=CANNOT_CHECK · I01=CANNOT_CHECK · I02=CANNOT_CHECK · I03=NOT_DETECTED · I04=CANNOT_CHECK · I05=DETECTED · L02=CANNOT_CHECK · Q02=CANNOT_CHECK · Q03=CANNOT_CHECK · Q04=CANNOT_CHECK · Q06=DETECTED · V07=DETECTED
 ── 6 ตัวเลขในเอกสาร ──
   ok   จำนวนหัวข้อของ audit ที่เอกสารอ้าง             37 · ตรงกันทั้ง 10 ที่
-  ok   จำนวนไฟล์ใน results/ ที่เอกสารอ้าง             69 · ตรงกันทั้ง 4 ที่
+  ok   จำนวนไฟล์ใน results/ ที่เอกสารอ้าง             71 · ตรงกันทั้ง 4 ที่
   ok   จำนวนแถวทะเบียนบั๊ก H ที่เอกสารอ้าง            32 · ตรงกันทั้ง 3 ที่
   ok   เลข H ตัวสุดท้ายที่เอกสารอ้าง                  32 · ตรงกันทั้ง 5 ที่
   ok   assertion ของ --reproduce ที่เอกสารอ้าง        47 · ตรงกันทั้ง 5 ที่
@@ -55,8 +55,8 @@ baseline: scripts/audit_baseline.json (_updated = 2026-07-31)
   ok   จำนวนบันทึกความผิดพลาด E ที่เอกสารอ้าง         46 · ตรงกันทั้ง 1 ที่
 
 ==============================================================================
-ผ่าน 37 · ไม่ผ่าน 0 · ตรวจไม่ได้ 0   (รวม 37)
+ผ่าน 36 · ไม่ผ่าน 1 · ตรวจไม่ได้ 0   (รวม 37)
 
-✅ ผ่านครบทุกข้อ — CLAUDE.md เชื่อถือได้ ณ เวลาที่รัน
-   ผู้ช่วยคนถัดไปไม่ต้องไล่ตรวจซ้ำทีละข้อ
+❌ ยังไม่พร้อม — แก้ให้ครบก่อนถือว่า CLAUDE.md เชื่อถือได้
+   'ตรวจไม่ได้' ไม่ใช่ 'ผ่าน' (กฎเหล็กข้อ 10)
 ==============================================================================
