@@ -131,21 +131,31 @@ END $$ LANGUAGE plpgsql;
 
 SELECT qf_q03_fixstep('1', 'ค่าเริ่มต้นทั้งหมด (iterative_scan = off)');
 
+-- 🔴 อ่านลำดับให้ดี — แต่ละขั้น **RESET ปุ่มของขั้นก่อน** ก่อนตั้งปุ่มใหม่
+--    ป้ายเดิมขึ้นต้นด้วย "+" ทุกขั้น ซึ่งอ่านได้ว่าสะสมกันไปเรื่อยๆ **แต่ไม่ใช่**
+--    ขั้น 3/4/5 คือ "iterative_scan + ปุ่มนั้นตัวเดียว" ไม่ได้ทับซ้อนกัน
+--    (การแยกทีละปุ่มเป็นวิธีที่ถูกต้องกว่า — ที่ผิดคือป้าย ไม่ใช่การวัด)
+--    แก้ป้ายแล้ว 2026-08-02 · ตารางในเอกสารที่ลอกป้ายนี้ไปต้องอ่านแบบเดียวกัน
+--
+--    และนี่อธิบาย E42/E43 ได้สะอาดขึ้น: หน่วยความจำที่ใช้จริง = work_mem x multiplier
+--      ขั้น 4 = 64kB x 8  = 512kB -> ได้ไม่ครบ
+--      ขั้น 5 = 4MB  x 1  = 4MB   -> ได้ครบ
+--      E42    = 64kB x 32 = 2MB   -> ได้ครบ  (ปุ่มคนละตัว งบเท่ากันโดยประมาณ)
 SET hnsw.iterative_scan = relaxed_order;
 SELECT qf_q03_fixstep('2', 'เปิด iterative_scan = relaxed_order');
 
 SET hnsw.max_scan_tuples = 200000;
-SELECT qf_q03_fixstep('3', '+ max_scan_tuples 20000 -> 200000');
+SELECT qf_q03_fixstep('3', 'iterative + max_scan_tuples 20000 -> 200000');
 
 RESET hnsw.max_scan_tuples;
 SET hnsw.scan_mem_multiplier = 8;
-SELECT qf_q03_fixstep('4', '+ scan_mem_multiplier 1 -> 8');
+SELECT qf_q03_fixstep('4', 'iterative + scan_mem_multiplier 1 -> 8');
 
 RESET hnsw.scan_mem_multiplier;
 SET work_mem = '4MB';
 -- ⚠️ ป้ายเดิมเขียนว่า "ตัวที่ปลดล็อกจริง" ซึ่งถอนแล้ว (E42) — work_mem กับ
 --    scan_mem_multiplier คูณกัน การเพิ่ม multiplier ถึง 32 ให้ผลเท่ากันเป๊ะ
-SELECT qf_q03_fixstep('5', '+ work_mem 64kB -> 4MB  (= mult 32 · ดู E42)');
+SELECT qf_q03_fixstep('5', 'iterative + work_mem 64kB -> 4MB  (= mult 32 · ดู E42)');
 
 SET hnsw.iterative_scan = strict_order;
 SELECT qf_q03_fixstep('6', 'strict_order + work_mem 4MB');
@@ -193,7 +203,7 @@ DECLARE
     worst       record;
     got_off     bigint; got_iter bigint; got_mst bigint;
     got_smm     bigint; got_wm   bigint;
-    n_plan_sort int;
+    j_no0 json; j_p0 json; has_sort_no0 boolean; has_sort_p0 boolean;
     rows_now bigint; fp_now text; g record;
 BEGIN
     -- 1) เฉลยต้องได้ครบทุกระดับ ไม่งั้นการทดลองผิดตั้งแต่ต้น
@@ -227,14 +237,53 @@ BEGIN
         RAISE EXCEPTION 'work_mem ไม่ได้ช่วยอะไร (% -> %) — สมมติฐานเรื่องตัวจำกัดผิด',
                         got_iter, got_wm;
     END IF;
-    RAISE NOTICE '[4/6] OK ไล่ตัวจำกัดได้: off=% iterative=% +max_scan_tuples=% +scan_mem_mult=% +work_mem=%',
+    -- ป้ายตรงนี้ก็เคยสื่อว่าสะสม — แต่ละขั้นคือ iterative_scan + ปุ่มนั้นตัวเดียว
+    RAISE NOTICE '[4/6] OK ไล่ทีละปุ่ม (ทุกขั้นมี iterative_scan): off=% iterative=% mst=% smm=% wm=%',
                  got_off, got_iter, got_mst, got_smm, got_wm;
 
     -- 5) `+ 0` ต้องทำให้เกิด Sort node จริง (ข้อ 4 ของ EVIDENCE.md)
-    CREATE TEMP TABLE q03_plan_probe AS
-    SELECT 1 AS x;
-    DROP TABLE q03_plan_probe;
-    RAISE NOTICE '[5/6] OK ยืนยัน + 0 จากโครงสร้าง plan ข้างบน — ไม่มี + 0 ไม่มี Sort node';
+    --
+    -- 🔴🔴 assertion ข้อนี้เคยเป็น **ของปลอม** (แก้ 2026-08-02)
+    --      เดิมมันสร้าง temp table เปล่า `SELECT 1 AS x` แล้วลบทิ้ง
+    --      จากนั้นพิมพ์ว่า "OK ยืนยัน + 0 จากโครงสร้าง plan ข้างบน"
+    --      **โดยไม่ได้อ่าน plan อะไรเลย** — ผ่านทุกครั้งไม่ว่าอะไรจะเกิดขึ้น
+    --
+    --      ตรงกับสิ่งที่สูตรข้อ 6 ห้ามไว้ตรงตัว: ตัวตรวจที่ไม่มีวันตอบลบ
+    --      = ไม่ได้วัดอะไรเลย · และมันอยู่ในบล็อก assertion ของตัวฉีดหลัก
+    --      ผ่าน audit ทุกรอบมาตลอดเพราะไม่มีเครื่องมือใดอ่านว่า assertion ทำอะไร
+    --
+    --      ตอนนี้อ่าน plan จริงทั้งสองแบบแล้วเทียบ (กฎเหล็กข้อ 6 — อ่านโครงสร้าง)
+    PERFORM set_config('hnsw.iterative_scan', 'relaxed_order', true);
+
+    EXECUTE 'EXPLAIN (COSTS OFF, FORMAT JSON) '
+            'WITH nearest AS MATERIALIZED ('
+            '  SELECT id, embedding <=> (SELECT embedding FROM qf_queries WHERE id=1) AS d '
+            '  FROM qf_q03 WHERE grp < 100 '
+            '  ORDER BY embedding <=> (SELECT embedding FROM qf_queries WHERE id=1) LIMIT 40'
+            ') SELECT id FROM nearest ORDER BY d LIMIT 40'
+      INTO j_no0;
+
+    EXECUTE 'EXPLAIN (COSTS OFF, FORMAT JSON) '
+            'WITH nearest AS MATERIALIZED ('
+            '  SELECT id, embedding <=> (SELECT embedding FROM qf_queries WHERE id=1) AS d '
+            '  FROM qf_q03 WHERE grp < 100 '
+            '  ORDER BY embedding <=> (SELECT embedding FROM qf_queries WHERE id=1) LIMIT 40'
+            ') SELECT id FROM nearest ORDER BY d + 0 LIMIT 40'
+      INTO j_p0;
+
+    PERFORM set_config('hnsw.iterative_scan', 'off', true);
+
+    has_sort_no0 := j_no0::text LIKE '%"Node Type": "Sort"%';
+    has_sort_p0  := j_p0::text  LIKE '%"Node Type": "Sort"%';
+
+    IF has_sort_no0 THEN
+        RAISE EXCEPTION 'ข้อ 5 ตก: ไม่มี + 0 แต่กลับมี Sort node — ข้อ 4 ของ EVIDENCE.md '
+                        'ตั้งอยู่บนสมมติฐานว่า ORDER BY ชั้นนอกถูกตัดทิ้ง';
+    END IF;
+    IF NOT has_sort_p0 THEN
+        RAISE EXCEPTION 'ข้อ 5 ตก: เติม + 0 แล้วยังไม่มี Sort node — ทริกไม่ทำงานบนเวอร์ชันนี้';
+    END IF;
+    RAISE NOTICE '[5/6] OK อ่าน plan จริงแล้ว: ไม่มี + 0 -> ไม่มี Sort node · มี + 0 -> มี Sort node';
 
     -- 6) qf_corpus ต้องไม่ถูกแตะ
     SELECT count(*), md5(string_agg(embedding::text, '|' ORDER BY id))
