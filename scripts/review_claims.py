@@ -28,7 +28,22 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 os.chdir(ROOT)
 
 FILES = ["thesis/THESIS_TH.md", "REPORT.md", "README.md", "CLAUDE.md",
-         "slides/proposal.html"]
+         "slides/proposal.html",
+         # 🔴 เพิ่ม 2026-08-02 — เดิมตรวจแค่ 5 เอกสารหลัก **ไม่แตะ results/ เลย**
+         #    แล้วพบว่า results/rq3_ai_traps.txt ซึ่งเป็น **ไฟล์ของส่งมอบ**
+         #    ยังสรุปว่า "เพราะเอกสารไม่ครบ" ทั้งที่ E42 ถอนข้ออ้างนั้นไปแล้ว
+         #    และใช้มันขยายข้อสรุป RQ3 ว่า "หนักแน่นกว่าที่คิดไว้ตอนแรกมาก"
+         #
+         #    ⚠️ ไฟล์ใน results/ **ห้ามแก้ข้อความเดิม** — ถ้าเจอให้เติมกล่อง
+         #       "หมายเหตุเพิ่มภายหลัง" ตามธรรมเนียมของ DECISIONS.md
+         #       เพราะมันเป็นบันทึกตามเวลา ไม่ใช่เอกสารที่แก้ให้เป็นปัจจุบันได้
+         #
+         #    เลือกเฉพาะไฟล์ที่มี **บทวิเคราะห์เขียนด้วยมือ** ไม่ใช่ผลดิบล้วน
+         #    (ผลดิบเก่าที่มีข้ออ้างเดิมเป็นหลักฐานทางประวัติศาสตร์ ถูกต้องแล้ว)
+         "results/rq3_ai_traps.txt", "results/real_q01.txt",
+         "results/real_i02.txt", "results/real_q03.txt", "results/real_l02.txt",
+         "results/doc_crosscheck.txt", "results/doc_crosscheck_f.txt",
+         "results/README.md"]
 
 # ข้ออ้างที่ถอน/ลดระดับไปแล้ว พร้อมความจริงล่าสุด
 WITHDRAWN = [
