@@ -2038,6 +2038,7 @@ MSYS_NO_PATHCONV=1 docker compose exec -T db psql -U lab -d faultlab -f //sql/sc
 | **`scripts/audit.py`** | **ตัวตรวจความพร้อมทั้ง repo — คำสั่งเดียวแทนการไล่ตรวจเอง** · `--reproduce` รันตัวฉีดจริงซ้ำ | **ก่อน commit ทุกครั้ง · ตอนเริ่ม session ถ้าไม่แน่ใจ** |
 | `scripts/rq3_score.py` | ให้คะแนน SQL ที่โมเดลเขียน — **รันจริง + อ่าน plan ว่าใช้ index ไหม** | เมื่อเก็บคำตอบ RQ3 จากโมเดลใหม่ |
 | `sql/qfcheck_states.sql` · `_fix` · `_teardown` | พิสูจน์ว่า `quietfail_check.py` พลิกสถานะได้ | ก่อนเชื่อผลของตัวตรวจ |
+| `scripts/real_embed_build.py` · `q01_qdrant.py` · `audit_numbers_states.py` · `review_claims.py` | **ทวนแล้ว 2026-08-02 สะอาด** — ไม่มี hardcode ที่จะผุ · `q01_qdrant.py` ตรึง 200 query ไว้เป็น**ด่านกันชุดที่ล็อก** ไม่ใช่ตัวเลขที่จะเคลื่อน | ไม่ต้องทวนซ้ำจนกว่าจะแก้ |
 | **`scripts/sweep_sql.py`** | **กวาด `sql/` ทั้งโฟลเดอร์ด้วยเกณฑ์ที่ได้จากการทวนทีละไฟล์** — ตารางค้าง · index บนตารางที่ล็อกไว้ไม่มีคำเตือน · fingerprint เขียนเอง · assertion เงียบ · **รันซ้ำได้ใน 5 วินาที** | หลังเขียนหรือแก้สคริปต์ใน `sql/` |
 | `scripts/review_claims.py` | **ทวนว่าข้ออ้างที่ถอนไปแล้วไม่โผล่โดยไม่มีคำกำกับ** — audit ตรวจตัวเลขได้ แต่ตรวจข้อความไม่ได้ · **ไม่คืน exit 1** เพราะค้นคำมีผลบวกลวงเสมอ ต้องอ่านเอง | หลังถอนหรือแก้ข้อสรุปใดๆ |
 | `scripts/audit_numbers_states.py` | **พิสูจน์ว่าหมวด 6 ของ audit พลิกได้** — แก้ตัวเลขให้ผิดทีละข้อแล้วดูว่าจับไหม · ผลที่ `results/audit_numbers_states.txt` | ก่อนเชื่อว่าตัวเลขในเอกสารถูกตรวจจริง |
