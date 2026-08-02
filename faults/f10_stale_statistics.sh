@@ -51,7 +51,7 @@ cleanup() {
       END LOOP;
     END \$\$;" >/dev/null 2>&1
   [[ "$KEEP_OBS" == "1" ]] && echo "   (KEEP_OBS=1 — เก็บ qf_f10_obs ไว้ให้ตัวนับคะแนน)"
-  admin -c "DROP FUNCTION IF EXISTS qf_f10_measure(text)" >/dev/null 2>&1
+  admin -c "DROP FUNCTION IF EXISTS qf_f10_measure(text)" >/dev/null
 }
 trap cleanup EXIT
 

@@ -45,8 +45,8 @@ echo
 #      qf_i05_results  ตารางผล
 #    และตัว qf_i05_results ก็ค้างอยู่จริงในฐานตอนที่ตรวจพบ (กับดักข้อ 14ฐ)
 cleanup_i05() {
-  psql_run -qAt -c "DROP INDEX IF EXISTS qf_i05_idx"     >/dev/null 2>&1 || true
-  psql_run -qAt -c "DROP TABLE IF EXISTS qf_i05_results" >/dev/null 2>&1 || true
+  psql_run -qAt -c "DROP INDEX IF EXISTS qf_i05_idx"     >/dev/null || true
+  psql_run -qAt -c "DROP TABLE IF EXISTS qf_i05_results" >/dev/null || true
 }
 trap cleanup_i05 EXIT INT TERM
 

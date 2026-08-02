@@ -55,9 +55,11 @@ cleanup() {
   sleep 2
   [[ -n "$BUILD_PID" ]] && kill "$BUILD_PID" 2>/dev/null
   wait 2>/dev/null
-  admin -c "DROP INDEX IF EXISTS qf_i03_idx" >/dev/null 2>&1
+  admin -c "DROP INDEX IF EXISTS qf_i03_idx" >/dev/null
   # ต้องคืนจำนวนแถวให้เท่าเดิม ไม่งั้น corpus ที่ล็อกไว้เพี้ยน
-  admin -c "DELETE FROM qf_corpus WHERE id > 100000000" >/dev/null 2>&1
+  # 🔴 ห้ามกลบ stderr — เป็น DELETE บน **ตารางที่ล็อกไว้** ถ้าล้มแล้วเงียบ
+  #    จำนวนแถวจะไม่กลับมาเท่าเดิม แล้ว fingerprint เพี้ยนทั้งชุด (กับดักข้อ 1)
+  admin -c "DELETE FROM qf_corpus WHERE id > 100000000" >/dev/null
 }
 trap cleanup EXIT
 

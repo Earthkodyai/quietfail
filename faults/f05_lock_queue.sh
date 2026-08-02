@@ -93,7 +93,9 @@ cleanup() {
                         WHERE table_name='${TABLE}' AND column_name='${TMP_COL}'" 2>/dev/null || echo 0)"
   if [[ "$leftover" != "0" ]]; then
     echo "!! คอลัมน์ ${TMP_COL} ถูกเพิ่มจริง กำลังถอนออก"
-    admin -c "ALTER TABLE ${TABLE} DROP COLUMN IF EXISTS ${TMP_COL}" >/dev/null 2>&1
+    # 🔴 ห้ามกลบ stderr — นี่คือตาข่ายที่ถอนคอลัมน์ที่ถูกเพิ่มโดยไม่ตั้งใจ (E15)
+    #    ถ้ามันล้มแล้วเงียบ schema จะเปลี่ยนถาวรโดยไม่มีใครรู้ (กับดักข้อ 1)
+    admin -c "ALTER TABLE ${TABLE} DROP COLUMN IF EXISTS ${TMP_COL}" >/dev/null
   fi
 
   rm -f "$C_TIME_FILE"

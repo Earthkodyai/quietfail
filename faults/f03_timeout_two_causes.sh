@@ -78,12 +78,13 @@ cleanup() {
   # หลักฐานของ F03 คือ **ตาราง** ที่บันทึกไว้แล้ว จึงไม่มีเหตุผลต้องแข่งกับเวลา
   # เคยพยายามใช้ HOLD_OPEN + ไฟล์สัญญาณ แล้ววัดผิดจังหวะซ้ำๆ (ดู E21)
   if [[ "${KEEP_OBS:-0}" != "1" ]]; then
-    admin -c "DROP TABLE IF EXISTS qf_f03_obs" >/dev/null 2>&1
+    admin -c "DROP TABLE IF EXISTS qf_f03_obs" >/dev/null
   else
     echo "   (KEEP_OBS=1 — เก็บตาราง qf_f03_obs ไว้ให้ตัวนับคะแนน)"
   fi
   # คืนค่า status ของแถวที่เอามาทดลอง
-  admin -c "UPDATE orders SET status='paid' WHERE id=1 AND status IN ('x','y')" >/dev/null 2>&1
+  # 🔴 ห้ามกลบ stderr — ถ้าคืนค่า status ไม่สำเร็จ แถวทดลองจะค้างสถานะผิด
+  admin -c "UPDATE orders SET status='paid' WHERE id=1 AND status IN ('x','y')" >/dev/null
 }
 trap cleanup EXIT
 
