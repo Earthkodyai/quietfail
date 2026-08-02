@@ -59,13 +59,18 @@ CREATE TABLE qf_q04_results (
     mean_recall numeric,
     min_recall  numeric,
     n_perfect   int,
-    query_ms    numeric
+    query_ms    numeric,
+    -- 🔴 เพิ่ม 2026-08-02 — ไฟล์นี้ไม่เคยเก็บ buffers เลย ต่างจาก q01 · q02 · i01
+    --    ทำให้ assertion ข้อ 4 ("การแลกมีจริง") ต้องตัดสินด้วย **เวลา**
+    --    ซึ่งขัดกฎเหล็กข้อ 7 และตรงกับกับดักข้อ 14ผ (assertion ที่ผูกกับเวลา
+    --    พร้อมตกแบบสุ่ม) · buffers เป็นค่าเชิงโครงสร้าง นิ่งกว่ามาก
+    buffers     bigint
 );
 
 CREATE OR REPLACE FUNCTION qf_q04_measure(
     p_kind text, p_param text, p_val int, p_default boolean, p_doc boolean
 ) RETURNS void LANGUAGE plpgsql AS $$
-DECLARE t0 timestamptz; ms numeric; r record; qvec vector;
+DECLARE t0 timestamptz; ms numeric; r record; qvec vector; j json; buf bigint;
 BEGIN
     PERFORM set_config(p_param, p_val::text, false);
 
@@ -82,9 +87,16 @@ BEGIN
 
     SELECT * INTO r FROM qf_recall_at(10);
 
+    -- กฎเหล็กข้อ 6ก — ต้องรวม hit + read ไม่ใช่นับแค่ hit
+    EXECUTE format(
+        'EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) SELECT c.id FROM qf_corpus c '
+        'ORDER BY c.embedding <=> %L::vector LIMIT 10', qvec::text) INTO j;
+    buf := coalesce((j -> 0 -> 'Plan' ->> 'Shared Hit Blocks')::bigint, 0)
+         + coalesce((j -> 0 -> 'Plan' ->> 'Shared Read Blocks')::bigint, 0);
+
     INSERT INTO qf_q04_results VALUES
         (p_kind, p_param, p_val, p_default, p_doc,
-         r.mean_recall, r.min_recall, r.n_perfect, ms);
+         r.mean_recall, r.min_recall, r.n_perfect, ms, buf);
 END $$;
 
 -- ============================================================
@@ -132,7 +144,7 @@ RESET hnsw.ef_search;
 SELECT index_kind AS "index", param_name AS "พารามิเตอร์", param_value AS "ค่า",
        CASE WHEN is_default THEN 'ค่าเริ่มต้น' WHEN is_doc_rec THEN 'เอกสารแนะนำ' ELSE '' END AS "หมายเหตุ",
        mean_recall AS "recall@10", min_recall AS "แย่สุด",
-       n_perfect AS "ครบ 10/10", query_ms AS "200 query (ms)"
+       n_perfect AS "ครบ 10/10", query_ms AS "200 query (ms)", buffers
 FROM qf_q04_results
 ORDER BY index_kind, param_value;
 
@@ -193,16 +205,19 @@ BEGIN
     --    ตัวเทียบที่ถูกคือ probes=10 (สูตร sqrt(lists) ที่เอกสารแนะนำ) ซึ่งยังใช้ index จริง
     SELECT * INTO r_ivf FROM qf_q04_results
      WHERE index_kind = 'ivfflat' AND param_value = 10;
-    IF r_ivf.query_ms IS NULL THEN
-        RAISE EXCEPTION 'ข้อ 4 ตรวจไม่ได้: ไม่มีผลของ probes=10 (กฎเหล็กข้อ 10)';
+    --    และตัดสินด้วย **buffers** ไม่ใช่เวลา (กฎเหล็กข้อ 7 · กับดักข้อ 14ผ)
+    IF r_ivf.buffers IS NULL OR d_ivf.buffers IS NULL THEN
+        RAISE EXCEPTION 'ข้อ 4 ตรวจไม่ได้: ไม่มีค่า buffers ของ probes=1 หรือ 10 (กฎเหล็กข้อ 10)';
     END IF;
-    IF r_ivf.query_ms <= d_ivf.query_ms THEN
+    IF r_ivf.buffers <= d_ivf.buffers THEN
         RAISE EXCEPTION
-            'ข้อ 4 ตก: probes=10 ไม่ได้ช้ากว่า probes=1 (% vs % ms) — การแลกไม่มีอยู่จริง',
-            r_ivf.query_ms, d_ivf.query_ms;
+            'ข้อ 4 ตก: probes=10 ไม่ได้อ่านมากกว่า probes=1 (% vs % blocks) — การแลกไม่มีอยู่จริง',
+            r_ivf.buffers, d_ivf.buffers;
     END IF;
-    RAISE NOTICE '[4/5] OK การแลกมีจริง: probes=1 ใช้ % ms · probes=10 ใช้ % ms (ช้าลง % เท่า)',
-        d_ivf.query_ms, r_ivf.query_ms, round(r_ivf.query_ms / d_ivf.query_ms, 1);
+    RAISE NOTICE '[4/5] OK การแลกมีจริง: probes=1 อ่าน % block · probes=10 อ่าน % block (% เท่า)',
+        d_ivf.buffers, r_ivf.buffers, round(r_ivf.buffers::numeric / greatest(d_ivf.buffers,1), 1);
+    RAISE NOTICE '        เวลาเป็นข้อมูลประกอบเท่านั้น: % ms vs % ms (กฎเหล็กข้อ 7)',
+        d_ivf.query_ms, r_ivf.query_ms;
     RAISE NOTICE '        ⚠️ แถว probes=50 และ 100 ในตารางข้างบน **planner ไม่ใช้ index**';
     RAISE NOTICE '        เวลาของสองแถวนั้นเป็นของ exact search เทียบข้ามแถวไม่ได้ (E45)';
 
