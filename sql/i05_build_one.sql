@@ -39,6 +39,13 @@ SELECT set_config('qf.t0', clock_timestamp()::text, false);
 
 -- เก็บกวาดของค้างจากรอบที่อาจตายกลางคัน
 -- ถ้าไม่ทำ รอบถัดไปจะตายด้วย "relation already exists" ซึ่งชี้ไปคนละเรื่องกับต้นเหตุ
+-- 🔴 ไฟล์นี้สร้าง index **บน qf_corpus โดยตรง** — ตารางที่ล็อกไว้แน่นที่สุด
+--    (fingerprint ของมันผูกกับผลทุกตัวในเล่ม) · index ไม่เปลี่ยนข้อมูลจึงไม่เสีย
+--    **แต่ถ้าถูกตัดกลางคันจะทิ้ง index ค้าง** ทำให้ score.sql · audit.py
+--    และ quietfail_check.py รายงานผิดไปทั้งชุด (กับดักข้อ 4 · 14ธ)
+--
+--    เก็บกวาดด้วยมือ:  DROP INDEX IF EXISTS qf_i05_idx;
+--    ตัวเรียก faults/i05_maintenance_work_mem.sh มี trap เก็บกวาดให้แล้ว
 DROP INDEX IF EXISTS qf_i05_idx;
 
 CREATE INDEX qf_i05_idx ON qf_corpus USING hnsw (embedding vector_cosine_ops);

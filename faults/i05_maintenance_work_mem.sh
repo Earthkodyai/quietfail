@@ -39,6 +39,17 @@ echo "=== I05: build HNSW ที่ maintenance_work_mem หลายค่า =
 echo "    corpus: $(psql_run -qAt -c 'SELECT count(*) FROM qf_corpus') แถว"
 echo
 
+# 🔴 เดิมไฟล์นี้ **ไม่มี trap เลย** — ต่างจาก .sh ตัวอื่นทั้ง 6 ไฟล์ (เพิ่ม 2026-08-02)
+#    ถ้าถูกตัดกลางคัน (Ctrl-C · session หลุด) จะทิ้งไว้สองอย่าง
+#      qf_i05_idx      index บน **qf_corpus** ซึ่งทำให้ตัวตรวจทุกตัวรายงานผิด
+#      qf_i05_results  ตารางผล
+#    และตัว qf_i05_results ก็ค้างอยู่จริงในฐานตอนที่ตรวจพบ (กับดักข้อ 14ฐ)
+cleanup_i05() {
+  psql_run -qAt -c "DROP INDEX IF EXISTS qf_i05_idx"     >/dev/null 2>&1 || true
+  psql_run -qAt -c "DROP TABLE IF EXISTS qf_i05_results" >/dev/null 2>&1 || true
+}
+trap cleanup_i05 EXIT INT TERM
+
 psql_run -qAt -c "DROP TABLE IF EXISTS qf_i05_results" >/dev/null
 
 declare -A SAW_NOTICE
