@@ -12,11 +12,26 @@
 #          ต้นเหตุ = query ช้าจริง (ไม่มี index)
 #          ทางแก้ที่ถูก = สร้าง index
 #
-# ตัวแยกมีอย่างเดียว: pg_blocking_pids()
-#   F03  -> ไม่ว่าง
-#   F03b -> ว่าง
+# 🔴 ต้องระบุเงื่อนไขให้ชัด — แก้ 2026-08-02 (E46)
+#
+#    ข้อความ "เหมือนกันทุกตัวอักษร" **จริงเฉพาะเมื่อ lock_timeout = 0**
+#    ซึ่งเป็นค่าตั้งต้นของ PostgreSQL · เอกสารระบุไว้เองว่า
+#      "Unlike statement_timeout, this timeout can only occur while
+#       waiting for locks."
+#    วัดแล้ว (results/doc_crosscheck_f.txt)
+#      F03  · lock_timeout = 0    -> canceling statement due to statement timeout
+#      F03  · lock_timeout = 500  -> canceling statement due to **lock** timeout
+#      F03b · lock_timeout = 50   -> canceling statement due to statement timeout
+#
+#    -> **ตัวแยกมีสองอย่าง ไม่ใช่หนึ่ง**
+#         1. pg_blocking_pids()   F03 ไม่ว่าง · F03b ว่าง
+#         2. lock_timeout         ตั้งแล้ว F03 เปลี่ยนข้อความ ส่วน F03b ไม่เปลี่ยน
+#
+#    ข้อ 2 เป็นกลไกที่ PostgreSQL มีให้อยู่แล้วแต่ **ค่าตั้งต้นเป็น 0**
+#    จึงเข้าธีมเดียวกับ hnsw.iterative_scan ที่ปริยายปิด (ตารางที่ 16 ในเล่ม)
 #
 # LLM ที่เห็นแค่ข้อความ error แยกสองกรณีนี้ไม่ออก ต้องดูสถานะจริงของ DB
+# — ซึ่งยังจริงอยู่ **ภายใต้ค่าตั้งต้น** ที่ทีมส่วนใหญ่ใช้
 #
 # นิยามเต็มอยู่ใน FAULTS.md — ห้ามแก้ assertion โดยไม่แก้ที่นั่นด้วย
 # =============================================================
@@ -65,13 +80,17 @@ app_err() {
 }
 
 A_PID=""; W_PID=""
+# 🔴 เดิม session A ทิ้ง stderr — A คือตัวที่ถือ row lock ทั้งข้อ
+#    ถ้า UPDATE ของมันล้ม (แถวถูกล็อกค้างจากรอบก่อน · สิทธิ์ไม่พอ) จะไม่มี
+#    blocker แล้ว assertion 3 ตกโดยไม่บอกสาเหตุ = รูปแบบเดียวกับ F05 (แก้ 2026-08-02)
+A_ERR="$(mktemp)"
 cleanup() {
   echo
   echo "--- เก็บกวาด ---"
   [[ -n "$W_PID" ]] && kill "$W_PID" 2>/dev/null
   [[ -n "$A_PID" ]] && kill "$A_PID" 2>/dev/null
   wait 2>/dev/null
-  rm -f "${READY_FILE:-/tmp/qf_f03_ready}"
+  rm -f "${READY_FILE:-/tmp/qf_f03_ready}" "$A_ERR"
   # KEEP_OBS=1 ให้เก็บตารางสังเกตการณ์ไว้ เพื่อให้ตัวนับคะแนนรัน**หลัง**ตัวฉีดจบได้
   #
   # ต่างจาก F01/F05 ที่หลักฐานเป็นสถานะสดของ DB (ต้องวัดตอน fault ยังค้าง)
@@ -101,6 +120,26 @@ START=$(date +%s%3N)
 admin -c "SET max_parallel_workers_per_gather = 0; ${SLOW_SQL}" >/dev/null
 END=$(date +%s%3N)
 SLOW_MS=$((END - START))
+
+# ---- lock_timeout ต้องเป็น 0 ไม่งั้นทั้งข้อวัดคนละเรื่อง (E46 · 2026-08-02) ----
+#
+# เอกสาร PostgreSQL: "Unlike statement_timeout, this timeout can only occur
+# while waiting for locks." -> lock_timeout **แยก F03 ออกจาก F03b ได้เอง**
+# วัดแล้ว: ตั้ง lock_timeout=500 แล้ว F03 เปลี่ยนเป็น "due to lock timeout"
+# ส่วน F03b ยังเป็น "due to statement timeout" เหมือนเดิม
+#
+# ข้ออ้าง "ข้อความเหมือนกันเป๊ะ" จึงจริง **เฉพาะที่ค่าตั้งต้น 0** เท่านั้น
+# ถ้าไม่ตรวจตรงนี้ assertion ข้อ 1 จะตกแล้วรายงานว่า "ออกแบบผิด" ซึ่งผิด
+LOCK_TO="$(admin -c 'SHOW lock_timeout')"
+echo "   lock_timeout = ${LOCK_TO} (ต้องเป็น 0 — ดู E46)"
+if [[ "$LOCK_TO" != "0" ]]; then
+  echo
+  echo "!! lock_timeout ไม่ใช่ 0 — ทั้งข้อนี้วัดภายใต้ค่าตั้งต้นเท่านั้น"
+  echo "!! ที่ค่าอื่น F03 จะได้ 'canceling statement due to lock timeout'"
+  echo "!! ซึ่ง**แยกจาก F03b ได้ด้วยข้อความ** = ไม่ใช่ fault ที่เงียบอีกต่อไป"
+  echo "!! ตั้ง lock_timeout = 0 แล้วรันใหม่ ห้ามปล่อยผ่านแล้วนับคะแนน"
+  exit 1
+fi
 
 NEED=$((TIMEOUT_MS * MIN_MARGIN))
 echo "   query ของ F03b ใช้เวลา ${SLOW_MS}ms · ต้องการอย่างน้อย ${NEED}ms (${MIN_MARGIN}x ของ timeout)"
@@ -152,7 +191,7 @@ echo "=== F03: victim รอ row lock ==="
 echo "-- A: BEGIN แล้ว UPDATE แถว id=1 ค้างไว้ (ถือ row lock)"
 ( echo "BEGIN; UPDATE orders SET status='x' WHERE id=1;"; sleep 60 ) \
   | PGPASSWORD="$APP_PW" psql -h "$HOST" -p "$PORT" -U "$APP_USER" -d "$DB" \
-      -q -o /dev/null 2>/dev/null &
+      -q -o /dev/null 2>"$A_ERR" &
 A_PID=$!
 sleep 2
 
@@ -211,7 +250,7 @@ if [[ -z "$F03_MSG" || -z "$F03B_MSG" ]]; then
   echo "[1/4] ❌ มีเคสที่ไม่ได้ error เลย — fault ไม่เกิด"
   FAIL=1
 elif [[ "$F03_MSG" == "$F03B_MSG" ]]; then
-  echo "[1/4] ✅ บรรทัด ERROR เหมือนกันทุกตัวอักษร"
+  echo "[1/4] ✅ บรรทัด ERROR เหมือนกันทุกตัวอักษร (ที่ lock_timeout = 0)"
   echo "        \"$F03_MSG\""
   if [[ "$F03_ERR" != "$F03B_ERR" ]]; then
     echo "        (มีบรรทัดเสริมต่างกัน — ดูหัวข้อ CONTEXT ข้างล่าง)"
@@ -242,6 +281,10 @@ if (( F03_BLOCKED > 0 )); then
   echo "[3/4] ✅ F03: pg_blocking_pids() ไม่ว่าง (${F03_BLOCKED} ตัวอย่าง) = ถูกบล็อกจริง"
 else
   echo "[3/4] ❌ F03: pg_blocking_pids() ว่างตลอด — ไม่ได้รอ lock ตามที่ตั้งใจ"
+  if [[ -s "$A_ERR" ]]; then
+    echo "        session A (ตัวที่ควรถือ lock) มี stderr — น่าจะเป็นสาเหตุ:"
+    sed 's/^/          /' "$A_ERR"
+  fi
   FAIL=1
 fi
 
@@ -312,3 +355,11 @@ echo "=== ข้อความ error บอกอะไรไม่ได้เ
 echo "=== F03  แก้ถูก = ไล่หา transaction ที่ถือ lock ==="
 echo "=== F03b แก้ถูก = สร้าง index ==="
 echo "=== ทั้งคู่ 'แก้' ด้วยการเพิ่ม timeout ได้ และทั้งคู่ผิดทั้งคู่ ==="
+echo
+echo "=== แต่ PostgreSQL มีตัวแยกให้อยู่แล้ว — ปริยายปิด (E46) ==="
+echo "    lock_timeout ปริยาย = 0 -> ทั้งสองเคสได้ข้อความเดียวกัน"
+echo "    ตั้ง lock_timeout ต่ำกว่า statement_timeout แล้ว F03 จะได้"
+echo "      canceling statement due to lock timeout"
+echo "    ส่วน F03b ยังได้ 'statement timeout' เหมือนเดิม = แยกออกจากกันทันที"
+echo "    -> รูปแบบเดียวกับ hnsw.iterative_scan · idle_in_transaction_session_timeout"
+echo "       คือ 'เครื่องมือมีอยู่แล้ว แต่ค่าตั้งต้นทำให้เงียบ'"
