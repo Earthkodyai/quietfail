@@ -551,6 +551,10 @@ def check_scorer(bl):
 DOC_FILES = ["CLAUDE.md", "README.md", "REPORT.md", "PROJECT.md",
              "FAULTS.md", "EVIDENCE.md", "rq3/README.md",
              "thesis/THESIS_TH.md", "slides/proposal.html",
+             # 🔴 สไลด์ใหม่ต้องอยู่ในรายการนี้ด้วย (เพิ่ม 2026-08-03)
+             #    ไม่งั้นตัวเลขบนสไลด์เคลื่อนออกจากของจริงได้เงียบๆ
+             #    ซึ่งเป็นความล้มเหลวเงียบชนิดเดียวกับที่โครงงานนี้ศึกษาอยู่
+             "slides/proposal_v2.html",
              "results/README.md"]
 
 # หมวดนี้ตรวจ "จำนวนหัวข้อของตัวเอง" ด้วย จึงต้องรู้ล่วงหน้าว่าตัวเองจะเพิ่มกี่หัวข้อ
