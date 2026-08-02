@@ -2043,6 +2043,7 @@ MSYS_NO_PATHCONV=1 docker compose exec -T db psql -U lab -d faultlab -f //sql/sc
 | **`scripts/quietfail_check.py`** | **ของส่งมอบ — ตรวจฐานข้อมูลของใครก็ได้** · ไม่ต้องมีไฟล์เฉลย | เมื่อจะเอาไปใช้จริง หรือทำ CI |
 | **`sql/score.sql`** | **ตัวนับคะแนน** — ตอบ `DETECTED` / `NOT_DETECTED` / `CANNOT_CHECK` ต่อ fault ทุกข้อ | เมื่อต้องรู้ว่าตอนนี้มี fault อะไรอยู่ |
 | `init/03_fingerprint.sql` | **นิยามกลางของ fingerprint** — โค้ดใหม่ต้องเรียก `qf_fingerprint()` ห้ามเขียนสูตรเอง (E40) | ก่อนเขียนโค้ดที่ต้องตรวจว่า corpus ไม่ถูกแตะ |
+| `init/` (3 ไฟล์) | schema + extension + fingerprint · **รันครั้งเดียวตอนสร้าง DB** แก้แล้ว restart เฉยๆ ไม่มีผล ต้อง `down -v` · ทวนแล้ว 2026-08-02 สะอาด | เมื่อจะแก้ schema หรือสงสัยว่าทำไม `init/` ไม่มีผล |
 | `sql/i04_seed_probe.sql` | ทดสอบว่า `setseed` ทำให้ HNSW build ซ้ำได้ไหม — **ไม่ได้** | เมื่อจะไล่กลไกของ I04 ต่อ |
 | `sql/i04_kmeans_nondeterminism.sql` | **ชื่อไฟล์ล้าสมัย** (E32 หักล้าง k-means แล้ว) · ไม่เปลี่ยนชื่อเพราะ groundtruth/baseline/results อ้างอยู่ | เมื่อสงสัยว่าทำไมชื่อไม่ตรงเนื้อหา |
 | **`sql/doc_reread_probe.sql`** | **ตรวจว่าปุ่มที่สรุปว่า "ไม่ทำงาน" ตายจริงไหม** — `max_scan_tuples` + `iterative_scan` กับ L02 (E43) · **รันซ้ำได้จริง ทดสอบแล้ว 2026-08-02** | ก่อนเขียนว่าพารามิเตอร์ใดไม่มีผล |
