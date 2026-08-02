@@ -1,0 +1,44 @@
+==============================================================================
+QuietFail — รันสคริปต์ probe ซ้ำหลังรอบทวน
+รันเมื่อ : 2026-08-03 01:19:26
+commit  : 56a826f
+==============================================================================
+
+เหตุผล: ไล่ diff ของ 63 ไฟล์ที่แก้ในรอบทวน แล้วพบว่ากลุ่มนี้ commit ล่าสุด
+        เป็นการเติมคำเตือน จึงยังไม่ได้รันหลังแก้
+
+🔴 รอบแรกล้มทั้ง 10 ไฟล์ใน 1 วินาที — **ไม่ใช่ assertion ตก**
+   psql: error: C:/Program Files/Git/sql/... No such file or directory
+   = กับดักข้อ 10 (Git Bash แปลง path) ที่ CLAUDE.md เตือนไว้เอง
+   และตัวกรอง grep -E 'ERROR' กลบข้อความไว้ เพราะ psql เขียน 'error' ตัวเล็ก
+   -> รูปแบบเดียวกับกับดักข้อ 1 · แก้เป็น grep -i + พิมพ์ท้าย output เมื่อ exit != 0
+
+════════ qfcheck_states ════════
+EXIT(qfcheck_states)=0 · 2 วินาที
+════════ qfcheck_fix ════════
+EXIT(qfcheck_fix)=0 · 1 วินาที
+════════ qfcheck_teardown ════════
+EXIT(qfcheck_teardown)=0 · 1 วินาที
+════════ q03_multiplier_probe ════════
+EXIT(q03_multiplier_probe)=0 · 43 วินาที
+════════ doc_reread_probe ════════
+EXIT(doc_reread_probe)=0 · 81 วินาที
+════════ q06_iterative_probe ════════
+EXIT(q06_iterative_probe)=0 · 30 วินาที
+════════ q06_iterative_recall ════════
+EXIT(q06_iterative_recall)=0 · 38 วินาที
+════════ doc_crosscheck_probe ════════
+EXIT(doc_crosscheck_probe)=0 · 79 วินาที
+════════ i05_capacity_model ════════
+EXIT(i05_capacity_model)=0 · 244 วินาที
+════════ i04_seed_probe ════════
+EXIT(i04_seed_probe)=0 · 945 วินาที
+
+==============================================================================
+สภาพฐานหลังรันครบ
+==============================================================================
+  score.sql        : DETECTED 3 · NOT_DETECTED 3 · CANNOT_CHECK 9
+  qf_corpus        : fingerprint 5a32cba54ea2be4ed022fe8bfedae9b0
+  vector index ค้าง : 0
+  ขนาดฐาน          : 822 MB
+  sweep_sql        : ไม่มีข้อสังเกต
