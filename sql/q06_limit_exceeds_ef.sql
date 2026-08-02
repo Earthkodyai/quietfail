@@ -47,7 +47,11 @@ CREATE TABLE qf_q06_rows (
     rows_min    int,
     rows_max    int,
     rows_avg    numeric,
-    got_error   boolean
+    got_error   boolean,
+    -- 🔴 เพิ่ม 2026-08-02 — เดิมจับ error แล้วทิ้งข้อความทิ้ง
+    --    assertion ข้อ 4 มีไว้จับ "ต้องไม่มี error เลย" ซึ่งเป็นหัวใจของข้อนี้
+    --    แต่ตอนมันฟ้อง ผู้รันไม่มีทางรู้ว่า error อะไร = รูปแบบเดียวกับกับดักข้อ 1
+    err_msg     text
 );
 
 DROP TABLE IF EXISTS qf_q06_recall;
@@ -74,7 +78,7 @@ RESET temp_file_limit;
 CREATE OR REPLACE FUNCTION qf_q06_count_rows(p_ef int, p_k int)
 RETURNS void LANGUAGE plpgsql AS $$
 DECLARE
-    lo int; hi int; av numeric; err boolean := false;
+    lo int; hi int; av numeric; err boolean := false; emsg text;
 BEGIN
     PERFORM set_config('hnsw.ef_search', p_ef::text, false);
 
@@ -91,10 +95,11 @@ BEGIN
           INTO lo, hi, av
         FROM per_query;
     EXCEPTION WHEN OTHERS THEN
-        err := true;
+        err  := true;
+        emsg := SQLSTATE || ': ' || SQLERRM;
     END;
 
-    INSERT INTO qf_q06_rows VALUES (p_ef, p_k, lo, hi, av, err);
+    INSERT INTO qf_q06_rows VALUES (p_ef, p_k, lo, hi, av, err, emsg);
 END $$;
 
 \qecho
@@ -148,6 +153,9 @@ FROM qf_q06_recall ORDER BY ef_search;
 DROP INDEX qf_q06_idx;
 RESET hnsw.ef_search;
 
+-- เก็บกวาดฟังก์ชันตัววัด — วางก่อน assertion เพราะถ้า assert ตกบรรทัดหลังไม่ถูกรัน
+DROP FUNCTION IF EXISTS qf_q06_count_rows(int, int);
+
 -- ============================================================
 -- assertion — กฎเหล็กข้อ 3
 -- ============================================================
@@ -192,7 +200,13 @@ BEGIN
     -- ข้อ 4: ต้องไม่มี error เลยสักกรณี — นี่คือหัวใจของ "ความล้มเหลวเงียบ"
     SELECT count(*) INTO n_err FROM qf_q06_rows WHERE got_error;
     IF n_err > 0 THEN
-        RAISE EXCEPTION 'ข้อ 4 ตก: มี error เกิดขึ้น % กรณี — ถ้ามี error แปลว่าไม่เงียบ', n_err;
+        RAISE EXCEPTION E'ข้อ 4 ตก: มี error เกิดขึ้น % กรณี — ถ้ามี error แปลว่าไม่เงียบ
+%',
+            n_err,
+            (SELECT string_agg('  ef=' || ef_search || ' k=' || requested_k || ' -> '
+                               || coalesce(err_msg, '(ไม่ทราบ)'), E'
+' ORDER BY ef_search, requested_k)
+             FROM qf_q06_rows WHERE got_error);
     END IF;
     RAISE NOTICE '[4/5] OK ไม่มี error เลยสักกรณี → เงียบสนิทตามนิยาม';
 
@@ -211,3 +225,13 @@ END $$;
 \qecho '=== ขอ 100 ได้ 40 · ไม่มี error · ไม่มี warning ==='
 \qecho '=== Q01 = ผลที่ได้ผิด · Q06 = ผลหายไปเลยตั้งแต่ต้น ==='
 \qecho '=== และตรวจได้แบบ static: เทียบ hnsw.ef_search กับ LIMIT ที่โค้ดใช้ ==='
+\qecho
+\qecho '=== ⚠️ ไฟล์นี้วัดทางแก้ทางเดียว (เพิ่ม ef_search) — ไม่ใช่ทางเดียวที่มี ==='
+\qecho '    E44 (2026-08-01) วัด hnsw.iterative_scan ซึ่งไม่เคยลองมาก่อน:'
+\qecho '      ยกเพดาน 40 -> 100 ครบทั้ง 200 query จ่าย buffers เพิ่มแค่ 6%'
+\qecho '      **แต่ recall@100 ได้แค่ 0.7572** (ต้อง + scan_mem_multiplier=32'
+\qecho '      ถึงจะได้ 0.9397) = จำนวนแถวกลับมาครบสนิท ขณะที่ 1 ใน 4 เป็นของผิด'
+\qecho '    -> ตัวชี้วัดที่มองเห็นง่ายที่สุด (จำนวนแถว) คือตัวที่หลอกที่สุด'
+\qecho '    results/q06_iterative_probe.txt · sql/q06_iterative_probe.sql'
+\qecho '    (ไม่ย้ายมาวัดในไฟล์นี้ เพราะมีไฟล์เฉพาะอยู่แล้ว — เขียนไว้กันสรุปว่า'
+\qecho '     ทางแก้มีทางเดียว ซึ่งเป็นกับดักข้อ 12 ที่เคยเหยียบมาแล้ว 4 ครั้ง)'

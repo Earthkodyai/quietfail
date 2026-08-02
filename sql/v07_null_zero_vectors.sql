@@ -57,7 +57,18 @@ CREATE TABLE qf_v07_results (
     rows_got     int,
     good_found   int,
     null_found   int,
-    zero_found   int
+    zero_found   int,
+    -- 🔴 เพิ่ม 2026-08-02 — ด่านนี้เคยมีแต่ใน sql/real_v07.sql ฝาแฝดเท่านั้น
+    --    ตัวฉีดหลักตัวนี้ **ไม่เคยตรวจว่าใช้ vector index จริงไหม**
+    --    ทั้งที่ CLAUDE.md บันทึกบทเรียนนี้ไว้จากรอบวัด real_v07 ว่า
+    --    "ตาราง 510 แถวเล็กมาก planner เลือก Seq Scan เอง ไม่เคยใช้ index เลย"
+    --    (กับดักข้อ 14บ — แก้ตัวเดียวแล้วลืมคู่แฝด)
+    --
+    --    enable_seqscan = off เป็นการ **ไม่สนับสนุน** ไม่ใช่การห้าม
+    --    ถ้า index build ล้มเงียบ หรือ opclass ไม่ตรง planner จะกลับไป Seq Scan
+    --    แล้วได้ครบ 510 แถว -> assertion ข้อ 2 ฟ้องว่า "fault ไม่เกิด"
+    --    ซึ่งวินิจฉัยผิด: ของที่พังคือสภาพแวดล้อม ไม่ใช่ fault
+    used_index   boolean
 );
 
 \qecho
@@ -83,7 +94,7 @@ FROM qf_v07 GROUP BY kind ORDER BY kind;
 CREATE OR REPLACE FUNCTION qf_v07_probe(p_phase text, p_use_index boolean, p_k int)
 RETURNS void LANGUAGE plpgsql AS $$
 DECLARE
-    qvec vector; g int; n int; z int; tot int;
+    qvec vector; g int; n int; z int; tot int; j json; used boolean;
 BEGIN
     SELECT embedding INTO qvec FROM qf_queries WHERE id = 1;
 
@@ -97,6 +108,13 @@ BEGIN
         PERFORM set_config('enable_indexonlyscan', 'off', true);
         PERFORM set_config('enable_seqscan',       'on',  true);
     END IF;
+
+    -- ⚠️ ตรวจจาก **ชื่อ index** ไม่ใช่ค้นคำว่า "Index Scan" ทั้ง plan
+    --    เพราะ subquery ที่ดึง query vector ใช้ pkey ของอีกตาราง แล้ว match ผิด (E25)
+    EXECUTE 'EXPLAIN (FORMAT JSON) SELECT v.kind FROM qf_v07 v '
+            'ORDER BY v.embedding <=> $1 LIMIT ' || p_k
+      INTO j USING qvec;
+    used := j::text LIKE '%qf_v07_idx%';
 
     WITH hit AS (
         SELECT v.id, v.kind
@@ -112,7 +130,7 @@ BEGIN
     FROM hit;
 
     INSERT INTO qf_v07_results VALUES (p_phase, CASE WHEN p_use_index THEN 'index' ELSE 'exact' END,
-                                       p_k, tot, g, n, z);
+                                       p_k, tot, g, n, z, used);
 END $$;
 
 -- ============================================================
@@ -141,7 +159,8 @@ DROP INDEX qf_v07_idx;
 \qecho
 \qecho '=== ผล: แถวชนิดไหนโผล่บ้าง ==='
 SELECT phase, path, rows_asked AS "ขอ", rows_got AS "ได้",
-       good_found AS "ปกติ", null_found AS "NULL", zero_found AS "zero"
+       good_found AS "ปกติ", null_found AS "NULL", zero_found AS "zero",
+       used_index AS "ใช้ vector index จริง"
 FROM qf_v07_results ORDER BY phase, path;
 
 -- ============================================================
@@ -164,6 +183,18 @@ BEGIN
     END IF;
     RAISE NOTICE '[1/4] OK exact search เห็นครบ 510 แถว (ปกติ % · NULL % · zero %)',
         a.good_found, a.null_found, a.zero_found;
+
+    -- ข้อ 0: เส้นทาง index ต้องใช้ vector index จริง ไม่งั้นข้ออื่นไม่พิสูจน์อะไร
+    -- กฎเหล็กข้อ 10: ไม่ได้ใช้ index = ตรวจไม่ได้ ไม่ใช่ "fault ไม่เกิด"
+    IF b.used_index IS NOT TRUE THEN
+        RAISE EXCEPTION
+            'ตรวจไม่ได้: เส้นทาง B ไม่ได้ใช้ qf_v07_idx จริง (planner เลือก Seq Scan) '
+            '— ผลทั้งหมดเป็นของ exact search ห้ามอ่านว่า fault ไม่เกิด';
+    END IF;
+    IF a.used_index IS TRUE THEN
+        RAISE EXCEPTION 'ตรวจไม่ได้: เส้นทาง A ควรเป็น exact แต่กลับใช้ index — กลุ่มควบคุมเสีย';
+    END IF;
+    RAISE NOTICE '[0/4] OK เส้นทาง B ใช้ qf_v07_idx จริง · เส้นทาง A ไม่ใช้ (กลุ่มควบคุม)';
 
     -- ข้อ 2: index ต้อง **ไม่คืน** แถว NULL และ zero เลย
     IF b.null_found > 0 OR b.zero_found > 0 THEN
