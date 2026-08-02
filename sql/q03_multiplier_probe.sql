@@ -26,6 +26,11 @@
 --    (กับดักเดียวกับ V07 · E25 · และเคยเกิดกับ doc_reread_probe.sql มาแล้ว)
 -- ห้ามแตะ qf_corpus — ตรวจ fingerprint ก่อน/หลัง
 -- ============================================================================
+-- 🔴 ไฟล์นี้สร้าง index **บน qf_real โดยตรง** ไม่ได้ทำสำเนา
+--    ถ้าถูกตัดกลางคันจะทิ้ง index ค้างบนตารางที่ล็อกไว้ ทำให้ score.sql ·
+--    audit.py · quietfail_check.py รายงานผิดไปทั้งชุด (กับดักข้อ 4 · 14ธ)
+--    เก็บกวาดด้วยมือ:  DROP INDEX IF EXISTS qf_q03m_idx;
+--    แล้วยืนยันด้วย    python scripts/audit.py
 \timing off
 \set ON_ERROR_STOP on
 SET client_min_messages = warning;

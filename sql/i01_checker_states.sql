@@ -10,6 +10,11 @@
 -- ⚠️ ห้ามใส่ 2>/dev/null รอบคำสั่งสร้าง index เด็ดขาด
 -- ============================================================
 
+-- 🔴 ไฟล์นี้สร้าง index **บน qf_corpus โดยตรง** ไม่ได้ทำสำเนา
+--    ถ้าถูกตัดกลางคันจะทิ้ง index ค้างบนตารางที่ล็อกไว้ ทำให้ score.sql ·
+--    audit.py · quietfail_check.py รายงานผิดไปทั้งชุด (กับดักข้อ 4 · 14ธ)
+--    เก็บกวาดด้วยมือ:  DROP INDEX IF EXISTS qf_i01_state;
+--    แล้วยืนยันด้วย    python scripts/audit.py
 \set ON_ERROR_STOP on
 LOAD 'vector';
 

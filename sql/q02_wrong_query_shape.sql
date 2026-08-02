@@ -16,6 +16,11 @@
 -- นิยามเต็มอยู่ใน FAULTS.md — ห้ามแก้ assertion โดยไม่แก้ที่นั่นด้วย
 -- ============================================================
 
+-- 🔴 ไฟล์นี้สร้าง index **บน qf_corpus โดยตรง** ไม่ได้ทำสำเนา
+--    ถ้าถูกตัดกลางคันจะทิ้ง index ค้างบนตารางที่ล็อกไว้ ทำให้ score.sql ·
+--    audit.py · quietfail_check.py รายงานผิดไปทั้งชุด (กับดักข้อ 4 · 14ธ)
+--    เก็บกวาดด้วยมือ:  DROP INDEX IF EXISTS qf_q02_idx;
+--    แล้วยืนยันด้วย    python scripts/audit.py
 \set ON_ERROR_STOP on
 LOAD 'vector';
 SET max_parallel_workers_per_gather = 0;

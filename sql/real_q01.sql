@@ -14,6 +14,11 @@
 -- ⚠️ ไม่แตะ qf_corpus — สร้าง index บน qf_real เท่านั้น
 -- ⚠️ index ถูก DROP ทุกครั้งที่ต้นและท้าย ตามกับดักข้อ 4
 -- ============================================================
+-- 🔴 ไฟล์นี้สร้าง index **บน qf_real โดยตรง** ไม่ได้ทำสำเนา
+--    ถ้าถูกตัดกลางคันจะทิ้ง index ค้างบนตารางที่ล็อกไว้ ทำให้ score.sql ·
+--    audit.py · quietfail_check.py รายงานผิดไปทั้งชุด (กับดักข้อ 4 · 14ธ)
+--    เก็บกวาดด้วยมือ:  DROP INDEX IF EXISTS qf_real_hnsw;
+--    แล้วยืนยันด้วย    python scripts/audit.py
 \timing on
 \set ON_ERROR_STOP on
 

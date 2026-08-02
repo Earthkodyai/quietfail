@@ -1771,14 +1771,24 @@ Q03 ไล่ `scan_mem_multiplier` ถึงแค่ 8 (ได้ 17/40) แ�
 > *"ต่างจากไฟล์ `real_*` ตัวอื่นที่ก๊อปตารางก่อน"* ซึ่ง**ผิด** · ไล่ทั้งโฟลเดอร์แล้ว
 > พบว่าเป็น**รูปแบบหลัก ไม่ใช่ข้อยกเว้น** — สรุปจาก 3–4 ไฟล์ที่เพิ่งอ่านโดยไม่ได้ไล่ให้ครบ
 
-**11 ไฟล์สร้าง index บน `qf_real` / `qf_real2` โดยตรง**
+**ไล่ทั้ง `sql/` แล้ว — 24 ไฟล์สร้าง index บนตารางที่ล็อกไว้โดยตรง**
+และ **14 ตัวสร้างบน `qf_corpus`** ซึ่งล็อกแน่นกว่า `qf_real` เพราะ fingerprint
+ของมันผูกกับผลทุกตัวในเล่ม
 
 ```
-doc_reread_probe · q03_multiplier_probe · real_q01 · real_q04 · real_q06
-real_i01_q02 · real_i04 (×3) · real2_q01 · real2_q04 · real2_q06 · real2_i04 (×3)
+บน qf_corpus  i01_opclass_mismatch · i01_checker_states · i03_build_index
+              i04_kmeans_nondeterminism · i04_parallel_control · i04_checker_states
+              i04_seed_probe · i05_build_one · q01_recall_collapse
+              q02_wrong_query_shape · q04_default_params · q04_checker_states
+              q06_limit_exceeds_ef
+บน qf_real    doc_reread_probe · q03_multiplier_probe · real_q01 · real_q04
+              real_q06 · real_i01_q02 · real_i04
+บน qf_real2   real2_q01 · real2_q04 · real2_q06 · real2_i04
 ```
 
 ส่วนที่**ทำสำเนาก่อน** มีแค่ `real_i02` · `real_l02` · `real_q03` (และคู่ 768 มิติ)
+
+✅ **เติมคำเตือนครบทุกไฟล์แล้ว 2026-08-02** พร้อมชื่อ index ที่ต้องลบถ้าถูกตัดกลางคัน
 
 **ข้อดี** ไม่กินพื้นที่เพิ่ม 400 MB และวัดบนข้อมูลชุดจริงตรงๆ
 **ข้อเสีย** ถ้าถูกตัดกลางคัน **จะทิ้ง index ค้างบนตารางที่ล็อกไว้**
