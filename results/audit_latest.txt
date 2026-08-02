@@ -1,7 +1,7 @@
 ==============================================================================
 QuietFail — ตรวจความพร้อมของ repo
-รันเมื่อ : 2026-08-02 14:46:39
-commit  : f3ff72c  อ่าน faults/f05 ทีละบรรทัด: session B รัน ALTER TABL
+รันเมื่อ : 2026-08-02 23:16:16
+commit  : 41744d9  ทวน sql/ ที่เหลือครบ: rq3_teardown ไม่ตรวจผลเก็บกวาด
 baseline: scripts/audit_baseline.json (_updated = 2026-07-31)
 ==============================================================================
 
@@ -25,7 +25,7 @@ baseline: scripts/audit_baseline.json (_updated = 2026-07-31)
   ok   เลข E/D ไม่ซ้ำกัน                              66 หัวข้อ ไม่มีเลขซ้ำ
   ok   สถานะใน CLAUDE.md ตรงกับ baseline              เสร็จ 11 · เหลือ 
   ok   ตารางของส่งมอบใน CLAUDE.md                     6 ข้อตรงกับ baseline · ไฟล์สอดคล้องทุกข้อ
-  ok   นิยาม fingerprint ตรงกันทุกที่                 ตัวคั่น '|' เหมือนกันทั้ง 31 ที่
+  ok   นิยาม fingerprint ตรงกันทุกที่                 ตัวคั่น '|' เหมือนกันทั้ง 26 ที่
   ok   fault ที่ตัดแล้วไม่กลับมา                      Q05 L01 V08 ยังถูกตัดอยู่ (D15)
 ── 4 ฐานข้อมูล ──
   ok   เชื่อมต่อ docker/psql                          ต่อได้
@@ -42,9 +42,9 @@ baseline: scripts/audit_baseline.json (_updated = 2026-07-31)
 ── 5 score.sql ──
   ok   รันจบไม่มี error                               exit 0
   ok   ทุก fault มีสาขาที่ตอบได้                      15/15 ข้อ
-  ok   verdict ที่ได้ตอนนี้ (ข้อมูล ไม่ใช่เกณฑ์)      F01=NOT_DETECTED · F03=CANNOT_CHECK · F05=NOT_DETECTED · F10=CANNOT_CHECK · I01=CANNOT_CHECK · I02=CANNOT_CHECK · I03=NOT_DETECTED · I04=CANNOT_CHECK · I05=DETECTED · L02=CANNOT_CHECK · Q02=CANNOT_CHECK · Q03=CANNOT_CHECK · Q04=CANNOT_CHECK · Q06=DETECTED · V07=DETECTED
+  ok   verdict ที่ได้ตอนนี้ (ข้อมูล ไม่ใช่เกณฑ์)      F01=NOT_DETECTED · F03=CANNOT_CHECK · F05=NOT_DETECTED · F10=CANNOT_CHECK · I01=CANNOT_CHECK · I02=CANNOT_CHECK · I03=NOT_DETECTED · I04=CANNOT_CHECK · I05=DETECTED · L02=CANNOT_CHECK · Q02=NOT_DETECTED · Q03=CANNOT_CHECK · Q04=CANNOT_CHECK · Q06=DETECTED · V07=DETECTED
 ── 6 ตัวเลขในเอกสาร ──
-  ok   จำนวนหัวข้อของ audit ที่เอกสารอ้าง             36 · ตรงกันทั้ง 9 ที่
+  ok   จำนวนหัวข้อของ audit ที่เอกสารอ้าง             36 · ตรงกันทั้ง 10 ที่
   ok   จำนวนไฟล์ใน results/ ที่เอกสารอ้าง             69 · ตรงกันทั้ง 4 ที่
   ok   จำนวนแถวทะเบียนบั๊ก H ที่เอกสารอ้าง            32 · ตรงกันทั้ง 3 ที่
   ok   เลข H ตัวสุดท้ายที่เอกสารอ้าง                  32 · ตรงกันทั้ง 5 ที่
