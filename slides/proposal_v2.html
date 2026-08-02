@@ -3,20 +3,21 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>QuietFail — สอบเสนอหัวข้อโครงงานวิศวกรรมคอมพิวเตอร์</title>
+<title>QuietFail — การสอบเสนอหัวข้อโครงงานวิศวกรรมคอมพิวเตอร์</title>
 <style>
   /* ============================================================
-     QuietFail — สไลด์สอบเสนอหัวข้อ (ฉบับผู้ฟังไม่คุ้น vector search)
-     26 หน้าหลัก + 6 หน้าสำรองสำหรับถาม-ตอบ · เวลา 30 นาที
-     ไฟล์เดียว เปิด offline ได้ · ← → หรือคลิกเปลี่ยนหน้า · Ctrl+P พิมพ์แจก
+     QuietFail — สไลด์สอบเสนอหัวข้อ
+     28 หน้าหลัก + 6 หน้าสำรองสำหรับการถาม-ตอบ · เวลานำเสนอ 30 นาที
+     ไฟล์เดียว เปิดแบบออฟไลน์ได้ · ← → หรือคลิกเพื่อเปลี่ยนหน้า · Ctrl+P เพื่อพิมพ์
 
-     🔴 ทุกตัวเลขมาจาก results/ ของ repo — ห้ามแก้ตัวเลขในไฟล์นี้เดี่ยวๆ
-        ถ้าตัวเลขเปลี่ยน ต้องแก้ที่ต้นทางแล้วรัน python scripts/audit.py
+     🔴 ตัวเลขทุกค่ามาจาก results/ ของ repository — ห้ามแก้ไขเฉพาะในไฟล์นี้
+        หากค่าเปลี่ยน ต้องแก้ที่ต้นทางแล้วรัน python scripts/audit.py
+        ไฟล์นี้อยู่ใน DOC_FILES ของ audit.py จึงถูกตรวจสอบตัวเลขทุกครั้ง
      ============================================================ */
   :root{
     --bg:#f6f7f5; --card:#ffffff; --ink:#16211c; --muted:#5b6a63;
-    --accent:#0b7a5c; --accent-soft:#e3f2ec; --hot:#c2410c; --hot-soft:#fdeee4;
-    --line:#dde4df; --code:#f0f3f1; --warn:#a16207; --warn-soft:#fef6e0;
+    --accent:#0b7a5c; --accent-soft:#e3f2ec; --hot:#b3400a; --hot-soft:#fdeee4;
+    --line:#dde4df; --code:#f0f3f1; --warn:#8a5a06; --warn-soft:#fef6e0;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%}
@@ -28,69 +29,65 @@
   #deck{position:relative;height:100%;width:100%}
   .slide{
     position:absolute; inset:0; display:none;
-    padding:4.5vh 6.5vw 8vh;
-    flex-direction:column; justify-content:center; gap:1.9vh;
+    padding:4.3vh 6.2vw 7.6vh;
+    flex-direction:column; justify-content:center; gap:1.75vh;
   }
   .slide.active{display:flex}
-  .kicker{color:var(--accent); font-weight:700; letter-spacing:.05em;
-          font-size:clamp(12px,1.55vh,17px)}
+  .kicker{color:var(--accent); font-weight:700; letter-spacing:.04em;
+          font-size:clamp(12px,1.5vh,17px)}
   .kicker.alt{color:var(--hot)}
-  h1{font-size:clamp(30px,6.2vh,62px); line-height:1.16; font-weight:800}
-  h2{font-size:clamp(21px,4.05vh,42px); line-height:1.24; font-weight:800}
-  h3{font-size:clamp(16px,2.5vh,24px); font-weight:800}
-  p,li{font-size:clamp(15px,2.3vh,23px); line-height:1.6}
-  .sm p,.sm li,.sm td,.sm th{font-size:clamp(13px,1.95vh,19px)}
+  h1{font-size:clamp(29px,6vh,60px); line-height:1.16; font-weight:800}
+  h2{font-size:clamp(20px,3.9vh,40px); line-height:1.25; font-weight:800}
+  h3{font-size:clamp(15px,2.4vh,23px); font-weight:800}
+  p,li{font-size:clamp(14px,2.2vh,22px); line-height:1.6}
+  .sm p,.sm li,.sm td,.sm th{font-size:clamp(12px,1.9vh,18px)}
   .muted{color:var(--muted)}
-  .hot{color:var(--hot); font-weight:800}
-  .ok{color:var(--accent); font-weight:800}
+  .hot{color:var(--hot); font-weight:700}
+  .ok{color:var(--accent); font-weight:700}
   strong{font-weight:800}
   code{font-family:"Cascadia Code",Consolas,monospace; background:var(--code);
-       border-radius:6px; padding:.1em .35em; font-size:.9em}
+       border-radius:5px; padding:.1em .32em; font-size:.9em}
   table{border-collapse:collapse; width:100%; background:var(--card);
         border-radius:10px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,.06)}
-  th,td{padding:.95vh 1vw; font-size:clamp(13px,2.05vh,20px);
+  th,td{padding:.9vh .95vw; font-size:clamp(12px,2vh,19px);
         text-align:left; border-bottom:1px solid var(--line); vertical-align:top}
   th{background:var(--accent-soft); font-weight:800}
   tr:last-child td{border-bottom:none}
   td.n,th.n{text-align:right; font-variant-numeric:tabular-nums}
   td.c,th.c{text-align:center}
-  ul{padding-left:1.2em} li{margin:.45vh 0}
-  .cols{display:grid; gap:1.5vw}
+  ul{padding-left:1.15em} li{margin:.4vh 0}
+  .cols{display:grid; gap:1.4vw}
   .c2{grid-template-columns:1fr 1fr} .c3{grid-template-columns:repeat(3,1fr)}
-  .card{background:var(--card); border-radius:14px; padding:1.9vh 1.4vw;
+  .card{background:var(--card); border-radius:13px; padding:1.75vh 1.3vw;
         box-shadow:0 1px 4px rgba(0,0,0,.07)}
   .card.hotc{background:var(--hot-soft)}
   .card.okc{background:var(--accent-soft)}
-  .big{font-size:clamp(38px,9.5vh,105px); font-weight:800; line-height:1.03;
+  .big{font-size:clamp(34px,8.6vh,96px); font-weight:800; line-height:1.03;
        font-variant-numeric:tabular-nums}
-  .mid{font-size:clamp(26px,5.5vh,60px); font-weight:800; line-height:1.1;
+  .mid{font-size:clamp(24px,5.1vh,56px); font-weight:800; line-height:1.1;
        font-variant-numeric:tabular-nums}
-  .tag{display:inline-block; background:var(--accent-soft); color:var(--accent);
-       border-radius:999px; padding:.16em .7em; font-weight:700;
-       font-size:clamp(12px,1.8vh,18px); margin:.15em .3em .15em 0}
-  .tag.hot{background:var(--hot-soft); color:var(--hot)}
-  .foot{position:absolute; left:6.5vw; right:6.5vw; bottom:2.6vh; display:flex;
+  .foot{position:absolute; left:6.2vw; right:6.2vw; bottom:2.5vh; display:flex;
         justify-content:space-between; color:var(--muted);
-        font-size:clamp(10px,1.5vh,14px)}
+        font-size:clamp(10px,1.45vh,14px)}
   #bar{position:absolute; top:0; left:0; height:5px; background:var(--accent);
        width:0; transition:width .25s; z-index:5}
-  #pg{position:absolute; right:2vw; bottom:2.2vh; color:var(--muted);
-      font-size:clamp(11px,1.7vh,15px); font-variant-numeric:tabular-nums}
-  /* กล่องนิยามศัพท์ — ใช้ทุกครั้งที่ศัพท์เทคนิคโผล่ครั้งแรก */
+  #pg{position:absolute; right:1.9vw; bottom:2.1vh; color:var(--muted);
+      font-size:clamp(11px,1.65vh,15px); font-variant-numeric:tabular-nums}
+  /* กล่องนิยามศัพท์ — ใช้เมื่อศัพท์เฉพาะปรากฏเป็นครั้งแรก */
   .define{background:var(--card); border:1.5px dashed var(--accent);
-          border-radius:12px; padding:1.4vh 1.3vw}
-  .define p{font-size:clamp(14px,2.15vh,21px)}
+          border-radius:11px; padding:1.3vh 1.2vw}
+  .define p{font-size:clamp(13px,2.05vh,20px)}
   .define b{color:var(--accent)}
   .note{background:var(--warn-soft); border-left:5px solid var(--warn);
-        border-radius:0 10px 10px 0; padding:1.1vh 1.2vw}
-  .note p{font-size:clamp(13px,2vh,19px)}
-  .src{color:var(--muted); font-size:clamp(11px,1.65vh,15px); margin-top:.3vh}
-  .datastrip{display:grid; grid-template-columns:repeat(4,1fr); gap:1vw; margin-top:.8vh}
-  .datastrip .card{text-align:center; padding:1.5vh .7vw}
-  .datastrip .v{font-size:clamp(18px,3.4vh,34px); font-weight:800;
+        border-radius:0 9px 9px 0; padding:1vh 1.1vw}
+  .note p{font-size:clamp(12px,1.92vh,18px)}
+  .src{color:var(--muted); font-size:clamp(10px,1.6vh,14px); margin-top:.25vh}
+  .datastrip{display:grid; grid-template-columns:repeat(4,1fr); gap:.9vw; margin-top:.7vh}
+  .datastrip .card{text-align:center; padding:1.4vh .6vw}
+  .datastrip .v{font-size:clamp(17px,3.2vh,32px); font-weight:800;
                 font-variant-numeric:tabular-nums; color:var(--accent)}
-  .datastrip .k{font-size:clamp(11px,1.7vh,16px); color:var(--muted)}
-  .backup{--accent:#6d28d9; --accent-soft:#ede9fe}
+  .datastrip .k{font-size:clamp(10px,1.62vh,15px); color:var(--muted)}
+  .backup{--accent:#5b21b6; --accent-soft:#ede9fe}
   @media print{
     body{overflow:visible; background:#fff}
     .slide{display:flex !important; position:relative; height:100vh; page-break-after:always}
@@ -102,16 +99,16 @@
 <div id="bar"></div>
 <div id="deck">
 
-<!-- ══════════ องก์ 1 · ทำให้เห็นปัญหา (1–5) ══════════ -->
+<!-- ═════════ ส่วนที่ 1 · ที่มาและความสำคัญของปัญหา (1–5) ═════════ -->
 
-<!-- 1 ─ ปก -->
-<section class="slide active">
+<!-- 1 -->
+<section class="slide">
   <div class="kicker">การสอบเสนอหัวข้อ · โครงงานวิศวกรรมคอมพิวเตอร์</div>
   <h1>QuietFail</h1>
   <h2 style="font-weight:600;color:var(--muted)">
-    เมื่อระบบค้นหาให้คำตอบไม่ครบ โดยไม่มีสัญญาณเตือนอะไรเลย<br>
-    <span style="font-size:.72em">— วัดได้ไหม ป้องกันได้ไหม</span></h2>
-  <div class="cols c2" style="margin-top:1.5vh">
+    การวัดและตรวจจับความล้มเหลวโดยไม่แจ้งเตือน<br>
+    ในระบบสืบค้นด้วยเวกเตอร์บน PostgreSQL</h2>
+  <div class="cols c2" style="margin-top:1.4vh">
     <div class="card">
       <h3>ผู้จัดทำ</h3>
       <p>นายพงศกร&nbsp; หมู่บ้านม่วง</p>
@@ -126,700 +123,799 @@
   <div class="foot"><span>QuietFail</span><span>ปีการศึกษา 2569</span></div>
 </section>
 
-<!-- 2 ─ ปัญหาในภาพเดียว (ห้ามมีศัพท์) -->
+<!-- 2 -->
 <section class="slide">
-  <div class="kicker alt">ปัญหา — ยังไม่ต้องรู้ศัพท์อะไรเลย</div>
-  <h2>ผู้ใช้ขอ 10 รายการ · ระบบคืนมา 4</h2>
+  <div class="kicker alt">ที่มาของปัญหา</div>
+  <h2>ผู้ใช้ร้องขอผลลัพธ์ 10 รายการ แต่ระบบส่งคืนเพียง 4 รายการ</h2>
   <div class="cols c3">
-    <div class="card okc"><div class="k muted">ผู้ใช้ขอ</div><div class="big ok">10</div></div>
-    <div class="card hotc"><div class="k muted">ระบบคืนมาจริง</div><div class="big hot">4</div></div>
+    <div class="card okc"><div class="k muted">จำนวนที่ร้องขอ</div><div class="big ok">10</div></div>
+    <div class="card hotc"><div class="k muted">จำนวนที่ได้รับจริง</div><div class="big hot">4</div></div>
     <div class="card"><div class="k muted">ข้อความแจ้งเตือน</div><div class="big">0</div></div>
   </div>
-  <div class="note"><p><strong>ไม่มี error · ไม่มี warning · log สะอาด · โปรแกรมไม่ค้าง ไม่ช้า</strong><br>
-    ทุกอย่างดู "ทำงานปกติ" — สิ่งเดียวที่ผิดคือ <strong>คำตอบไม่ครบ</strong>
-    และไม่มีอะไรในระบบบอกเรื่องนี้เลย</p></div>
-  <p class="muted">คำถามของโครงงานนี้: <strong>หายไปเท่าไหร่ · รู้ล่วงหน้าได้ไหม</strong></p>
-  <div class="foot"><span>องก์ 1 · ปัญหา</span><span>QuietFail</span></div>
+  <div class="note"><p>ไม่ปรากฏข้อความแสดงข้อผิดพลาด ไม่ปรากฏคำเตือน บันทึกการทำงานไม่มีสิ่งผิดปกติ
+    ระบบไม่หยุดทำงานและไม่ช้าลง<br>
+    สิ่งเดียวที่ไม่ถูกต้องคือ <strong>ผลลัพธ์ไม่ครบถ้วน</strong>
+    ซึ่งไม่มีกลไกใดในระบบแจ้งให้ทราบ</p></div>
+  <p class="muted">โครงงานนี้ตั้งคำถามว่า <strong>ผลลัพธ์สูญหายไปในปริมาณเท่าใด
+    และสามารถตรวจจับล่วงหน้าได้หรือไม่</strong></p>
+  <div class="foot"><span>ส่วนที่ 1 · ที่มาของปัญหา</span><span>QuietFail</span></div>
 </section>
 
-<!-- 3 ─ ค้นหาด้วยความหมายคืออะไร -->
+<!-- 3 -->
 <section class="slide">
-  <div class="kicker">พื้นฐาน 1 จาก 3</div>
-  <h2>"ค้นหาด้วยความหมาย" ต่างจากค้นหาแบบเดิมอย่างไร</h2>
+  <div class="kicker">ความรู้พื้นฐาน 1 จาก 3</div>
+  <h2>การสืบค้นเชิงความหมาย แตกต่างจากการสืบค้นแบบดั้งเดิมอย่างไร</h2>
   <div class="cols c2">
     <div class="card">
-      <h3>ค้นแบบเดิม — จับคู่คำตรงตัว</h3>
-      <p>พิมพ์ว่า <em>"รองเท้าวิ่ง"</em> → ได้เฉพาะเอกสารที่มีคำนี้<br>
-      <span class="hot">พิมพ์ว่า "ผ้าใบออกกำลัง" → ไม่เจอ</span></p>
+      <h3>การสืบค้นแบบดั้งเดิม — จับคู่คำตรงตัว</h3>
+      <p>ค้นด้วยคำว่า <em>“รองเท้าวิ่ง”</em> จะได้เฉพาะเอกสารที่ปรากฏคำดังกล่าว<br>
+      <span class="hot">หากค้นด้วยคำว่า “ผ้าใบออกกำลังกาย” จะไม่พบเอกสารเดียวกัน</span></p>
     </div>
     <div class="card okc">
-      <h3>ค้นด้วยความหมาย</h3>
-      <p>เข้าใจว่าสองคำนี้<strong>ความหมายใกล้กัน</strong><br>
-      <span class="ok">พิมพ์แบบไหนก็เจอ</span></p>
+      <h3>การสืบค้นเชิงความหมาย</h3>
+      <p>ระบบพิจารณาว่าทั้งสองคำ<strong>มีความหมายใกล้เคียงกัน</strong><br>
+      <span class="ok">จึงสืบค้นได้ด้วยคำใดก็ตามที่มีความหมายตรงกัน</span></p>
     </div>
   </div>
   <div class="define">
-    <p><b>embedding (เวกเตอร์ความหมาย)</b> — เพื่อให้คอมพิวเตอร์เทียบ "ความหมาย" ได้
-    เราแปลงข้อความแต่ละชิ้นเป็น<strong>ชุดตัวเลข</strong>ก่อน เช่นชุดละ 384 ตัว<br>
-    ข้อความที่ความหมายใกล้กัน จะได้ชุดตัวเลขที่<strong>อยู่ใกล้กันในเชิงระยะทาง</strong><br>
-    การค้นหาจึงกลายเป็นคำถามว่า <em>"ชุดตัวเลขไหนอยู่ใกล้คำถามที่สุด 10 อันดับแรก"</em></p>
+    <p><b>embedding (เวกเตอร์ความหมาย)</b> — เพื่อให้คอมพิวเตอร์เปรียบเทียบความหมายได้
+    ระบบจะแปลงข้อความแต่ละหน่วยให้เป็น<strong>ชุดตัวเลข</strong>ก่อน เช่นชุดละ 384 ค่า<br>
+    ข้อความที่มีความหมายใกล้เคียงกันจะได้ชุดตัวเลขที่<strong>มีระยะห่างน้อย</strong><br>
+    การสืบค้นจึงกลายเป็นการหาว่า <em>ชุดตัวเลขใดมีระยะห่างจากคำค้นน้อยที่สุด 10 อันดับแรก</em></p>
   </div>
-  <div class="foot"><span>องก์ 1 · ปัญหา</span><span>QuietFail</span></div>
+  <div class="foot"><span>ส่วนที่ 1 · ที่มาของปัญหา</span><span>QuietFail</span></div>
 </section>
 
-<!-- 4 ─ ทำไมต้องมี index -->
+<!-- 4 -->
 <section class="slide">
-  <div class="kicker">พื้นฐาน 2 จาก 3</div>
-  <h2>ทำไมต้องมี index — และทำไมมันถึงตอบ "โดยประมาณ"</h2>
+  <div class="kicker">ความรู้พื้นฐาน 2 จาก 3</div>
+  <h2>เหตุใดจึงต้องใช้ index และเหตุใดผลลัพธ์จึงเป็นเพียงค่าประมาณ</h2>
   <div class="cols c2">
     <div class="card">
-      <h3>ถ้าไม่ใช้ index</h3>
-      <p>เทียบคำถามกับ<strong>ทุกรายการ</strong>ในฐานข้อมูล<br>
-        100,000 รายการ = เทียบ 100,000 ครั้ง<br>
-        <span class="ok">ถูกต้องเสมอ</span> · <span class="hot">แต่ช้าเกินรับได้</span></p>
+      <h3>กรณีไม่ใช้ index</h3>
+      <p>เปรียบเทียบคำค้นกับ<strong>ข้อมูลทุกรายการ</strong><br>
+        ข้อมูล 100,000 รายการ ต้องเปรียบเทียบ 100,000 ครั้ง<br>
+        <span class="ok">ผลลัพธ์ถูกต้องเสมอ</span> · <span class="hot">แต่ใช้เวลามากเกินกว่าจะยอมรับได้</span></p>
     </div>
     <div class="card">
-      <h3>ถ้าใช้ index</h3>
-      <p>ข้ามรายการที่ "น่าจะไม่ใช่" ทิ้งไปเลย<br>
-        <span class="ok">เร็วขึ้นหลายสิบเท่า</span> ·
-        <span class="hot">แต่ของที่ข้ามไป อาจมีคำตอบที่ถูกปนอยู่</span></p>
+      <h3>กรณีใช้ index</h3>
+      <p>ระบบข้ามรายการที่ประเมินว่าไม่น่าเป็นคำตอบ<br>
+        <span class="ok">ประมวลผลเร็วขึ้นหลายสิบเท่า</span> ·
+        <span class="hot">แต่รายการที่ถูกข้ามอาจมีคำตอบที่ถูกต้องรวมอยู่</span></p>
     </div>
   </div>
   <div class="define">
-    <p><b>ANN — Approximate Nearest Neighbor (การค้นเพื่อนบ้านใกล้สุดโดยประมาณ)</b><br>
-    คำว่า <strong>"โดยประมาณ" อยู่ในชื่อของมันเอง</strong> — ผู้ออกแบบตั้งใจแลกความถูกต้องกับความเร็ว
-    ไม่ใช่ข้อบกพร่อง<br>
-    <b>recall (ความครบของผลลัพธ์)</b> = ของที่<em>ควร</em>เจอ เจอจริงกี่เปอร์เซ็นต์ ·
-    recall 0.85 แปลว่า <strong>หายไป 15%</strong></p>
+    <p><b>ANN — Approximate Nearest Neighbor (การค้นหาเพื่อนบ้านใกล้ที่สุดโดยประมาณ)</b><br>
+    คำว่า <strong>“โดยประมาณ” ปรากฏอยู่ในชื่อของวิธีการนี้</strong>
+    ผู้ออกแบบตั้งใจแลกความถูกต้องบางส่วนกับความเร็ว จึงมิใช่ข้อบกพร่องของระบบ<br>
+    <b>recall (ความครบถ้วนของผลลัพธ์)</b> = สัดส่วนของรายการที่<em>ควร</em>พบและพบจริง ·
+    ค่า recall เท่ากับ 0.85 หมายความว่า <strong>ผลลัพธ์สูญหายไปร้อยละ 15</strong></p>
   </div>
-  <div class="foot"><span>องก์ 1 · ปัญหา</span><span>QuietFail</span></div>
+  <div class="foot"><span>ส่วนที่ 1 · ที่มาของปัญหา</span><span>QuietFail</span></div>
 </section>
 
-<!-- 5 ─ ทำไมถึงเงียบ -->
+<!-- 5 -->
 <section class="slide">
-  <div class="kicker alt">พื้นฐาน 3 จาก 3 — หัวใจของโครงงาน</div>
-  <h2>ฐานข้อมูลปกติ "พังแล้วฟ้อง" · แบบนี้ "พังแล้วเงียบ"</h2>
+  <div class="kicker alt">ความรู้พื้นฐาน 3 จาก 3 — ประเด็นหลักของโครงงาน</div>
+  <h2>ระบบฐานข้อมูลทั่วไปแจ้งข้อผิดพลาด แต่กรณีนี้ไม่มีการแจ้ง</h2>
   <table>
-    <tr><th style="width:22%"></th><th>ฐานข้อมูลแบบเดิม</th><th>ค้นหาด้วยเวกเตอร์</th></tr>
-    <tr><td><strong>พิมพ์คำสั่งผิด</strong></td><td class="ok">ฟ้อง syntax error</td><td class="ok">ฟ้องเหมือนกัน</td></tr>
-    <tr><td><strong>ตารางไม่มีอยู่</strong></td><td class="ok">ฟ้องทันที</td><td class="ok">ฟ้องเหมือนกัน</td></tr>
-    <tr><td><strong>คำตอบไม่ครบ</strong></td><td class="ok">ไม่เกิด — ถ้าตรงเงื่อนไขต้องได้ครบ</td>
-        <td class="hot">เกิดได้ · <strong>และไม่มีอะไรฟ้องเลย</strong></td></tr>
+    <tr><th style="width:24%">สถานการณ์</th><th>ฐานข้อมูลเชิงสัมพันธ์</th><th>การสืบค้นด้วยเวกเตอร์</th></tr>
+    <tr><td><strong>คำสั่งผิดรูปแบบ</strong></td><td class="ok">แจ้ง syntax error</td><td class="ok">แจ้งเช่นเดียวกัน</td></tr>
+    <tr><td><strong>ไม่พบตารางที่อ้างถึง</strong></td><td class="ok">แจ้งทันที</td><td class="ok">แจ้งเช่นเดียวกัน</td></tr>
+    <tr><td><strong>ผลลัพธ์ไม่ครบถ้วน</strong></td>
+        <td class="ok">ไม่เกิดขึ้น — หากตรงเงื่อนไขย่อมได้รับครบ</td>
+        <td class="hot">เกิดขึ้นได้ และ<strong>ไม่มีการแจ้งเตือนใด ๆ</strong></td></tr>
   </table>
-  <div class="note"><p>เพราะผลที่ได้<strong>ไม่ได้ผิดรูป</strong> — มันเป็นคำตอบที่ถูกต้องทุกแถว
-    เพียงแต่<strong>ขาดบางแถวไป</strong> ซึ่งจากภายนอกแยกไม่ออกจาก
-    "ข้อมูลมีอยู่เท่านี้จริงๆ"</p></div>
-  <p class="muted">โครงงานนี้เรียกอาการนี้ว่า <strong>QuietFail — ความล้มเหลวเงียบ</strong></p>
-  <div class="foot"><span>องก์ 1 · ปัญหา</span><span>QuietFail</span></div>
+  <div class="note"><p>เนื่องจากผลลัพธ์ที่ได้<strong>มิได้ผิดรูปแบบ</strong>
+    ทุกรายการที่ส่งคืนล้วนถูกต้อง เพียงแต่<strong>ขาดบางรายการไป</strong>
+    ซึ่งผู้ใช้ไม่สามารถแยกแยะจากกรณีที่ “ข้อมูลมีอยู่เพียงเท่านี้” ได้</p></div>
+  <p class="muted">โครงงานนี้เรียกลักษณะดังกล่าวว่า <strong>QuietFail — ความล้มเหลวโดยไม่แจ้งเตือน</strong></p>
+  <div class="foot"><span>ส่วนที่ 1 · ที่มาของปัญหา</span><span>QuietFail</span></div>
 </section>
 
-<!-- ══════════ องก์ 2 · โจทย์และขอบเขต (6–9) ══════════ -->
+<!-- ═════════ ส่วนที่ 2 · วัตถุประสงค์และขอบเขต (6–9) ═════════ -->
 
-<!-- 6 ─ หน้ารวมศัพท์ -->
+<!-- 6 -->
 <section class="slide sm">
-  <div class="kicker">หน้าอ้างอิง — ย้อนดูได้ตลอดการนำเสนอ</div>
-  <h2>ศัพท์ทั้งหมดที่จะใช้ 8 คำ</h2>
+  <div class="kicker">หน้าอ้างอิง — ใช้ประกอบตลอดการนำเสนอ</div>
+  <h2>นิยามศัพท์เฉพาะที่ใช้ในโครงงาน</h2>
   <table>
-    <tr><th style="width:20%">ศัพท์</th><th style="width:32%">คำแปล</th><th>อธิบายสั้นที่สุด</th></tr>
-    <tr><td><code>embedding</code></td><td>เวกเตอร์ความหมาย</td><td>ชุดตัวเลขที่แทนความหมายของข้อความ</td></tr>
-    <tr><td><code>ANN</code></td><td>ค้นเพื่อนบ้านโดยประมาณ</td><td>ค้นเร็วขึ้นโดยยอมให้ผลไม่ครบ</td></tr>
-    <tr><td><code>index</code></td><td>ดัชนีช่วยค้น</td><td>โครงสร้างที่ทำให้ข้ามข้อมูลที่ไม่น่าใช่ได้</td></tr>
-    <tr><td><code>recall</code></td><td>ความครบของผลลัพธ์</td><td>ของที่ควรเจอ เจอจริงกี่ % — <strong>ตัวชี้วัดหลักของงานนี้</strong></td></tr>
-    <tr><td><code>HNSW</code></td><td>ดัชนีแบบกราฟ</td><td>index ชนิดที่ 1 — เดินตามเส้นเชื่อมเพื่อนบ้าน</td></tr>
-    <tr><td><code>IVFFlat</code></td><td>ดัชนีแบบแบ่งกลุ่ม</td><td>index ชนิดที่ 2 — แบ่งข้อมูลเป็นกลุ่มแล้วค้นเฉพาะบางกลุ่ม</td></tr>
-    <tr><td><code>ef_search</code> / <code>probes</code></td><td>ค่าตั้ง "ค้นละเอียดแค่ไหน"</td><td>ของ HNSW / ของ IVFFlat — <strong>ยิ่งมาก ยิ่งครบ ยิ่งช้า</strong></td></tr>
-    <tr><td><code>fault injection</code></td><td>การจงใจฉีดความผิดพลาด</td><td>ทำให้พังเองเพื่อให้รู้คำตอบที่ถูก 100%</td></tr>
+    <tr><th style="width:19%">ศัพท์</th><th style="width:30%">คำแปลที่ใช้</th><th>ความหมายโดยย่อ</th></tr>
+    <tr><td><code>embedding</code></td><td>เวกเตอร์ความหมาย</td><td>ชุดตัวเลขที่ใช้แทนความหมายของข้อความ</td></tr>
+    <tr><td><code>ANN</code></td><td>การค้นเพื่อนบ้านใกล้ที่สุดโดยประมาณ</td><td>เพิ่มความเร็วโดยยอมให้ผลลัพธ์ไม่ครบถ้วน</td></tr>
+    <tr><td><code>index</code></td><td>ดัชนีช่วยสืบค้น</td><td>โครงสร้างที่ทำให้ข้ามข้อมูลที่ไม่น่าเป็นคำตอบได้</td></tr>
+    <tr><td><code>recall</code></td><td>ความครบถ้วนของผลลัพธ์</td><td>สัดส่วนของรายการที่ควรพบและพบจริง — <strong>ตัวชี้วัดหลัก</strong></td></tr>
+    <tr><td><code>HNSW</code></td><td>ดัชนีเชิงกราฟ</td><td>ดัชนีชนิดที่ 1 อาศัยการเดินตามเส้นเชื่อมระหว่างข้อมูล</td></tr>
+    <tr><td><code>IVFFlat</code></td><td>ดัชนีเชิงการแบ่งกลุ่ม</td><td>ดัชนีชนิดที่ 2 แบ่งข้อมูลเป็นกลุ่มแล้วค้นเฉพาะบางกลุ่ม</td></tr>
+    <tr><td><code>ef_search</code> · <code>probes</code></td><td>พารามิเตอร์ระดับความละเอียด</td><td>ของ HNSW และ IVFFlat ตามลำดับ — <strong>ค่าสูงขึ้นให้ผลครบขึ้นแต่ช้าลง</strong></td></tr>
+    <tr><td><code>fault injection</code></td><td>การจงใจสร้างความผิดพลาด</td><td>สร้างความล้มเหลวขึ้นเองเพื่อให้ทราบคำตอบที่ถูกต้องอย่างแน่นอน</td></tr>
+    <tr><td><code>exact search</code></td><td>การค้นแบบครบถ้วน</td><td>เปรียบเทียบกับข้อมูลทุกรายการ ใช้เป็นคำตอบอ้างอิง</td></tr>
   </table>
-  <p class="src">📄 หน้านี้พิมพ์แจกกรรมการ 1 แผ่น เพื่อย้อนดูระหว่างถาม-ตอบ</p>
-  <div class="foot"><span>องก์ 2 · โจทย์</span><span>QuietFail</span></div>
+  <p class="src">หน้านี้จัดพิมพ์แจกคณะกรรมการ เพื่อใช้อ้างอิงระหว่างการนำเสนอและการถาม-ตอบ</p>
+  <div class="foot"><span>ส่วนที่ 2 · วัตถุประสงค์</span><span>QuietFail</span></div>
 </section>
 
-<!-- 7 ─ คำถามของโครงงาน -->
+<!-- 7 -->
 <section class="slide">
-  <div class="kicker">โจทย์</div>
-  <h2>คำถามของโครงงาน 3 ข้อ — วัดเป็นตัวเลขได้ทุกข้อ</h2>
+  <div class="kicker">วัตถุประสงค์</div>
+  <h2>คำถามของโครงงาน 3 ข้อ พร้อมตัวชี้วัดเชิงปริมาณ</h2>
   <table>
-    <tr><th style="width:8%">ข้อ</th><th style="width:44%">คำถาม</th><th>วัดด้วยอะไร</th></tr>
+    <tr><th style="width:7%">ข้อ</th><th style="width:43%">คำถาม</th><th>ตัวชี้วัดที่ใช้ตอบ</th></tr>
     <tr><td class="c"><strong>1</strong></td>
-        <td>ใช้ค่าตั้งต้นของระบบ แล้วคำตอบหายไปเท่าไหร่</td>
-        <td><strong>recall</strong> เทียบกับคำตอบที่ถูกต้องแน่นอน · ที่ 2 ขนาดข้อมูล</td></tr>
+        <td>เมื่อใช้ค่าพารามิเตอร์ตั้งต้นของระบบ ผลลัพธ์สูญหายไปในปริมาณเท่าใด</td>
+        <td>ค่า <strong>recall</strong> เทียบกับคำตอบอ้างอิง ณ ขนาดข้อมูล 2 ระดับ</td></tr>
     <tr><td class="c"><strong>2</strong></td>
-        <td>ความผิดพลาดแต่ละแบบ ตรวจจับล่วงหน้าได้กี่แบบ</td>
-        <td><strong>จำนวนแบบที่มีตัวตรวจอัตโนมัติ</strong> ที่พิสูจน์แล้วว่าใช้ได้จริง</td></tr>
+        <td>ความผิดพลาดแต่ละรูปแบบสามารถตรวจจับล่วงหน้าได้กี่รูปแบบ</td>
+        <td><strong>จำนวนรูปแบบที่มีโปรแกรมตรวจจับ</strong>ซึ่งพิสูจน์แล้วว่าใช้งานได้จริง</td></tr>
     <tr><td class="c"><strong>3</strong></td>
-        <td>ถ้าให้ AI เขียนโค้ดค้นหาให้ มันตกหลุมเดียวกันไหม</td>
-        <td><strong>รูปแบบความล้มเหลว</strong>ที่พบ เมื่อรันโค้ดที่ AI เขียนจริง</td></tr>
+        <td>เมื่อให้แบบจำลองภาษาขนาดใหญ่เขียนคำสั่งสืบค้น จะเกิดความผิดพลาดรูปแบบเดียวกันหรือไม่</td>
+        <td><strong>รูปแบบความล้มเหลว</strong>ที่พบจากการนำคำสั่งไปประมวลผลจริง</td></tr>
   </table>
-  <div class="note"><p>ข้อ 3 <strong>ตอบเป็น "รูปแบบ" ไม่ใช่ "อัตรา"</strong> —
-    เพราะโจทย์ที่ใช้ทดสอบเป็นโจทย์ที่ออกแบบมาเล็งจุดอ่อนที่รู้อยู่แล้ว ไม่ใช่ตัวอย่างสุ่ม
-    <span class="muted">(อธิบายเพิ่มในหน้าข้อจำกัด)</span></p></div>
-  <div class="foot"><span>องก์ 2 · โจทย์</span><span>QuietFail</span></div>
+  <div class="note"><p>คำถามข้อ 3 ให้คำตอบในลักษณะ <strong>“รูปแบบความล้มเหลว” มิใช่ “อัตราความผิดพลาด”</strong>
+    เนื่องจากชุดโจทย์ที่ใช้ทดสอบได้รับการออกแบบให้มุ่งเป้าไปยังจุดอ่อนที่ทราบอยู่แล้ว
+    จึงมิใช่ตัวอย่างเชิงสุ่ม <span class="muted">(อธิบายเพิ่มเติมในหน้าข้อจำกัด)</span></p></div>
+  <div class="foot"><span>ส่วนที่ 2 · วัตถุประสงค์</span><span>QuietFail</span></div>
 </section>
 
-<!-- 8 ─ ช่องว่างของงานที่มีอยู่ -->
+<!-- 8 -->
 <section class="slide">
-  <div class="kicker">ที่มาและความสำคัญ</div>
-  <h2>งานที่มีอยู่ช่วย "เลือกซื้อ" — ยังไม่มีใครช่วย "ตรวจสภาพ"</h2>
+  <div class="kicker">ความสำคัญและช่องว่างขององค์ความรู้</div>
+  <h2>งานที่มีอยู่สนับสนุนการเลือกเครื่องมือ แต่ยังไม่มีงานที่ตรวจสอบระบบที่ใช้งานอยู่</h2>
   <div class="cols c2">
     <div class="card">
-      <h3>งานเปรียบเทียบที่มีอยู่</h3>
-      <p>ตอบว่า <em>"เครื่องมือไหนเร็วกว่า แม่นกว่า"</em><br>
-      ใช้ตอน<strong>กำลังเลือก</strong>ว่าจะใช้อะไร</p>
-      <p class="muted" style="font-size:.86em">วัดบนชุดข้อมูลมาตรฐาน ในสภาพที่ปรับแต่งมาแล้ว</p>
+      <h3>งานเปรียบเทียบสมรรถนะที่มีอยู่</h3>
+      <p>ตอบคำถามว่า <em>เครื่องมือใดประมวลผลเร็วกว่าและแม่นยำกว่า</em><br>
+      ใช้ประกอบ<strong>การตัดสินใจเลือกเครื่องมือ</strong></p>
+      <p class="muted" style="font-size:.85em">วัดบนชุดข้อมูลมาตรฐาน ภายใต้การปรับแต่งพารามิเตอร์แล้ว</p>
     </div>
     <div class="card okc">
-      <h3>สิ่งที่ยังขาด — และงานนี้ทำ</h3>
-      <p>ตอบว่า <em>"ระบบที่คุณใช้อยู่ตอนนี้ กำลังทำผลหายอยู่หรือเปล่า"</em><br>
-      ใช้ตอน<strong>ระบบขึ้นใช้งานแล้ว</strong></p>
-      <p class="muted" style="font-size:.86em">วัดในสภาพที่คนทั่วไปตั้งค่าจริง คือ <strong>ไม่ได้ปรับแต่งอะไรเลย</strong></p>
+      <h3>ช่องว่างที่โครงงานนี้มุ่งเติมเต็ม</h3>
+      <p>ตอบคำถามว่า <em>ระบบที่ใช้งานอยู่ในปัจจุบันกำลังสูญเสียผลลัพธ์อยู่หรือไม่</em><br>
+      ใช้<strong>หลังจากระบบเปิดให้บริการแล้ว</strong></p>
+      <p class="muted" style="font-size:.85em">วัดภายใต้การตั้งค่าที่ผู้ใช้ทั่วไปใช้จริง กล่าวคือ <strong>ไม่ปรับแต่งพารามิเตอร์ใด ๆ</strong></p>
     </div>
   </div>
-  <div class="quote note"><p>ทีมส่วนใหญ่ติดตั้ง แล้วใช้ค่าที่ระบบให้มา — <strong>โดยไม่เคยวัด recall เลยสักครั้ง</strong>
-    เพราะไม่มีอะไรบอกว่าต้องวัด</p></div>
-  <div class="foot"><span>องก์ 2 · โจทย์</span><span>QuietFail</span></div>
+  <div class="note"><p>ผู้พัฒนาระบบส่วนใหญ่ติดตั้งแล้วใช้ค่าพารามิเตอร์ที่ระบบกำหนดมาให้
+    <strong>โดยมิได้วัดค่า recall แม้แต่ครั้งเดียว</strong> เนื่องจากไม่มีกลไกใดแจ้งว่าจำเป็นต้องวัด</p></div>
+  <div class="foot"><span>ส่วนที่ 2 · วัตถุประสงค์</span><span>QuietFail</span></div>
 </section>
 
-<!-- 9 ─ ขอบเขต -->
+<!-- 9 -->
 <section class="slide">
-  <div class="kicker">ขอบเขต</div>
-  <h2>ทำอะไร และ <span class="hot">ไม่ทำอะไร</span></h2>
+  <div class="kicker">ขอบเขตของโครงงาน</div>
+  <h2>ขอบเขตที่ครอบคลุม และขอบเขตที่ไม่ครอบคลุม</h2>
   <div class="cols c2">
     <div class="card okc">
       <h3 class="ok">อยู่ในขอบเขต</h3>
       <ul>
-        <li>PostgreSQL 17.10 + pgvector 0.8.5 (ตรึงเวอร์ชัน)</li>
-        <li>ความผิดพลาด <strong>12 แบบ</strong> ที่เลือกไว้ล่วงหน้าและล็อกรายการแล้ว</li>
-        <li>index 2 ชนิด: HNSW และ IVFFlat</li>
-        <li>เครื่องมือตรวจที่ทีมอื่นเอาไปใช้ได้จริง</li>
+        <li>PostgreSQL รุ่น 17.10 ร่วมกับส่วนขยาย pgvector รุ่น 0.8.5 โดยตรึงรุ่นไว้</li>
+        <li>ความผิดพลาด <strong>12 รูปแบบ</strong> ซึ่งกำหนดรายการไว้ล่วงหน้าและตรึงไว้แล้ว</li>
+        <li>ดัชนี 2 ชนิด ได้แก่ HNSW และ IVFFlat</li>
+        <li>เครื่องมือตรวจสอบที่ผู้พัฒนาระบบอื่นสามารถนำไปประยุกต์ใช้ได้</li>
       </ul>
     </div>
     <div class="card hotc">
       <h3 class="hot">ไม่อยู่ในขอบเขต</h3>
       <ul>
-        <li>ไม่เปรียบเทียบทุกเครื่องมือในตลาด <span class="muted">(มี Qdrant 1 ตัวเป็นตัวสอบทานเท่านั้น)</span></li>
-        <li>ไม่ปรับปรุงหรือเสนออัลกอริทึมใหม่</li>
-        <li>ไม่ทำระบบค้นหาภาษาไทยแบบครบวงจร</li>
-        <li>ไม่วัดบนเครื่อง production ของใคร</li>
+        <li>ไม่เปรียบเทียบเครื่องมือทั้งหมดในตลาด <span class="muted">(ใช้ Qdrant 1 ระบบเป็นตัวสอบทานเท่านั้น)</span></li>
+        <li>ไม่ปรับปรุงหรือนำเสนออัลกอริทึมใหม่</li>
+        <li>ไม่พัฒนาระบบสืบค้นภาษาไทยแบบครบวงจร</li>
+        <li>ไม่ทดสอบบนระบบที่ให้บริการจริงขององค์กรใด</li>
       </ul>
     </div>
   </div>
-  <p class="muted"><strong>ทำไมต้องตรึงเวอร์ชัน</strong> — ผลของ index ขึ้นกับเวอร์ชันมาก
-    ถ้าไม่ตรึง ผลที่วัดวันนี้กับพรุ่งนี้เทียบกันไม่ได้</p>
-  <div class="foot"><span>องก์ 2 · โจทย์</span><span>QuietFail</span></div>
+  <p class="muted"><strong>เหตุผลของการตรึงรุ่นซอฟต์แวร์</strong> — พฤติกรรมของดัชนีขึ้นอยู่กับรุ่นอย่างมีนัยสำคัญ
+    หากไม่ตรึงรุ่นไว้ ผลการวัดในแต่ละช่วงเวลาจะไม่สามารถนำมาเปรียบเทียบกันได้</p>
+  <div class="foot"><span>ส่วนที่ 2 · วัตถุประสงค์</span><span>QuietFail</span></div>
 </section>
 
-<!-- ══════════ องก์ 3 · วิธีทำ (10–15) ══════════ -->
+<!-- ═════════ ส่วนที่ 3 · วิธีดำเนินโครงงาน (10–16) ═════════ -->
 
-<!-- 10 ─ fault injection -->
+<!-- 10 -->
 <section class="slide">
-  <div class="kicker">วิธีดำเนินงาน 1 จาก 6</div>
-  <h2>ทำไมต้อง "จงใจทำให้พัง" แทนที่จะรอให้พังเอง</h2>
+  <div class="kicker">วิธีดำเนินโครงงาน 1 จาก 7</div>
+  <h2>เหตุใดจึงใช้วิธีจงใจสร้างความผิดพลาด แทนการรอให้ความผิดพลาดเกิดขึ้นเอง</h2>
   <div class="cols c2">
     <div class="card">
-      <h3>ถ้ารอให้พังเอง</h3>
-      <p>เจอปัญหาแล้ว <strong>แต่ไม่รู้ว่าคำตอบที่ถูกคืออะไร</strong><br>
-      จึงบอกไม่ได้ว่าหายไปเท่าไหร่ และแก้แล้วดีขึ้นจริงไหม</p>
+      <h3>หากรอให้เกิดขึ้นเอง</h3>
+      <p>แม้จะพบปัญหา แต่<strong>ไม่ทราบว่าคำตอบที่ถูกต้องคือสิ่งใด</strong><br>
+      จึงไม่สามารถระบุปริมาณที่สูญหาย และไม่สามารถยืนยันว่าการแก้ไขได้ผลจริง</p>
     </div>
     <div class="card okc">
-      <h3>fault injection — จงใจฉีดความผิดพลาด</h3>
-      <p>เราเป็นคนสร้างความผิดพลาดเอง <strong>จึงรู้คำตอบที่ถูก 100%</strong><br>
-      วัดได้ว่าหายไปกี่แถว และตัวตรวจจับได้จริงไหม</p>
+      <h3>fault injection — การจงใจสร้างความผิดพลาด</h3>
+      <p>ผู้จัดทำเป็นผู้สร้างความผิดพลาดขึ้นเอง จึง<strong>ทราบคำตอบที่ถูกต้องอย่างครบถ้วน</strong><br>
+      สามารถวัดปริมาณที่สูญหาย และตรวจสอบว่าโปรแกรมตรวจจับทำงานได้จริง</p>
     </div>
   </div>
   <div class="define">
-    <p><b>ทุกความผิดพลาดต้องมี 2 อย่างคู่กันเสมอ</b><br>
-    <strong>1. ตัวฉีด</strong> — โปรแกรมที่ทำให้อาการเกิดขึ้นจริง<br>
-    <strong>2. ด่านตรวจ (assertion)</strong> — ถ้าฉีดแล้วอาการ<em>ไม่</em>เกิดตามที่ตั้งใจ
-    โปรแกรมต้อง<strong>หยุดและแจ้งข้อผิดพลาด</strong> ห้ามปล่อยผ่านแล้วนับคะแนน</p>
+    <p><b>องค์ประกอบที่ความผิดพลาดทุกรูปแบบต้องมี</b><br>
+    <strong>1. โปรแกรมสร้างความผิดพลาด</strong> — ทำให้อาการเกิดขึ้นจริงในระบบ<br>
+    <strong>2. เงื่อนไขตรวจสอบ (assertion)</strong> — หากสร้างแล้วอาการ<em>ไม่</em>เกิดขึ้นตามที่กำหนด
+    โปรแกรมต้อง<strong>หยุดทำงานและแจ้งข้อผิดพลาด</strong> มิใช่ดำเนินการต่อแล้วบันทึกผล</p>
   </div>
-  <div class="foot"><span>องก์ 3 · วิธีทำ</span><span>QuietFail</span></div>
+  <div class="foot"><span>ส่วนที่ 3 · วิธีดำเนินโครงงาน</span><span>QuietFail</span></div>
 </section>
 
-<!-- 11 ─ ข้อมูล -->
+<!-- 11 ─ ข้อมูล (ชี้ชัดว่าอันไหนใช้ AI อันไหนไม่ใช้) -->
 <section class="slide sm">
-  <div class="kicker">วิธีดำเนินงาน 2 จาก 6 — ที่มาข้อมูล</div>
-  <h2>ข้อมูลที่ใช้ 3 ชุด — มาจากไหน จำนวนเท่าไหร่ ทำไมต้องมี</h2>
+  <div class="kicker">วิธีดำเนินโครงงาน 2 จาก 7 — แหล่งที่มาของข้อมูล</div>
+  <h2>ชุดข้อมูลที่ใช้ 3 ชุด</h2>
   <table>
-    <tr><th style="width:14%">ชุด</th><th style="width:28%">ที่มา</th><th class="n" style="width:13%">จำนวน</th>
-        <th class="c" style="width:9%">มิติ</th><th>บทบาทในงาน</th></tr>
-    <tr><td><strong>สังเคราะห์</strong></td>
-        <td>สร้างเองด้วยสูตรคณิตศาสตร์ตายตัว · จัดเป็น 50 กลุ่มความหมาย</td>
+    <tr><th style="width:13%">ชุดข้อมูล</th><th style="width:31%">แหล่งที่มาและวิธีสร้าง</th>
+        <th class="n" style="width:12%">จำนวน</th><th class="c" style="width:8%">มิติ</th>
+        <th>บทบาทในโครงงาน</th></tr>
+    <tr><td><strong>ชุดควบคุม</strong><br><span class="muted">(สังเคราะห์)</span></td>
+        <td>สร้างจาก<strong>สูตรคณิตศาสตร์</strong> — ใช้ค่าแฮช <code>md5</code> ของคีย์
+            แปลงเป็นค่าสุ่มแบบแจกแจงปกติด้วยวิธี Box-Muller<br>
+            <span class="hot"><strong>ไม่ได้ใช้แบบจำลองปัญญาประดิษฐ์ใด ๆ</strong></span></td>
         <td class="n"><strong>100,000</strong><br>และ <strong>500,000</strong></td>
         <td class="c">384</td>
-        <td><strong>รู้เฉลย 100%</strong> · รันกี่ครั้งก็ได้ข้อมูลชุดเดิมเป๊ะ</td></tr>
-    <tr><td><strong>จริง ชุด 1</strong></td>
-        <td>ชุดข้อมูลสาธารณะ BEIR/Quora<br>แปลงด้วยโมเดล <code>all-MiniLM-L6-v2</code></td>
+        <td>ทราบคำตอบที่ถูกต้องอย่างครบถ้วน · สร้างซ้ำได้ผลเหมือนเดิมทุกครั้ง</td></tr>
+    <tr><td><strong>ชุดจริงที่ 1</strong></td>
+        <td>ข้อความจริงจากชุดข้อมูลสาธารณะ <strong>BEIR/Quora</strong><br>
+            แปลงเป็นเวกเตอร์ด้วย<strong>แบบจำลองภาษา</strong> <code>all-MiniLM-L6-v2</code></td>
         <td class="n"><strong>100,000</strong></td><td class="c">384</td>
-        <td>ผลที่ได้ <strong>ยกไปใช้กับข้อมูลจริงได้ไหม</strong></td></tr>
-    <tr><td><strong>จริง ชุด 2</strong></td>
-        <td>ข้อความ<strong>ชุดเดิมเป๊ะ</strong><br>แปลงด้วยโมเดล <code>all-mpnet-base-v2</code></td>
+        <td>ตรวจสอบว่าข้อสรุปที่ได้สามารถนำไปใช้กับข้อมูลจริงได้เพียงใด</td></tr>
+    <tr><td><strong>ชุดจริงที่ 2</strong></td>
+        <td>ข้อความ<strong>ชุดเดียวกันทุกประการ</strong><br>
+            แปลงด้วยแบบจำลอง <code>all-mpnet-base-v2</code></td>
         <td class="n"><strong>100,000</strong></td><td class="c">768</td>
-        <td>แยกว่าผลต่าง <strong>เพราะโมเดล</strong> หรือ <strong>เพราะชนิดข้อมูล</strong></td></tr>
+        <td>แยกแยะว่าผลที่ต่างกันเกิดจาก<strong>แบบจำลอง</strong>หรือจาก<strong>ลักษณะข้อมูล</strong></td></tr>
   </table>
-  <div class="cols c2">
-    <div class="note"><p><strong>คำถามทดสอบ 200 ข้อ</strong> ใช้ชุดเดียวกันทั้งสามชุดข้อมูล
-      และมี<strong>รหัสตรวจ (fingerprint)</strong> กำกับ เพื่อกันการแก้ข้อมูลหลังเห็นผลแล้ว</p></div>
-    <div class="note"><p><strong>ทำไมต้องมีข้อมูลสังเคราะห์ด้วย</strong> — ข้อมูลจริงไม่มีใครบอกได้ว่า
-      "คำตอบที่ถูกต้อง" คืออะไร ข้อมูลที่ควบคุมได้จึงเป็น<strong>ข้อบังคับของวิธีวิจัย ไม่ใช่ทางลัด</strong></p></div>
-  </div>
-  <div class="foot"><span>องก์ 3 · วิธีทำ</span><span>QuietFail</span></div>
+  <div class="note"><p><strong>ข้อควรทราบ</strong> — คำว่า “ข้อมูลสังเคราะห์” ในโครงงานนี้หมายถึง
+    ข้อมูลที่สร้างจาก<strong>สูตรคณิตศาสตร์ที่กำหนดผลลัพธ์ได้แน่นอน</strong>
+    <span class="hot">มิใช่ข้อมูลที่สร้างโดยปัญญาประดิษฐ์</span><br>
+    ส่วนแบบจำลองปัญญาประดิษฐ์ถูกใช้เฉพาะในชุดข้อมูลจริง เพื่อแปลงข้อความเป็นเวกเตอร์เท่านั้น</p></div>
+  <div class="foot"><span>ส่วนที่ 3 · วิธีดำเนินโครงงาน</span><span>QuietFail</span></div>
 </section>
 
-<!-- 12 ─ เฉลยมาจากไหน -->
-<section class="slide">
-  <div class="kicker">วิธีดำเนินงาน 3 จาก 6</div>
-  <h2>"คำตอบที่ถูกต้อง" มาจากไหน</h2>
-  <div class="define">
-    <p><b>exact search (การค้นแบบไล่ทุกรายการ)</b> — สั่งให้ฐานข้อมูล<strong>ห้ามใช้ index</strong>
-    แล้วเทียบคำถามกับข้อมูลทุกแถว<br>
-    ช้ามาก <strong>แต่ถูกต้องตามนิยาม</strong> เพราะไม่ได้ข้ามอะไรเลย → ใช้เป็นเฉลย</p>
-  </div>
-  <ul>
-    <li><strong>เฉลยคำนวณไว้ล่วงหน้า</strong>สำหรับคำถามทั้ง 200 ข้อ ที่ระดับ 10 และ 100 อันดับแรก</li>
-    <li>เก็บลงตารางแยก พร้อมรหัสตรวจ — <strong>คำนวณครั้งเดียว ใช้ทุกการทดลอง</strong></li>
-    <li>มี<strong>ด่านกันเฉลยปนเปื้อน</strong>: ก่อนสร้างเฉลยจะตรวจแผนการทำงานของฐานข้อมูล
-      ถ้าพบว่าเผลอใช้ index อยู่ <strong>โปรแกรมจะหยุดทันที</strong></li>
-  </ul>
-  <div class="note"><p>ถ้าเฉลยปนผลจากการค้นแบบประมาณ <strong>recall จะออกมาสวยเสมอโดยไม่มีอะไรเตือน</strong>
-    — ซึ่งจะทำให้ทั้งโครงงานไร้ความหมาย จึงต้องมีด่านนี้</p></div>
-  <div class="foot"><span>องก์ 3 · วิธีทำ</span><span>QuietFail</span></div>
-</section>
-
-<!-- 13 ─ ชุดความผิดพลาด -->
+<!-- 12 ─ ชุดคำถาม 200 ข้อ (หน้าใหม่) -->
 <section class="slide sm">
-  <div class="kicker">วิธีดำเนินงาน 4 จาก 6</div>
-  <h2>ความผิดพลาด 12 แบบ — ครอบคลุมทั้งวงจรชีวิตของระบบ</h2>
-  <table>
-    <tr><th style="width:24%">เกิดตอนไหน</th><th style="width:10%" class="c">กี่แบบ</th><th>ตัวอย่างอาการ</th></tr>
-    <tr><td><strong>ตอนสร้าง index</strong></td><td class="c"><strong>5</strong></td>
-        <td>เลือกวิธีวัดระยะไม่ตรงกับตอนค้น · สร้างตอนข้อมูลยังน้อย · สร้างใหม่แล้วได้คำตอบไม่เหมือนเดิม</td></tr>
-    <tr><td><strong>ตอนเขียนคำสั่งค้น</strong></td><td class="c"><strong>4</strong></td>
-        <td>เขียนผิดรูปจน index ใช้ไม่ได้ · ขอจำนวนเกินที่ค่าตั้งต้นรองรับ · กรองข้อมูลผิดจังหวะ</td></tr>
-    <tr><td><strong>ตอนข้อมูลเปลี่ยน</strong></td><td class="c"><strong>1</strong></td>
-        <td>ลบข้อมูลแล้วร่องรอยเก่ายังค้างใน index</td></tr>
-    <tr><td><strong>คุณภาพข้อมูล</strong></td><td class="c"><strong>1</strong></td>
-        <td>บางแถวมีค่าว่างหรือเป็นศูนย์ → <strong>ไม่มีวันโผล่ในผลค้นเลยตลอดกาล</strong></td></tr>
-    <tr><td><strong>เป็นตัววัดผลเอง</strong></td><td class="c"><strong>1</strong></td>
-        <td>การวัดว่าใส่ index แล้วคำตอบหายไปเท่าไหร่ (คำถามข้อ 1)</td></tr>
-  </table>
-  <p class="muted">เพิ่มความผิดพลาดฝั่งฐานข้อมูลทั่วไปอีก <strong>4 แบบ</strong> เป็นกลุ่มควบคุม
-    (การล็อกตาราง · สถิติเก่า · การเชื่อมต่อค้าง) → รวม <strong>15 แบบที่มีตัวฉีดและตัวตรวจครบ</strong></p>
-  <p class="src">รายการล็อกไว้แล้ว — จะเพิ่มแบบใหม่ ต้องตัดของเดิมออกหนึ่งแบบ เพื่อกันขอบเขตบานปลาย</p>
-  <div class="foot"><span>องก์ 3 · วิธีทำ</span><span>QuietFail</span></div>
-</section>
-
-<!-- 14 ─ ตัวนับคะแนน 3 คำตอบ -->
-<section class="slide">
-  <div class="kicker">วิธีดำเนินงาน 5 จาก 6</div>
-  <h2>ตัวตรวจที่ซื่อสัตย์ ต้องตอบได้ 3 แบบ ไม่ใช่ 2</h2>
-  <div class="cols c3">
-    <div class="card okc"><div class="mid ok">เจอ</div><p>พบว่ากำลังมีปัญหานี้อยู่</p></div>
-    <div class="card"><div class="mid">ไม่เจอ</div><p>ตรวจแล้ว ไม่พบปัญหานี้</p></div>
-    <div class="card hotc"><div class="mid hot">ตรวจไม่ได้</div><p>ข้อมูลไม่พอจะตัดสิน</p></div>
-  </div>
-  <div class="note"><p><strong>"ตรวจไม่ได้" ไม่นับว่าผ่าน</strong> — ถ้าตัวตรวจหาสิ่งที่ควรมีไม่เจอ
-    มันต้องบอกว่าตรวจไม่ได้ ห้ามเงียบแล้วให้ผ่าน<br>
-    เพราะ<strong>ตัวตรวจที่เงียบเมื่อไม่รู้ ก็เป็นความล้มเหลวเงียบอีกชั้นหนึ่ง</strong></p></div>
-  <div class="foot"><span>องก์ 3 · วิธีทำ</span><span>QuietFail</span></div>
-</section>
-
-<!-- 15 ─ กันตัวเองโกง -->
-<section class="slide">
-  <div class="kicker">วิธีดำเนินงาน 6 จาก 6</div>
-  <h2>กันไม่ให้ "ตัวตรวจที่ไม่ได้ตรวจอะไรเลย" ผ่านไปได้</h2>
-  <div class="quote note"><p>ตัวตรวจที่<strong>ไม่มีวันตอบว่า "เจอ"</strong> จะดูเหมือนผ่านตลอด
-    — ทั้งที่มันไม่ได้วัดอะไรเลย</p></div>
-  <ul>
-    <li><strong>กฎที่ตั้งไว้</strong>: ตัวตรวจทุกตัวต้องมีหลักฐานว่า<strong>พลิกสถานะได้จริง</strong>
-      คือต้องเห็นทั้งตอนที่มันตอบ "เจอ" และตอน "ไม่เจอ"</li>
-    <li>ทำโดย<strong>จงใจแก้เงื่อนไขให้ผิดทีละข้อ</strong> แล้วดูว่าตัวตรวจฟ้องไหม แล้วคืนสภาพ</li>
-    <li>ใช้กฎนี้กับ<strong>ตัวโปรแกรมตรวจสอบของโครงงานเองด้วย</strong> —
-      ปัจจุบัน <strong>35 จาก 38 หัวข้อ</strong> มีหลักฐานว่าตอบลบได้จริง
-      อีก 2 ข้อตั้งใจให้ผ่านเสมอโดยมีเหตุผลกำกับ</li>
-  </ul>
-  <p class="src">เคยเกิดจริง: ตัวตรวจแบบหนึ่งผ่านทุกอย่าง <strong>ยกเว้นข้อนี้</strong> โดยไม่มีใครสังเกต
-    จนกระทั่งเอากฎนี้มาใช้</p>
-  <div class="foot"><span>องก์ 3 · วิธีทำ</span><span>QuietFail</span></div>
-</section>
-
-<!-- ══════════ องก์ 4 · ผล (16–22) ══════════ -->
-
-<!-- 16 ─ ผลหลัก -->
-<section class="slide sm">
-  <div class="kicker alt">ผลการดำเนินงาน 1 จาก 7 — คำถามข้อ 1</div>
-  <h2>ใส่ index แล้วคำตอบหายไปเท่าไหร่ (ไม่ปรับแต่งอะไรเลย)</h2>
-  <table>
-    <tr><th style="width:14%">ขนาดข้อมูล</th><th style="width:18%">วิธีค้น</th>
-        <th class="n">recall@10</th><th class="n">ได้ครบ 10/10<br>กี่คำถาม</th><th class="n">เร็วขึ้น</th></tr>
-    <tr><td rowspan="3"><strong>100,000</strong></td><td>ไม่ใช้ index (เฉลย)</td>
-        <td class="n ok">1.0000</td><td class="n ok">200 / 200</td><td class="n">1.0×</td></tr>
-    <tr><td>HNSW</td><td class="n hot">0.8565</td><td class="n hot">52 / 200</td><td class="n">32.6×</td></tr>
-    <tr><td>IVFFlat</td><td class="n hot">0.7870</td><td class="n hot">100 / 200</td><td class="n">44.6×</td></tr>
-    <tr><td rowspan="3"><strong>500,000</strong></td><td>ไม่ใช้ index (เฉลย)</td>
-        <td class="n ok">1.0000</td><td class="n ok">200 / 200</td><td class="n">1.0×</td></tr>
-    <tr><td><strong>HNSW</strong></td><td class="n hot"><strong>0.5885</strong></td>
-        <td class="n hot"><strong>2 / 200</strong></td><td class="n"><strong>117×</strong></td></tr>
-    <tr><td>IVFFlat</td><td class="n hot">0.7820</td><td class="n hot">108 / 200</td><td class="n">51.6×</td></tr>
-  </table>
-  <div class="note"><p>อ่านคอลัมน์ที่ 4: ที่ 500,000 รายการ <strong>มีเพียง 2 คำถามจาก 200
-    ที่ได้คำตอบครบทั้ง 10 อันดับ</strong> — อีก 198 คำถามขาดไปอย่างน้อยหนึ่งรายการ</p></div>
-  <p class="src">ที่มา: <code>results/q01_recall_collapse_*.txt</code> · ค่าตั้งต้นทั้งหมด · เฉลยจาก exact search</p>
-  <div class="foot"><span>องก์ 4 · ผล</span><span>QuietFail</span></div>
-</section>
-
-<!-- 17 ─ จุดที่น่ากลัวที่สุด -->
-<section class="slide">
-  <div class="kicker alt">ผลการดำเนินงาน 2 จาก 7</div>
-  <h2>ยิ่งข้อมูลเยอะ ยิ่ง<span class="ok">เร็วขึ้น</span> พร้อมกับยิ่ง<span class="hot">พังลง</span></h2>
+  <div class="kicker">วิธีดำเนินโครงงาน 3 จาก 7 — ชุดคำถามทดสอบ</div>
+  <h2>ชุดคำถามทดสอบ 200 ข้อ สร้างขึ้นอย่างไร</h2>
   <div class="cols c2">
     <div class="card">
-      <h3>สิ่งที่ทีมงานเฝ้าดูกัน</h3>
-      <p>ความเร็ว: <span class="ok">32.6× → 117×</span></p>
-      <p class="ok"><strong>ดูเหมือน "ดีขึ้น 3 เท่า"</strong></p>
+      <h3>วิธีสร้าง</h3>
+      <ul>
+        <li>กำหนด<strong>จุดศูนย์กลางกลุ่ม 50 จุด</strong> ในปริภูมิ 384 มิติ</li>
+        <li>คำถามแต่ละข้อ = <strong>จุดศูนย์กลางกลุ่มหนึ่ง + สัญญาณรบกวน</strong></li>
+        <li>สัญญาณรบกวนมีค่า <code>s = 0.04</code> ซึ่ง<strong>ได้จากการวัด มิใช่การกำหนดโดยประมาณ</strong></li>
+        <li>คำถามกระจายครอบคลุม<strong>ครบทั้ง 50 กลุ่ม</strong></li>
+      </ul>
+      <p class="src">สร้างด้วยสูตรเดียวกับชุดข้อมูลควบคุม จึงมาจากการแจกแจงเดียวกัน</p>
+    </div>
+    <div class="card">
+      <h3>เหตุผลของค่าสัญญาณรบกวน</h3>
+      <table style="box-shadow:none">
+        <tr><th class="n"><code>s</code></th><th class="n">ทฤษฎี</th><th class="n">วัดได้</th></tr>
+        <tr><td class="n">0.02</td><td class="n">0.133</td><td class="n">0.131</td></tr>
+        <tr><td class="n"><strong>0.04</strong></td><td class="n">0.381</td><td class="n ok"><strong>0.377</strong></td></tr>
+        <tr><td class="n">0.08</td><td class="n">0.711</td><td class="n">0.702</td></tr>
+      </table>
+      <p class="src">ระยะภายในกลุ่ม 0.38 เทียบกับระยะข้ามกลุ่ม 1.00
+        = <strong>ห่างกัน 2.6 เท่า</strong> ข้อมูลจึงมีโครงสร้างเพียงพอให้วัดผลได้อย่างมีความหมาย</p>
+    </div>
+  </div>
+  <div class="note"><p><strong>มาตรการป้องกันการเลือกโจทย์ที่เอื้อต่อผลลัพธ์</strong> —
+    ชุดคำถามถูกบันทึกเข้าระบบควบคุมเวอร์ชัน<strong>ก่อนที่จะมีตัวเลขผลการทดลองใด ๆ</strong>
+    และมี<strong>ค่าตรวจสอบความถูกต้อง (fingerprint)</strong> กำกับไว้
+    หากมีการแก้ไขจำนวน สูตร หรือค่าตั้งต้น ค่าตรวจสอบจะเปลี่ยนทันที</p></div>
+  <div class="foot"><span>ส่วนที่ 3 · วิธีดำเนินโครงงาน</span><span>QuietFail</span></div>
+</section>
+
+<!-- 13 -->
+<section class="slide">
+  <div class="kicker">วิธีดำเนินโครงงาน 4 จาก 7</div>
+  <h2>คำตอบอ้างอิงที่ใช้เปรียบเทียบ ได้มาอย่างไร</h2>
+  <div class="define">
+    <p><b>exact search (การค้นแบบครบถ้วน)</b> — กำหนดให้ระบบฐานข้อมูล<strong>ไม่ใช้ index</strong>
+    แล้วเปรียบเทียบคำค้นกับข้อมูลทุกรายการ<br>
+    ใช้เวลามาก <strong>แต่ให้ผลถูกต้องตามนิยาม</strong> เนื่องจากไม่มีการข้ามข้อมูลใด จึงใช้เป็นคำตอบอ้างอิง</p>
+  </div>
+  <ul>
+    <li><strong>คำนวณคำตอบอ้างอิงไว้ล่วงหน้า</strong>สำหรับคำถามทั้ง 200 ข้อ ณ ระดับ 10 และ 100 อันดับแรก</li>
+    <li>จัดเก็บในตารางแยกพร้อมค่าตรวจสอบ — <strong>คำนวณครั้งเดียวและใช้ตลอดทุกการทดลอง</strong></li>
+    <li>มี<strong>เงื่อนไขป้องกันการปนเปื้อน</strong> โดยตรวจสอบแผนการทำงานของฐานข้อมูลก่อนสร้างคำตอบอ้างอิง
+      หากพบว่ามีการใช้ index ปะปนอยู่ <strong>โปรแกรมจะหยุดทำงานทันที</strong></li>
+  </ul>
+  <div class="note"><p>หากคำตอบอ้างอิงปนเปื้อนผลจากการค้นแบบประมาณ
+    <strong>ค่า recall จะสูงเกินความเป็นจริงเสมอโดยไม่มีสิ่งใดแจ้งเตือน</strong>
+    ซึ่งจะทำให้ผลการทดลองทั้งหมดไม่มีความหมาย จึงจำเป็นต้องมีเงื่อนไขนี้</p></div>
+  <div class="foot"><span>ส่วนที่ 3 · วิธีดำเนินโครงงาน</span><span>QuietFail</span></div>
+</section>
+
+<!-- 14 -->
+<section class="slide sm">
+  <div class="kicker">วิธีดำเนินโครงงาน 5 จาก 7</div>
+  <h2>ความผิดพลาด 12 รูปแบบ ครอบคลุมตลอดวงจรชีวิตของระบบ</h2>
+  <table>
+    <tr><th style="width:25%">ช่วงที่เกิด</th><th style="width:10%" class="c">จำนวน</th><th>ตัวอย่างลักษณะอาการ</th></tr>
+    <tr><td><strong>ขณะสร้างดัชนี</strong></td><td class="c"><strong>5</strong></td>
+        <td>เลือกวิธีวัดระยะไม่ตรงกับที่ใช้ตอนสืบค้น · สร้างดัชนีขณะข้อมูลยังไม่ครบ · สร้างใหม่แล้วได้ผลลัพธ์ไม่เหมือนเดิม</td></tr>
+    <tr><td><strong>ขณะเขียนคำสั่งสืบค้น</strong></td><td class="c"><strong>4</strong></td>
+        <td>เขียนคำสั่งในรูปแบบที่ทำให้ดัชนีถูกใช้งานไม่ได้ · ร้องขอจำนวนเกินกว่าค่าตั้งต้นรองรับ · กรองข้อมูลผิดลำดับขั้น</td></tr>
+    <tr><td><strong>ขณะข้อมูลเปลี่ยนแปลง</strong></td><td class="c"><strong>1</strong></td>
+        <td>ลบข้อมูลแล้วร่องรอยเดิมยังคงค้างอยู่ในดัชนี</td></tr>
+    <tr><td><strong>คุณภาพของข้อมูล</strong></td><td class="c"><strong>1</strong></td>
+        <td>บางรายการมีค่าว่างหรือเป็นศูนย์ ทำให้<strong>ไม่ปรากฏในผลการสืบค้นอย่างถาวร</strong></td></tr>
+    <tr><td><strong>เป็นการวัดผลในตัวเอง</strong></td><td class="c"><strong>1</strong></td>
+        <td>การวัดว่าเมื่อใช้ดัชนีแล้วผลลัพธ์สูญหายไปเท่าใด (ตรงกับคำถามข้อ 1)</td></tr>
+  </table>
+  <p class="muted">เพิ่มความผิดพลาดของระบบฐานข้อมูลทั่วไปอีก <strong>4 รูปแบบ</strong> เป็นกลุ่มควบคุม
+    ได้แก่ การล็อกตาราง สถิติที่ล้าสมัย และการเชื่อมต่อค้าง
+    รวมเป็น <strong>15 รูปแบบที่มีโปรแกรมสร้างและโปรแกรมตรวจจับครบถ้วน</strong></p>
+  <p class="src">รายการนี้ถูกตรึงไว้แล้ว การเพิ่มรูปแบบใหม่ต้องตัดรูปแบบเดิมออกหนึ่งรายการ เพื่อควบคุมมิให้ขอบเขตขยายตัว</p>
+  <div class="foot"><span>ส่วนที่ 3 · วิธีดำเนินโครงงาน</span><span>QuietFail</span></div>
+</section>
+
+<!-- 15 -->
+<section class="slide">
+  <div class="kicker">วิธีดำเนินโครงงาน 6 จาก 7</div>
+  <h2>โปรแกรมตรวจจับต้องให้คำตอบได้ 3 สถานะ มิใช่ 2 สถานะ</h2>
+  <div class="cols c3">
+    <div class="card okc"><div class="mid ok">ตรวจพบ</div><p>ตรวจสอบแล้วพบความผิดพลาดรูปแบบนี้</p></div>
+    <div class="card"><div class="mid">ไม่พบ</div><p>ตรวจสอบแล้วไม่พบความผิดพลาดรูปแบบนี้</p></div>
+    <div class="card hotc"><div class="mid hot">ตรวจไม่ได้</div><p>ข้อมูลไม่เพียงพอที่จะสรุปผล</p></div>
+  </div>
+  <div class="note"><p>สถานะ <strong>“ตรวจไม่ได้” ไม่นับว่าผ่านการตรวจสอบ</strong>
+    หากโปรแกรมไม่พบข้อมูลที่จำเป็นต่อการตัดสิน จะต้องรายงานว่าตรวจสอบไม่ได้
+    มิใช่รายงานว่าผ่าน<br>
+    เนื่องจาก<strong>โปรแกรมตรวจสอบที่นิ่งเงียบเมื่อไม่ทราบผล ย่อมเป็นความล้มเหลวโดยไม่แจ้งเตือนอีกชั้นหนึ่ง</strong></p></div>
+  <div class="foot"><span>ส่วนที่ 3 · วิธีดำเนินโครงงาน</span><span>QuietFail</span></div>
+</section>
+
+<!-- 16 -->
+<section class="slide">
+  <div class="kicker">วิธีดำเนินโครงงาน 7 จาก 7</div>
+  <h2>มาตรการป้องกันโปรแกรมตรวจจับที่ไม่ได้ตรวจสอบสิ่งใดจริง</h2>
+  <div class="note"><p>โปรแกรมตรวจจับที่<strong>ไม่มีทางรายงานว่า “ตรวจพบ” ได้เลย</strong>
+    จะปรากฏว่าผ่านการตรวจสอบตลอดเวลา ทั้งที่มิได้วัดสิ่งใด</p></div>
+  <ul>
+    <li><strong>เกณฑ์ที่กำหนดไว้</strong> — โปรแกรมตรวจจับทุกตัวต้องมีหลักฐานว่า<strong>เปลี่ยนสถานะได้จริง</strong>
+      กล่าวคือต้องปรากฏทั้งสถานะ “ตรวจพบ” และ “ไม่พบ”</li>
+    <li>ดำเนินการโดย<strong>จงใจแก้ไขเงื่อนไขให้ผิดทีละรายการ</strong>
+      แล้วตรวจสอบว่าโปรแกรมรายงานความผิดปกติหรือไม่ จากนั้นคืนสภาพเดิม</li>
+    <li>ใช้เกณฑ์เดียวกันนี้กับ<strong>โปรแกรมตรวจสอบความสอดคล้องของโครงงานเองด้วย</strong>
+      ปัจจุบัน <strong>35 จาก 38 หัวข้อ</strong> มีหลักฐานว่ารายงานความผิดปกติได้จริง
+      ส่วนที่เหลืออีกสองรายการกำหนดให้ผ่านเสมอโดยมีเหตุผลประกอบ</li>
+  </ul>
+  <p class="src">เคยเกิดขึ้นจริง — โปรแกรมตรวจจับรูปแบบหนึ่งผ่านทุกเกณฑ์ <strong>ยกเว้นเกณฑ์นี้</strong>
+    โดยไม่มีผู้ใดสังเกตเห็น จนกระทั่งนำเกณฑ์ดังกล่าวมาบังคับใช้</p>
+  <div class="foot"><span>ส่วนที่ 3 · วิธีดำเนินโครงงาน</span><span>QuietFail</span></div>
+</section>
+
+<!-- ═════════ ส่วนที่ 4 · ผลการดำเนินโครงงาน (17–23) ═════════ -->
+
+<!-- 17 -->
+<section class="slide sm">
+  <div class="kicker alt">ผลการดำเนินโครงงาน 1 จาก 7 — ตอบคำถามข้อ 1</div>
+  <h2>ปริมาณผลลัพธ์ที่สูญหายเมื่อใช้ดัชนีโดยไม่ปรับแต่งพารามิเตอร์</h2>
+  <table>
+    <tr><th style="width:14%">ขนาดข้อมูล</th><th style="width:19%">วิธีสืบค้น</th>
+        <th class="n">recall@10</th><th class="n">จำนวนคำถามที่<br>ได้ผลครบ 10 รายการ</th><th class="n">อัตราเร็วขึ้น</th></tr>
+    <tr><td rowspan="3"><strong>100,000</strong></td><td>ไม่ใช้ดัชนี (อ้างอิง)</td>
+        <td class="n ok">1.0000</td><td class="n ok">200 / 200</td><td class="n">1.0 เท่า</td></tr>
+    <tr><td>HNSW</td><td class="n hot">0.8565</td><td class="n hot">52 / 200</td><td class="n">32.6 เท่า</td></tr>
+    <tr><td>IVFFlat</td><td class="n hot">0.7870</td><td class="n hot">100 / 200</td><td class="n">44.6 เท่า</td></tr>
+    <tr><td rowspan="3"><strong>500,000</strong></td><td>ไม่ใช้ดัชนี (อ้างอิง)</td>
+        <td class="n ok">1.0000</td><td class="n ok">200 / 200</td><td class="n">1.0 เท่า</td></tr>
+    <tr><td><strong>HNSW</strong></td><td class="n hot"><strong>0.5885</strong></td>
+        <td class="n hot"><strong>2 / 200</strong></td><td class="n"><strong>117 เท่า</strong></td></tr>
+    <tr><td>IVFFlat</td><td class="n hot">0.7820</td><td class="n hot">108 / 200</td><td class="n">51.6 เท่า</td></tr>
+  </table>
+  <div class="note"><p>พิจารณาคอลัมน์ที่ 4 — ณ ขนาดข้อมูล 500,000 รายการ
+    <strong>มีเพียง 2 คำถามจากทั้งหมด 200 คำถามที่ได้รับผลลัพธ์ครบทั้ง 10 อันดับ</strong>
+    คำถามที่เหลืออีก 198 ข้อขาดผลลัพธ์ไปอย่างน้อยหนึ่งรายการ</p></div>
+  <p class="src">แหล่งที่มา: <code>results/q01_recall_collapse_*.txt</code> · ใช้ค่าพารามิเตอร์ตั้งต้นทั้งหมด · คำตอบอ้างอิงจาก exact search</p>
+  <div class="foot"><span>ส่วนที่ 4 · ผลการดำเนินโครงงาน</span><span>QuietFail</span></div>
+</section>
+
+<!-- 18 -->
+<section class="slide">
+  <div class="kicker alt">ผลการดำเนินโครงงาน 2 จาก 7</div>
+  <h2>เมื่อข้อมูลมีขนาดใหญ่ขึ้น ระบบประมวลผลเร็วขึ้นพร้อมกับความครบถ้วนที่ลดลง</h2>
+  <div class="cols c2">
+    <div class="card">
+      <h3>ตัวชี้วัดที่มักถูกเฝ้าระวัง</h3>
+      <p>อัตราเร็ว: <span class="ok">32.6 เท่า → 117 เท่า</span></p>
+      <p class="ok"><strong>ปรากฏว่าสมรรถนะดีขึ้นประมาณ 3 เท่า</strong></p>
     </div>
     <div class="card hotc">
-      <h3>สิ่งที่เกิดขึ้นจริงพร้อมกัน</h3>
-      <p>ความครบ: <span class="hot">0.8565 → 0.5885</span></p>
-      <p class="hot"><strong>ได้ครบทั้ง 10 เหลือ 2 จาก 200 คำถาม</strong></p>
+      <h3>สิ่งที่เกิดขึ้นพร้อมกัน</h3>
+      <p>ความครบถ้วน: <span class="hot">0.8565 → 0.5885</span></p>
+      <p class="hot"><strong>คำถามที่ได้ผลครบลดจาก 52 เหลือ 2 จาก 200 ข้อ</strong></p>
     </div>
   </div>
-  <div class="note"><p><strong>ทำไมสองอย่างนี้ไปด้วยกัน</strong> — ค่าตั้งต้นบอกว่า
-    "ให้ดูผู้สมัครประมาณ 40 รายแล้วตอบ" ซึ่งเป็น<strong>จำนวนคงที่</strong><br>
-    พอข้อมูลโตขึ้น 5 เท่า มันก็ยังดูแค่ 40 ราย → เร็วขึ้น (เทียบสัดส่วนแล้วทำงานน้อยลง)
-    แต่โอกาสที่คำตอบจริงจะอยู่ใน 40 รายนั้นลดลง</p></div>
-  <p class="muted"><strong>ทีมที่วัดแต่ความเร็วจะไม่มีวันเห็นปัญหานี้</strong></p>
-  <div class="foot"><span>องก์ 4 · ผล</span><span>QuietFail</span></div>
+  <div class="note"><p><strong>สาเหตุที่ปรากฏการณ์ทั้งสองเกิดขึ้นพร้อมกัน</strong> —
+    ค่าพารามิเตอร์ตั้งต้นกำหนดให้ระบบพิจารณาผู้สมัครประมาณ 40 รายการแล้วจึงตอบ
+    ซึ่งเป็น<strong>ค่าคงที่ ไม่แปรตามขนาดข้อมูล</strong><br>
+    เมื่อข้อมูลเพิ่มขึ้น 5 เท่า ระบบยังคงพิจารณาเพียง 40 รายการเท่าเดิม
+    จึงประมวลผลเร็วขึ้นเมื่อเทียบตามสัดส่วน แต่โอกาสที่คำตอบที่ถูกต้องจะอยู่ใน 40 รายการนั้นลดลง</p></div>
+  <p class="muted"><strong>ผู้ที่เฝ้าระวังเฉพาะอัตราเร็วจะไม่พบปัญหานี้</strong></p>
+  <div class="foot"><span>ส่วนที่ 4 · ผลการดำเนินโครงงาน</span><span>QuietFail</span></div>
 </section>
 
-<!-- 18 ─ หน้าผา -->
+<!-- 19 -->
 <section class="slide sm">
-  <div class="kicker alt">ผลการดำเนินงาน 3 จาก 7</div>
-  <h2>ไม่ค่อยๆ แย่ลง — มันตกหน้าผาทีเดียว</h2>
+  <div class="kicker alt">ผลการดำเนินโครงงาน 3 จาก 7</div>
+  <h2>ความครบถ้วนมิได้ลดลงอย่างค่อยเป็นค่อยไป แต่ลดลงอย่างฉับพลัน</h2>
   <div class="cols c2">
     <div class="card">
-      <h3>เพดานตายตัวจากค่าตั้งต้น</h3>
-      <table><tr><th>ขอกี่รายการ</th><th class="n">ได้จริง</th></tr>
-        <tr><td>39</td><td class="n ok">39 ครบ</td></tr>
-        <tr><td>40</td><td class="n ok">40 ครบ</td></tr>
+      <h3>เพดานคงที่จากค่าพารามิเตอร์ตั้งต้น</h3>
+      <table style="box-shadow:none"><tr><th>จำนวนที่ร้องขอ</th><th class="n">จำนวนที่ได้รับ</th></tr>
+        <tr><td>39</td><td class="n ok">39 ครบถ้วน</td></tr>
+        <tr><td>40</td><td class="n ok">40 ครบถ้วน</td></tr>
         <tr><td><strong>41</strong></td><td class="n hot"><strong>40</strong> ขาด 1</td></tr>
         <tr><td><strong>100</strong></td><td class="n hot"><strong>40</strong> ขาด 60</td></tr></table>
-      <p class="src">เพดานเท่ากับค่า <code>ef_search</code> พอดี · ขอเพิ่มไม่ช่วยเลย</p>
+      <p class="src">เพดานมีค่าเท่ากับพารามิเตอร์ <code>ef_search</code> พอดี การร้องขอเพิ่มไม่ช่วยให้ได้ผลเพิ่ม</p>
     </div>
     <div class="card">
-      <h3>ลบข้อมูลแล้วผลหาย</h3>
-      <table><tr><th>ลบไปกี่ %</th><th class="n">ขอ 10 ได้</th></tr>
-        <tr><td>30%</td><td class="n ok">10</td></tr>
-        <tr><td><strong>40%</strong></td><td class="n ok"><strong>10</strong></td></tr>
-        <tr><td><strong>50%</strong></td><td class="n hot"><strong>0</strong></td></tr>
-        <tr><td>90%</td><td class="n hot">0</td></tr></table>
-      <p class="src">ข้อมูลที่เหลือยังมีเกิน 10 รายการเสมอ · เฉลยได้ครบ 10 ทุกขั้น</p>
+      <h3>ผลของการลบข้อมูล</h3>
+      <table style="box-shadow:none"><tr><th>สัดส่วนที่ถูกลบ</th><th class="n">ร้องขอ 10 ได้รับ</th></tr>
+        <tr><td>ร้อยละ 30</td><td class="n ok">10</td></tr>
+        <tr><td><strong>ร้อยละ 40</strong></td><td class="n ok"><strong>10</strong></td></tr>
+        <tr><td><strong>ร้อยละ 50</strong></td><td class="n hot"><strong>0</strong></td></tr>
+        <tr><td>ร้อยละ 90</td><td class="n hot">0</td></tr></table>
+      <p class="src">ข้อมูลที่เหลือมีมากกว่า 10 รายการเสมอ และคำตอบอ้างอิงได้ครบ 10 รายการทุกระดับ</p>
     </div>
   </div>
-  <div class="note"><p><strong>ทำไมเรื่องนี้สำคัญกว่าตัวเลข</strong> — การเฝ้าระวังแบบ "ตั้งเกณฑ์เตือนเมื่อค่าตก"
-    <strong>ใช้ไม่ได้กับอาการแบบนี้</strong> เพราะมันปกติดีจนถึงวินาทีที่กลายเป็นศูนย์</p></div>
-  <div class="foot"><span>องก์ 4 · ผล</span><span>QuietFail</span></div>
+  <div class="note"><p><strong>นัยสำคัญเชิงปฏิบัติ</strong> — การเฝ้าระวังด้วยการกำหนดเกณฑ์แจ้งเตือน
+    เมื่อค่าตัวชี้วัดลดต่ำลง <strong>ไม่สามารถใช้ได้กับลักษณะอาการเช่นนี้</strong>
+    เนื่องจากค่าคงอยู่ในระดับปกติจนถึงจุดที่ลดลงเป็นศูนย์ทันที</p></div>
+  <div class="foot"><span>ส่วนที่ 4 · ผลการดำเนินโครงงาน</span><span>QuietFail</span></div>
 </section>
 
-<!-- 19 ─ กรองแล้วผลหาย + เอกสารทำนายถูก -->
+<!-- 20 -->
 <section class="slide sm">
-  <div class="kicker alt">ผลการดำเนินงาน 4 จาก 7</div>
-  <h2>กรองข้อมูลก่อนค้น — ผลหายโดยไม่มีอะไรบอก</h2>
+  <div class="kicker alt">ผลการดำเนินโครงงาน 4 จาก 7</div>
+  <h2>การกรองข้อมูลก่อนสืบค้น ทำให้ผลลัพธ์สูญหายโดยไม่มีการแจ้งเตือน</h2>
   <table>
-    <tr><th>กรองเหลือ</th><th class="n">มีข้อมูลเข้าเงื่อนไข</th><th class="n">ขอ</th>
-        <th class="n">ได้จริง</th><th class="n">เฉลย</th></tr>
-    <tr><td>20%</td><td class="n">20,000</td><td class="n">10</td><td class="n ok">10</td><td class="n">10</td></tr>
-    <tr><td><strong>10%</strong></td><td class="n">10,000</td><td class="n">10</td><td class="n hot"><strong>2</strong></td><td class="n">10</td></tr>
-    <tr><td>5%</td><td class="n">5,000</td><td class="n">10</td><td class="n hot">1</td><td class="n">10</td></tr>
-    <tr><td><strong>2% ลงไป</strong></td><td class="n">2,000</td><td class="n">10</td><td class="n hot"><strong>0</strong></td><td class="n">10</td></tr>
+    <tr><th>สัดส่วนที่ผ่านการกรอง</th><th class="n">จำนวนที่เข้าเงื่อนไข</th><th class="n">ร้องขอ</th>
+        <th class="n">ได้รับจริง</th><th class="n">คำตอบอ้างอิง</th></tr>
+    <tr><td>ร้อยละ 20</td><td class="n">20,000</td><td class="n">10</td><td class="n ok">10</td><td class="n">10</td></tr>
+    <tr><td><strong>ร้อยละ 10</strong></td><td class="n">10,000</td><td class="n">10</td><td class="n hot"><strong>2</strong></td><td class="n">10</td></tr>
+    <tr><td>ร้อยละ 5</td><td class="n">5,000</td><td class="n">10</td><td class="n hot">1</td><td class="n">10</td></tr>
+    <tr><td><strong>ร้อยละ 2 และต่ำกว่า</strong></td><td class="n">2,000</td><td class="n">10</td><td class="n hot"><strong>0</strong></td><td class="n">10</td></tr>
   </table>
-  <div class="note"><p><strong>ข้อค้นพบที่น่าสนใจ</strong> — คู่มือทางการของ pgvector
-    <strong>ทำนายตัวเลขนี้ไว้แล้ว</strong> ว่า "ถ้าเงื่อนไขตรง 10% จะเหลือเฉลี่ยประมาณ 4 รายการ"<br>
-    เราวัดบน<strong>ข้อมูลจริง</strong>ได้ <strong class="ok">4 พอดี</strong> —
-    เป็นการยืนยันว่า<strong>คู่มือแม่นในเชิงปริมาณ</strong> ปัญหาอยู่ที่<strong>ไม่มีใครอ่านตอนตั้งค่า</strong></p></div>
-  <p class="src">ที่มา: <code>results/real_q03.txt</code> · <code>results/q03_filter_after_scan.txt</code></p>
-  <div class="foot"><span>องก์ 4 · ผล</span><span>QuietFail</span></div>
+  <div class="note"><p><strong>ข้อค้นพบที่สำคัญ</strong> — เอกสารประกอบอย่างเป็นทางการของ pgvector
+    <strong>ได้ระบุค่าที่คาดการณ์ไว้แล้ว</strong> ว่าหากเงื่อนไขการกรองเหลือข้อมูลร้อยละ 10
+    จะได้ผลลัพธ์เฉลี่ยประมาณ 4 รายการ<br>
+    การวัดบน<strong>ข้อมูลจริง</strong>ได้ผลเท่ากับ <strong class="ok">4 รายการพอดี</strong>
+    จึงเป็นการยืนยันว่า<strong>เอกสารมีความแม่นยำเชิงปริมาณ</strong>
+    ปัญหาจึงมิได้อยู่ที่เอกสาร แต่อยู่ที่<strong>ผู้ใช้มิได้อ่านเอกสารในขั้นตอนการตั้งค่า</strong></p></div>
+  <p class="src">แหล่งที่มา: <code>results/real_q03.txt</code> · <code>results/q03_filter_after_scan.txt</code></p>
+  <div class="foot"><span>ส่วนที่ 4 · ผลการดำเนินโครงงาน</span><span>QuietFail</span></div>
 </section>
 
-<!-- 20 ─ ค่าตั้งต้นไม่พอ -->
+<!-- 21 -->
 <section class="slide sm">
-  <div class="kicker alt">ผลการดำเนินงาน 5 จาก 7</div>
-  <h2>ค่าตั้งต้นที่ผู้พัฒนาให้มา ต่ำกว่าที่คู่มือของเขาเองแนะนำ 10 เท่า</h2>
+  <div class="kicker alt">ผลการดำเนินโครงงาน 5 จาก 7</div>
+  <h2>ค่าพารามิเตอร์ตั้งต้นต่ำกว่าค่าที่เอกสารของผู้พัฒนาแนะนำ 10 เท่า</h2>
   <table>
-    <tr><th style="width:26%">ค่า <code>probes</code></th><th class="n">recall (สังเคราะห์)</th>
-        <th class="n">recall (ข้อมูลจริง)</th><th class="n">ได้ครบ 10/10</th></tr>
+    <tr><th style="width:27%">ค่า <code>probes</code></th><th class="n">recall (ชุดควบคุม)</th>
+        <th class="n">recall (ข้อมูลจริง)</th><th class="n">คำถามที่ได้ผลครบ 10</th></tr>
     <tr><td><strong>1</strong> — ค่าตั้งต้น</td><td class="n hot">0.7370</td>
         <td class="n hot"><strong>0.6607</strong></td><td class="n hot">58 / 200</td></tr>
     <tr><td>5</td><td class="n">1.0000</td><td class="n">0.9068</td><td class="n">125 / 200</td></tr>
-    <tr><td><strong>10</strong> — คู่มือแนะนำ</td><td class="n ok">1.0000</td>
+    <tr><td><strong>10</strong> — ค่าที่เอกสารแนะนำ</td><td class="n ok">1.0000</td>
         <td class="n ok"><strong>0.9527</strong></td><td class="n">150 / 200</td></tr>
   </table>
   <div class="cols c2">
-    <div class="note"><p><strong>คู่มือแนะนำถูกแล้ว</strong> — บนข้อมูลจริง ค่า 10 ดีกว่าค่า 5 จริง
-      <span class="muted">(บนข้อมูลสังเคราะห์ดูเหมือนสิ้นเปลือง ซึ่งทำให้เราเกือบสรุปผิด)</span></p></div>
-    <div class="note"><p><strong>ที่ยังเป็นปัญหา</strong> — ค่าตั้งต้นคือ <strong>1</strong>
-      และไม่มีอะไรเตือนตอนติดตั้งว่าควรเปลี่ยน</p></div>
+    <div class="note"><p><strong>ค่าที่เอกสารแนะนำมีความเหมาะสม</strong> — บนข้อมูลจริง
+      ค่า 10 ให้ผลดีกว่าค่า 5 อย่างชัดเจน
+      <span class="muted">(บนชุดควบคุมค่า 5 ดูเพียงพอแล้ว ซึ่งเกือบทำให้สรุปคลาดเคลื่อน)</span></p></div>
+    <div class="note"><p><strong>ประเด็นที่ยังเป็นปัญหา</strong> — ค่าตั้งต้นของระบบคือ <strong>1</strong>
+      และไม่มีกลไกใดแจ้งเตือนในขั้นตอนการติดตั้งว่าควรปรับเปลี่ยน</p></div>
   </div>
-  <p class="src">ที่มา: <code>results/q04_default_params.txt</code> · <code>results/real_q04.txt</code></p>
-  <div class="foot"><span>องก์ 4 · ผล</span><span>QuietFail</span></div>
+  <p class="src">แหล่งที่มา: <code>results/q04_default_params.txt</code> · <code>results/real_q04.txt</code></p>
+  <div class="foot"><span>ส่วนที่ 4 · ผลการดำเนินโครงงาน</span><span>QuietFail</span></div>
 </section>
 
-<!-- 21 ─ ตรวจล่วงหน้าได้ -->
+<!-- 22 -->
 <section class="slide">
-  <div class="kicker">ผลการดำเนินงาน 6 จาก 7 — คำถามข้อ 2</div>
-  <h2>ข่าวดี: ส่วนใหญ่ตรวจจับล่วงหน้าได้ด้วยโปรแกรม</h2>
+  <div class="kicker">ผลการดำเนินโครงงาน 6 จาก 7 — ตอบคำถามข้อ 2</div>
+  <h2>ความสามารถในการตรวจจับล่วงหน้าด้วยโปรแกรม</h2>
   <div class="cols c3">
-    <div class="card okc"><div class="mid ok">11 / 12</div><p>มีตัวตรวจอัตโนมัติที่<strong>พิสูจน์แล้วว่าใช้ได้จริง</strong></p>
-      <p class="src">แบบที่ 12 คือการวัดผลเอง ไม่ใช่ข้อที่ต้องมีตัวตรวจแยก</p></div>
-    <div class="card okc"><div class="mid ok">5</div><p>ใน 11 แบบนั้น <strong>ตรวจได้จากการตั้งค่าล้วนๆ</strong></p>
-      <p class="src">ไม่ต้องมีข้อมูลในระบบด้วยซ้ำ — ตรวจได้ตั้งแต่ก่อนขึ้นใช้งาน</p></div>
-    <div class="card"><div class="mid">6</div><p><strong>เครื่องมือส่งมอบ</strong> ตรวจได้บนฐานข้อมูลของใครก็ได้</p>
-      <p class="src">ไม่ต้องมีไฟล์เฉลย ไม่ต้องรู้โครงสร้างตารางล่วงหน้า</p></div>
+    <div class="card okc"><div class="mid ok">11 / 12</div>
+      <p>รูปแบบที่มีโปรแกรมตรวจจับซึ่ง<strong>พิสูจน์แล้วว่าใช้งานได้จริง</strong></p>
+      <p class="src">รูปแบบที่ 12 คือการวัดผลในตัวเอง จึงมิใช่รายการที่ต้องมีโปรแกรมตรวจจับแยก</p></div>
+    <div class="card okc"><div class="mid ok">5</div>
+      <p>ในจำนวน 11 รูปแบบนั้น <strong>ตรวจจับได้จากการตั้งค่าเพียงอย่างเดียว</strong></p>
+      <p class="src">ไม่จำเป็นต้องมีข้อมูลในระบบ จึงตรวจสอบได้ตั้งแต่ก่อนเปิดให้บริการ</p></div>
+    <div class="card"><div class="mid">6</div>
+      <p><strong>เครื่องมือที่ส่งมอบ</strong> ตรวจสอบฐานข้อมูลของผู้ใช้รายอื่นได้</p>
+      <p class="src">ไม่ต้องมีไฟล์คำตอบอ้างอิง และไม่ต้องทราบโครงสร้างตารางล่วงหน้า</p></div>
   </div>
-  <div class="note"><p><strong>คำถามที่สำคัญกว่า "กี่ข้อ" คือ "จากหลักฐานอะไร"</strong> —
-    ตัวตรวจอ่าน<strong>โครงสร้างของระบบ</strong> (การตั้งค่า · แผนการทำงานของฐานข้อมูล)
-    ไม่ใช่การเดาจากข้อความ · และตอบ "ตรวจไม่ได้" เมื่อข้อมูลไม่พอ</p></div>
-  <div class="foot"><span>องก์ 4 · ผล</span><span>QuietFail</span></div>
+  <div class="note"><p><strong>ประเด็นที่สำคัญกว่าจำนวน คือแหล่งที่มาของหลักฐาน</strong> —
+    โปรแกรมตรวจจับอ่าน<strong>โครงสร้างของระบบ</strong> ได้แก่ ค่าการตั้งค่าและแผนการทำงานของฐานข้อมูล
+    มิใช่การอนุมานจากข้อความ และรายงานสถานะ “ตรวจไม่ได้” เมื่อข้อมูลไม่เพียงพอ</p></div>
+  <div class="foot"><span>ส่วนที่ 4 · ผลการดำเนินโครงงาน</span><span>QuietFail</span></div>
 </section>
 
-<!-- 22 ─ RQ3 -->
+<!-- 23 -->
 <section class="slide sm">
-  <div class="kicker">ผลการดำเนินงาน 7 จาก 7 — คำถามข้อ 3</div>
-  <h2>ให้ AI เขียนโค้ดค้นหาจากโจทย์ 10 ข้อ แล้วรันจริง</h2>
+  <div class="kicker">ผลการดำเนินโครงงาน 7 จาก 7 — ตอบคำถามข้อ 3</div>
+  <h2>ผลจากการให้แบบจำลองภาษาเขียนคำสั่งสืบค้นจากโจทย์ 10 ข้อ แล้วนำไปประมวลผลจริง</h2>
   <table>
-    <tr><th style="width:26%"></th><th class="n">แบบจำลอง ก<br><span class="muted" style="font-weight:400">เก็บ 2 รอบ</span></th>
-        <th class="n">แบบจำลอง ข<br><span class="muted" style="font-weight:400">เก็บ 1 รอบ</span></th></tr>
-    <tr><td>ตกหลุมกี่ข้อ</td><td class="n hot"><strong>5–7 / 10</strong></td><td class="n hot"><strong>10 / 10</strong></td></tr>
-    <tr><td>ข้อที่เขียนจนระบบ<strong>ใช้ index ไม่ได้เลย</strong></td><td class="n">0–3</td><td class="n hot"><strong>8</strong></td></tr>
-    <tr><td>ผลลัพธ์ที่ได้</td><td class="hot">ขาดหายบ่อย</td><td class="ok">ครบถูกต้องทุกข้อ</td></tr>
-    <tr><td>ต้นทุนต่อการค้น 1 ครั้ง</td><td class="n">974 หน่วย</td><td class="n hot"><strong>20,049 หน่วย</strong> (แพงกว่า 21 เท่า)</td></tr>
-    <tr><td><strong>ชนิดความล้มเหลว</strong></td><td class="hot"><strong>เร็วแต่ผิด</strong></td><td class="hot"><strong>ถูกแต่ช้า</strong></td></tr>
+    <tr><th style="width:28%">รายการ</th><th class="n">แบบจำลอง ก<br><span class="muted" style="font-weight:400">เก็บข้อมูล 2 รอบ</span></th>
+        <th class="n">แบบจำลอง ข<br><span class="muted" style="font-weight:400">เก็บข้อมูล 1 รอบ</span></th></tr>
+    <tr><td>จำนวนข้อที่เกิดความผิดพลาด</td><td class="n hot"><strong>5–7 / 10</strong></td><td class="n hot"><strong>10 / 10</strong></td></tr>
+    <tr><td>ข้อที่เขียนคำสั่งจน<strong>ดัชนีถูกใช้งานไม่ได้</strong></td><td class="n">0–3</td><td class="n hot"><strong>8</strong></td></tr>
+    <tr><td>ความถูกต้องของผลลัพธ์</td><td class="hot">ไม่ครบถ้วนในหลายข้อ</td><td class="ok">ครบถ้วนถูกต้องทุกข้อ</td></tr>
+    <tr><td>ต้นทุนการประมวลผลต่อการสืบค้น 1 ครั้ง</td><td class="n">974 บล็อก</td>
+        <td class="n hot"><strong>20,049 บล็อก</strong> (สูงกว่า 21 เท่า)</td></tr>
+    <tr><td><strong>ลักษณะความล้มเหลว</strong></td><td class="hot"><strong>ประมวลผลเร็วแต่ผลไม่ถูกต้อง</strong></td>
+        <td class="hot"><strong>ผลถูกต้องแต่ประมวลผลช้า</strong></td></tr>
   </table>
-  <div class="note"><p><strong>ห้ามอ่านว่า "แบบจำลอง ข แย่กว่า 2 เท่า"</strong> — 8 ใน 10 ข้อของมัน
-    มาจาก<strong>ความผิดพลาดเดียวกันซ้ำๆ</strong> คือเขียนคำสั่งในรูปแบบที่ทำให้ index ใช้ไม่ได้<br>
-    <strong>ทั้งคู่คือความล้มเหลวในการใช้งานจริง</strong> — แต่ทีมที่ตรวจด้วย "ผลถูกไหม" จะให้ ข ผ่านเต็ม
-    ส่วนทีมที่ตรวจด้วย "เร็วไหม" จะกลับกัน</p></div>
-  <div class="foot"><span>องก์ 4 · ผล</span><span>QuietFail</span></div>
+  <div class="note"><p><strong>ข้อควรระวังในการตีความ</strong> — มิอาจสรุปว่าแบบจำลอง ข ด้อยกว่าถึง 2 เท่า
+    เนื่องจาก 8 ข้อจากทั้งหมด 10 ข้อเกิดจาก<strong>ความผิดพลาดรูปแบบเดียวกันที่เกิดซ้ำ</strong>
+    คือการเขียนคำสั่งในรูปแบบที่ทำให้ดัชนีถูกใช้งานไม่ได้<br>
+    <strong>ทั้งสองกรณีถือเป็นความล้มเหลวในการใช้งานจริง</strong>
+    แต่ผู้ที่ตรวจสอบด้วยเกณฑ์ความถูกต้องจะประเมินว่าแบบจำลอง ข ผ่านทั้งหมด
+    ในขณะที่ผู้ที่ตรวจสอบด้วยเกณฑ์อัตราเร็วจะประเมินตรงกันข้าม</p></div>
+  <div class="foot"><span>ส่วนที่ 4 · ผลการดำเนินโครงงาน</span><span>QuietFail</span></div>
 </section>
 
-<!-- ══════════ องก์ 5 · ความน่าเชื่อถือและสถานะ (23–26) ══════════ -->
+<!-- ═════════ ส่วนที่ 5 · การตรวจสอบความน่าเชื่อถือ (24–28) ═════════ -->
 
-<!-- 23 ─ เส้นแบ่งที่ทำนายไว้ก่อน -->
-<section class="slide">
+<!-- 24 ─ ตารางเปรียบเทียบสังเคราะห์ vs จริง (ขยายตามคำถาม) -->
+<section class="slide sm">
   <div class="kicker">ความน่าเชื่อถือของผล 1 จาก 3</div>
-  <h2>ทดสอบซ้ำกับข้อมูลจริง แล้วพบเส้นแบ่งที่ทำนายไว้ก่อนแล้วถูก</h2>
-  <div class="cols c2">
-    <div class="card okc">
-      <h3 class="ok">ยกไปใช้กับข้อมูลอื่นได้</h3>
-      <p><strong>ข้อสรุปเชิงกลไก</strong> — "มีเพดานตายตัว" · "ขอเพิ่มไม่ช่วย" ·
-        "แถวที่ค่าว่างไม่มีวันโผล่"</p>
-      <p class="src">อธิบายพฤติกรรมของตัวประมวลผล ไม่ขึ้นกับข้อมูล</p>
-    </div>
-    <div class="card hotc">
-      <h3 class="hot">ยกไปใช้ไม่ได้</h3>
-      <p><strong>ข้อสรุปเชิงปริมาณ</strong> — "หายไป 14%" · "เพดานอยู่ที่ 40" ·
-        "ค่า 5 ก็พอแล้ว"</p>
-      <p class="src">ขึ้นกับการกระจายตัวของข้อมูลโดยตรง</p>
-    </div>
-  </div>
-  <div class="note"><p><strong>จุดที่ทำให้เชื่อถือได้</strong> — เส้นแบ่งนี้
-    <strong>เขียนทำนายไว้ก่อนรันการทดลอง</strong> แล้วผลออกมาตามนั้น <strong>ครบ 6 จาก 6 ข้อ</strong><br>
-    จึงเป็นข้อค้นพบเชิงระเบียบวิธี ไม่ใช่การอธิบายผลย้อนหลัง</p></div>
-  <div class="foot"><span>องก์ 5 · สรุป</span><span>QuietFail</span></div>
+  <h2>การทดสอบซ้ำบนข้อมูลจริง — เปรียบเทียบผลทีละรูปแบบ</h2>
+  <table>
+    <tr><th style="width:22%">รูปแบบความผิดพลาด</th><th class="c" style="width:13%">กลไก<br>เกิดซ้ำ</th>
+        <th class="c" style="width:13%">ปริมาณ<br>ตรงกัน</th><th>รายละเอียดการเปรียบเทียบ</th></tr>
+    <tr><td>ดัชนีไม่ถูกใช้งาน</td><td class="c ok">ใช่</td><td class="c ok">ใช่</td>
+        <td>จำนวนบล็อกที่อ่านเท่ากันทุกประการ (23,388 เทียบ 23,388)</td></tr>
+    <tr><td>รูปแบบคำสั่งสืบค้น</td><td class="c ok">ใช่</td><td class="c ok">ใช่</td>
+        <td>ใช้ดัชนีได้ 2 จาก 6 รูปแบบเท่ากันทั้งสองชุดข้อมูล</td></tr>
+    <tr><td>ค่าว่างหรือค่าศูนย์</td><td class="c ok">ใช่</td><td class="c ok">ใช่</td>
+        <td>สูญหาย 10 รายการพอดีทั้งสองชุดข้อมูล</td></tr>
+    <tr><td>ข้อจำกัดหน่วยความจำ</td><td class="c ok">ใช่</td><td class="c ok">ใช่</td>
+        <td>28,352 เทียบ 28,364 tuples (ต่างกัน 12)</td></tr>
+    <tr><td>เพดานจากค่าตั้งต้น</td><td class="c ok">ใช่</td><td class="c hot">ไม่</td>
+        <td>มีเพดานคงที่ทั้งคู่ แต่ตำแหน่งเปลี่ยนจาก 40 เป็น <strong>41</strong></td></tr>
+    <tr><td>ข้อมูลที่ถูกลบ</td><td class="c ok">ใช่</td><td class="c hot">ไม่</td>
+        <td>บนข้อมูลจริงยังได้ผลครบจนถึงร้อยละ 80 และ<strong>ไม่ลดลงถึงศูนย์</strong></td></tr>
+    <tr><td>ค่าพารามิเตอร์ตั้งต้น</td><td class="c ok">ใช่</td><td class="c hot">ไม่</td>
+        <td>ค่าตั้งต้นไม่เพียงพอทั้งคู่ แต่ค่าที่เหมาะสมต่างกัน</td></tr>
+  </table>
+  <p class="src">ทดสอบซ้ำครบ <strong>10 รูปแบบ</strong> บนข้อมูลจริง 2 ชุด · ควบคุมทุกตัวแปรให้เท่าเดิม เปลี่ยนเฉพาะแหล่งที่มาของเวกเตอร์
+    · <code>results/real_*.txt</code> · <code>results/real2_*.txt</code></p>
+  <div class="foot"><span>ส่วนที่ 5 · ความน่าเชื่อถือ</span><span>QuietFail</span></div>
 </section>
 
-<!-- 24 ─ จับความผิดพลาดตัวเองได้ -->
+<!-- 25 -->
 <section class="slide">
   <div class="kicker">ความน่าเชื่อถือของผล 2 จาก 3</div>
-  <h2>วิธีวิจัยนี้จับความผิดพลาดของผู้จัดทำเองได้ — และจับได้จริงมาแล้ว</h2>
-  <div class="cols c3">
-    <div class="card"><div class="mid hot">14</div><p><strong>ข้อสรุปของตัวเองที่ถูกถอน</strong>หลังตรวจซ้ำ</p>
-      <p class="src">รวมข้ออ้างที่เคยเขียนว่า "คู่มือทางการบอกไม่ครบ" ซึ่ง<strong>ถอนทั้งหมด</strong></p></div>
-    <div class="card"><div class="mid">38</div><p><strong>หัวข้อที่โปรแกรมตรวจสอบ</strong>ทุกครั้งก่อนบันทึกงาน</p>
-      <p class="src">ตัวเลขในเอกสารต้องตรงกับของจริง ไม่งั้นฟ้อง</p></div>
-    <div class="card okc"><div class="mid ok">15 / 15</div><p><strong>ความผิดพลาดที่รันซ้ำได้</strong>และให้ผลเหมือนเดิม</p>
-      <p class="src">ยืนยันด้วยการรันจริงซ้ำทั้งชุด</p></div>
-  </div>
-  <div class="quote note"><p>ตัวอย่าง: เคยสรุปว่า "คู่มือไม่ได้บอกวิธีแก้ไว้" —
-    ตรวจซ้ำแล้วพบว่า<strong>คู่มือบอกไว้ครบ แต่เราหมุนปุ่มไม่ไกลพอ</strong> จึงถอนข้อสรุปนั้น<br>
-    <strong>ไม่มีข้อใดเลยที่พิสูจน์ได้ว่าคู่มือทางการเขียนผิด</strong></p></div>
-  <div class="foot"><span>องก์ 5 · สรุป</span><span>QuietFail</span></div>
-</section>
-
-<!-- 25 ─ ข้อจำกัด -->
-<section class="slide sm">
-  <div class="kicker alt">ความน่าเชื่อถือของผล 3 จาก 3</div>
-  <h2>สิ่งที่งานนี้ยัง<span class="hot">ตอบไม่ได้</span> — ขอพูดเองก่อนถูกถาม</h2>
-  <table>
-    <tr><th style="width:34%">ข้อจำกัด</th><th>ผลที่ตามมา และเหตุผล</th></tr>
-    <tr><td><strong>โจทย์ทดสอบ AI ไม่ได้สุ่ม</strong></td>
-        <td>ออกแบบมาเล็งจุดอ่อนที่รู้อยู่แล้ว → ตอบได้แค่ <strong>"รูปแบบความล้มเหลว"</strong>
-            <strong>บอกไม่ได้ว่า "AI พลาดบ่อยแค่ไหน"</strong> · เพิ่มจำนวนโจทย์ก็ไม่ช่วย เพราะปัญหาอยู่ที่วิธีเลือก</td></tr>
-    <tr><td><strong>เก็บข้อมูล AI ได้ 2 แบบจำลอง</strong></td>
-        <td>แบบจำลองหนึ่งเก็บได้รอบเดียว → <strong>ไม่ทราบว่าตัวเลขนั้นนิ่งไหม</strong>
-            ที่ยกไปใช้ได้คือรูปแบบที่พบซ้ำภายในรอบเดียวกัน</td></tr>
-    <tr><td><strong>ตัวเลขเวลาเทียบข้ามเครื่องไม่ได้</strong></td>
-        <td>เวลาแกว่งตามฮาร์ดแวร์ → ใช้ <strong>จำนวนบล็อกที่อ่าน</strong> เป็นตัวชี้วัดหลักแทน
-            เพราะเป็นค่าเชิงโครงสร้างที่นิ่งกว่า</td></tr>
-    <tr><td><strong>วัดบน pgvector เป็นหลัก</strong></td>
-        <td>มีเครื่องมืออีกตัวเป็นตัวสอบทานว่า <strong>อาการนี้เป็นธรรมชาติของ ANN ไม่ใช่บั๊กเฉพาะเจ้า</strong>
-            แต่<strong>ยังสรุปข้ามไปทุกเครื่องมือไม่ได้</strong></td></tr>
-  </table>
-  <div class="foot"><span>องก์ 5 · สรุป</span><span>QuietFail</span></div>
-</section>
-
-<!-- 26 ─ สถานะและสิ่งที่เหลือ -->
-<section class="slide">
-  <div class="kicker">สรุป</div>
-  <h2>สถานะปัจจุบันและแผนที่เหลือ</h2>
+  <h2>เส้นแบ่งของข้อสรุปที่พยากรณ์ไว้ล่วงหน้าและได้รับการยืนยัน</h2>
   <div class="cols c2">
     <div class="card okc">
-      <h3 class="ok">ทำเสร็จแล้ว</h3>
+      <h3 class="ok">นำไปใช้กับข้อมูลชุดอื่นได้</h3>
+      <p><strong>ข้อสรุปเชิงกลไก</strong> — การมีเพดานคงที่ · การร้องขอเพิ่มไม่ช่วยให้ได้ผลเพิ่ม ·
+        รายการที่มีค่าว่างไม่ปรากฏในผลการสืบค้น</p>
+      <p class="src">อธิบายพฤติกรรมของตัวประมวลผล จึงไม่ขึ้นกับลักษณะของข้อมูล</p>
+    </div>
+    <div class="card hotc">
+      <h3 class="hot">นำไปใช้กับข้อมูลชุดอื่นไม่ได้</h3>
+      <p><strong>ข้อสรุปเชิงปริมาณ</strong> — ผลลัพธ์สูญหายร้อยละ 14 · เพดานอยู่ที่ 40 ·
+        ค่าพารามิเตอร์เท่ากับ 5 เพียงพอแล้ว</p>
+      <p class="src">ขึ้นอยู่กับการกระจายตัวของข้อมูลโดยตรง</p>
+    </div>
+  </div>
+  <div class="note"><p><strong>เหตุผลที่ทำให้ข้อสรุปนี้น่าเชื่อถือ</strong> — เส้นแบ่งดังกล่าว
+    <strong>ได้รับการบันทึกเป็นการพยากรณ์ไว้ก่อนดำเนินการทดลอง</strong>
+    และผลที่ได้เป็นไปตามการพยากรณ์ <strong>ครบทั้ง 6 รูปแบบ</strong><br>
+    จึงถือเป็นข้อค้นพบเชิงระเบียบวิธี มิใช่การอธิบายผลย้อนหลัง</p></div>
+  <div class="foot"><span>ส่วนที่ 5 · ความน่าเชื่อถือ</span><span>QuietFail</span></div>
+</section>
+
+<!-- 26 -->
+<section class="slide">
+  <div class="kicker">ความน่าเชื่อถือของผล 3 จาก 3</div>
+  <h2>ระเบียบวิธีของโครงงานสามารถตรวจพบความผิดพลาดของผู้จัดทำเองได้</h2>
+  <div class="cols c3">
+    <div class="card"><div class="mid hot">14</div>
+      <p><strong>ข้อสรุปของผู้จัดทำที่ถูกเพิกถอน</strong>ภายหลังการตรวจสอบซ้ำ</p>
+      <p class="src">รวมถึงข้อกล่าวอ้างว่าเอกสารทางการให้ข้อมูลไม่ครบถ้วน ซึ่ง<strong>ถูกเพิกถอนทั้งหมด</strong></p></div>
+    <div class="card"><div class="mid">38</div>
+      <p><strong>หัวข้อที่โปรแกรมตรวจสอบ</strong>ก่อนบันทึกงานทุกครั้ง</p>
+      <p class="src">ตัวเลขในเอกสารต้องตรงกับผลการวัดจริง มิฉะนั้นจะรายงานความไม่สอดคล้อง</p></div>
+    <div class="card okc"><div class="mid ok">15 / 15</div>
+      <p><strong>ความผิดพลาดที่ดำเนินการซ้ำ</strong>แล้วได้ผลเช่นเดิม</p>
+      <p class="src">ยืนยันด้วยการประมวลผลจริงซ้ำทั้งชุด</p></div>
+  </div>
+  <div class="note"><p>ตัวอย่าง — ผู้จัดทำเคยสรุปว่าเอกสารทางการมิได้ระบุวิธีแก้ไขปัญหาไว้
+    การตรวจสอบซ้ำพบว่า<strong>เอกสารระบุไว้ครบถ้วน แต่ผู้จัดทำปรับค่าพารามิเตอร์ไม่ถึงระดับที่จำเป็น</strong>
+    จึงเพิกถอนข้อสรุปดังกล่าว<br>
+    <strong>ไม่ปรากฏข้อใดที่พิสูจน์ได้ว่าเอกสารทางการมีข้อผิดพลาด</strong></p></div>
+  <div class="foot"><span>ส่วนที่ 5 · ความน่าเชื่อถือ</span><span>QuietFail</span></div>
+</section>
+
+<!-- 27 -->
+<section class="slide sm">
+  <div class="kicker alt">ข้อจำกัดของโครงงาน</div>
+  <h2>ข้อจำกัดและประเด็นที่โครงงานนี้ยังไม่สามารถตอบได้</h2>
+  <table>
+    <tr><th style="width:33%">ข้อจำกัด</th><th>ผลกระทบและเหตุผล</th></tr>
+    <tr><td><strong>ชุดโจทย์ทดสอบแบบจำลองภาษามิได้สุ่ม</strong></td>
+        <td>ออกแบบให้มุ่งเป้าไปยังจุดอ่อนที่ทราบอยู่แล้ว จึงตอบได้เพียง <strong>ลักษณะรูปแบบความล้มเหลว</strong>
+            <strong>ไม่สามารถระบุความถี่ของความผิดพลาดได้</strong> ·
+            การเพิ่มจำนวนโจทย์ไม่ช่วยแก้ปัญหา เนื่องจากข้อจำกัดอยู่ที่วิธีคัดเลือก</td></tr>
+    <tr><td><strong>เก็บข้อมูลจากแบบจำลองภาษาได้ 2 แบบจำลอง</strong></td>
+        <td>แบบจำลองหนึ่งเก็บข้อมูลได้เพียงรอบเดียว จึง<strong>ไม่ทราบว่าค่าที่ได้มีเสถียรภาพเพียงใด</strong>
+            สิ่งที่นำไปอ้างอิงได้คือรูปแบบที่ปรากฏซ้ำภายในรอบเดียวกัน</td></tr>
+    <tr><td><strong>ค่าเวลาเปรียบเทียบข้ามเครื่องไม่ได้</strong></td>
+        <td>ค่าเวลาผันแปรตามฮาร์ดแวร์ จึงใช้ <strong>จำนวนบล็อกที่อ่าน</strong> เป็นตัวชี้วัดหลัก
+            เนื่องจากเป็นค่าเชิงโครงสร้างที่มีเสถียรภาพสูงกว่า</td></tr>
+    <tr><td><strong>ทดสอบบน pgvector เป็นหลัก</strong></td>
+        <td>มีระบบอื่นอีก 1 ระบบเป็นตัวสอบทานว่า<strong>อาการนี้เป็นลักษณะร่วมของวิธี ANN
+            มิใช่ข้อบกพร่องเฉพาะระบบ</strong> แต่<strong>ยังไม่สามารถสรุปครอบคลุมทุกระบบได้</strong></td></tr>
+  </table>
+  <div class="foot"><span>ส่วนที่ 5 · ความน่าเชื่อถือ</span><span>QuietFail</span></div>
+</section>
+
+<!-- 28 -->
+<section class="slide">
+  <div class="kicker">บทสรุป</div>
+  <h2>สถานะการดำเนินงานและแผนการดำเนินงานที่เหลือ</h2>
+  <div class="cols c2">
+    <div class="card okc">
+      <h3 class="ok">ดำเนินการแล้วเสร็จ</h3>
       <ul>
-        <li>วัดครบ <strong>15 ความผิดพลาด</strong> · รันซ้ำได้ผลเหมือนเดิม</li>
-        <li>ทดสอบซ้ำบน<strong>ข้อมูลจริง 2 ชุด</strong> (384 และ 768 มิติ)</li>
-        <li><strong>เครื่องมือส่งมอบ</strong> + ระบบตรวจอัตโนมัติต่อเนื่อง</li>
-        <li>เก็บคำตอบจาก AI ครบ 3 การเก็บ</li>
+        <li>วัดผลครบ <strong>15 รูปแบบความผิดพลาด</strong> และดำเนินการซ้ำได้ผลเช่นเดิม</li>
+        <li>ทดสอบซ้ำบน<strong>ข้อมูลจริง 2 ชุด</strong> (มิติ 384 และ 768)</li>
+        <li>พัฒนา<strong>เครื่องมือที่ส่งมอบ</strong>และระบบตรวจสอบอัตโนมัติต่อเนื่อง</li>
+        <li>เก็บข้อมูลจากแบบจำลองภาษาครบ 3 รอบการเก็บ</li>
       </ul>
     </div>
     <div class="card">
-      <h3>เหลือทำ</h3>
+      <h3>อยู่ระหว่างดำเนินการ</h3>
       <ul>
-        <li>เรียบเรียงเล่มปริญญานิพนธ์ให้ครบตามรูปแบบของภาควิชา</li>
-        <li>ยืนยันรูปแบบเล่มกับอาจารย์ที่ปรึกษา</li>
+        <li>เรียบเรียงเล่มปริญญานิพนธ์ตามรูปแบบของภาควิชา</li>
+        <li>ยืนยันรูปแบบการจัดทำเล่มกับอาจารย์ที่ปรึกษา</li>
         <li>จัดทำโปสเตอร์และบทสรุปย่อ</li>
       </ul>
     </div>
   </div>
   <div class="datastrip">
-    <div class="card"><div class="v">100k / 500k</div><div class="k">รายการข้อมูล</div></div>
+    <div class="card"><div class="v">100k / 500k</div><div class="k">จำนวนข้อมูลที่ใช้ทดสอบ</div></div>
     <div class="card"><div class="v">200</div><div class="k">คำถามทดสอบ</div></div>
-    <div class="card"><div class="v">15</div><div class="k">ความผิดพลาดที่วัดแล้ว</div></div>
-    <div class="card"><div class="v">11 / 12</div><div class="k">ตรวจล่วงหน้าได้</div></div>
+    <div class="card"><div class="v">15</div><div class="k">รูปแบบความผิดพลาดที่วัดแล้ว</div></div>
+    <div class="card"><div class="v">11 / 12</div><div class="k">ตรวจจับล่วงหน้าได้</div></div>
   </div>
-  <p style="text-align:center;margin-top:.6vh"><strong>ขอบคุณครับ — ยินดีรับคำถาม</strong></p>
-  <div class="foot"><span>องก์ 5 · สรุป</span><span>QuietFail</span></div>
+  <p style="text-align:center;margin-top:.5vh"><strong>ขอขอบพระคุณคณะกรรมการ — ยินดีรับคำถามและข้อเสนอแนะ</strong></p>
+  <div class="foot"><span>ส่วนที่ 5 · บทสรุป</span><span>QuietFail</span></div>
 </section>
 
-<!-- ══════════ หน้าสำรองสำหรับถาม-ตอบ (27–32) ══════════ -->
+<!-- ═════════ หน้าสำรองสำหรับการถาม-ตอบ (29–34) ═════════ -->
 
 <!-- S1 -->
 <section class="slide backup sm">
   <div class="kicker">หน้าสำรอง 1</div>
-  <h2>HNSW กับ IVFFlat ต่างกันอย่างไร</h2>
+  <h2>ความแตกต่างระหว่างดัชนี HNSW และ IVFFlat</h2>
   <div class="cols c2">
     <div class="card">
-      <h3>HNSW — ดัชนีแบบกราฟ</h3>
-      <p>สร้าง "เส้นทางลัด" เชื่อมข้อมูลที่ใกล้กัน แล้ว<strong>เดินตามเส้นทางเข้าหาคำตอบ</strong></p>
-      <p>ค่าที่คุม: <code>ef_search</code> = เดินสำรวจกี่จุดก่อนตอบ</p>
-      <p class="hot">พังแบบ: มี<strong>เพดานตายตัว</strong> — ขอเกินค่านี้ไม่ได้เลย</p>
+      <h3>HNSW — ดัชนีเชิงกราฟ</h3>
+      <p>สร้างเส้นเชื่อมระหว่างข้อมูลที่อยู่ใกล้กัน แล้ว<strong>เดินตามเส้นเชื่อมเข้าหาคำตอบ</strong></p>
+      <p>พารามิเตอร์ควบคุม: <code>ef_search</code> คือจำนวนจุดที่สำรวจก่อนตอบ</p>
+      <p class="hot">ลักษณะความล้มเหลว: มี<strong>เพดานคงที่</strong> ไม่สามารถร้องขอเกินค่าดังกล่าวได้</p>
     </div>
     <div class="card">
-      <h3>IVFFlat — ดัชนีแบบแบ่งกลุ่ม</h3>
-      <p>แบ่งข้อมูลเป็นกลุ่มก่อน แล้ว<strong>ค้นเฉพาะกลุ่มที่ใกล้คำถาม</strong></p>
-      <p>ค่าที่คุม: <code>probes</code> = เปิดดูกี่กลุ่ม</p>
-      <p class="hot">พังแบบ: ถ้าคำตอบอยู่<strong>นอกกลุ่มที่เปิดดู</strong> ก็ไม่มีวันเจอ</p>
+      <h3>IVFFlat — ดัชนีเชิงการแบ่งกลุ่ม</h3>
+      <p>แบ่งข้อมูลออกเป็นกลุ่มก่อน แล้ว<strong>ค้นเฉพาะกลุ่มที่ใกล้เคียงกับคำค้น</strong></p>
+      <p>พารามิเตอร์ควบคุม: <code>probes</code> คือจำนวนกลุ่มที่เปิดพิจารณา</p>
+      <p class="hot">ลักษณะความล้มเหลว: หากคำตอบอยู่<strong>นอกกลุ่มที่เปิดพิจารณา</strong> จะไม่ปรากฏในผลลัพธ์</p>
     </div>
   </div>
-  <div class="note"><p><strong>ทั้งคู่ไม่มี error</strong> เมื่อผลไม่ครบ — ต่างกันแค่<em>วิธี</em>ที่ทำให้ไม่ครบ
-    และ<strong>เสื่อมตามขนาดข้อมูลคนละแบบ</strong> (ดูหน้าผลหลัก)</p></div>
-  <div class="foot"><span>สำรอง</span><span>QuietFail</span></div>
+  <div class="note"><p><strong>ทั้งสองชนิดไม่แจ้งข้อผิดพลาด</strong>เมื่อผลลัพธ์ไม่ครบถ้วน
+    แตกต่างกันเพียง<em>กลไก</em>ที่ทำให้เกิดความไม่ครบถ้วน
+    และ<strong>มีลักษณะการเสื่อมสมรรถนะตามขนาดข้อมูลต่างกัน</strong> ตามที่แสดงในหน้าผลการวัดหลัก</p></div>
+  <div class="foot"><span>หน้าสำรอง</span><span>QuietFail</span></div>
 </section>
 
 <!-- S2 -->
 <section class="slide backup sm">
   <div class="kicker">หน้าสำรอง 2</div>
-  <h2>ความเป็นตัวแทนของข้อมูลตอนสร้าง index สำคัญกว่าจำนวน</h2>
+  <h2>ความเป็นตัวแทนของข้อมูลขณะสร้างดัชนี มีผลมากกว่าจำนวนข้อมูล</h2>
   <table>
-    <tr><th>สร้าง index ตอนมี</th><th class="n">จำนวนแถว</th><th>ครอบคลุมกี่กลุ่ม</th>
-        <th class="c">ระบบเตือนไหม</th><th class="n">recall</th></tr>
-    <tr><td>A</td><td class="n">50</td><td>ครบ 50 กลุ่ม</td><td class="c ok">เตือน</td><td class="n">0.4520</td></tr>
-    <tr><td>B</td><td class="n">1,000</td><td>ครบ 50 กลุ่ม</td><td class="c hot">เงียบ</td><td class="n">0.5974</td></tr>
-    <tr><td>C</td><td class="n">100,000</td><td>ครบ 50 กลุ่ม</td><td class="c hot">เงียบ</td><td class="n ok">0.6653</td></tr>
-    <tr><td><strong>D</strong></td><td class="n">1,000</td><td class="hot"><strong>แค่ 5 กลุ่ม</strong></td>
-        <td class="c hot">เงียบ</td><td class="n hot"><strong>0.4151</strong></td></tr>
+    <tr><th>เงื่อนไข</th><th class="n">จำนวนข้อมูลขณะสร้างดัชนี</th><th>ความครอบคลุมกลุ่ม</th>
+        <th class="c">ระบบแจ้งเตือน</th><th class="n">recall</th></tr>
+    <tr><td>ก</td><td class="n">50</td><td>ครบ 50 กลุ่ม</td><td class="c ok">แจ้ง</td><td class="n">0.4520</td></tr>
+    <tr><td>ข</td><td class="n">1,000</td><td>ครบ 50 กลุ่ม</td><td class="c hot">ไม่แจ้ง</td><td class="n">0.5974</td></tr>
+    <tr><td>ค</td><td class="n">100,000</td><td>ครบ 50 กลุ่ม</td><td class="c hot">ไม่แจ้ง</td><td class="n ok">0.6653</td></tr>
+    <tr><td><strong>ง</strong></td><td class="n">1,000</td><td class="hot"><strong>เพียง 5 กลุ่ม</strong></td>
+        <td class="c hot">ไม่แจ้ง</td><td class="n hot"><strong>0.4151</strong></td></tr>
   </table>
-  <div class="note"><p>เทียบ <strong>B กับ D</strong> — <strong>จำนวนแถวเท่ากันเป๊ะ</strong> (1,000)
-    ต่างกันแค่ข้อมูลชุดแรกครอบคลุมกี่กลุ่ม → recall ต่างกันชัดเจน<br>
-    <strong>และไม่มีคำเตือนใดๆ สำหรับกรณีที่ข้อมูลไม่เป็นตัวแทน</strong> ซึ่งเป็นกรณีที่เกิดจริงในทีม</p></div>
-  <p class="src">ที่มา: <code>results/real_i02.txt</code> · ข้อมูลปลายทางเหมือนกันทุกเงื่อนไข 100,000 แถว</p>
-  <div class="foot"><span>สำรอง</span><span>QuietFail</span></div>
+  <div class="note"><p>เปรียบเทียบเงื่อนไข <strong>ข กับ ง</strong> — <strong>จำนวนข้อมูลเท่ากันทุกประการ</strong>
+    (1,000 รายการ) ต่างกันเพียงความครอบคลุมกลุ่มของข้อมูลชุดแรก ซึ่งส่งผลให้ค่า recall ต่างกันอย่างชัดเจน<br>
+    <strong>และไม่มีการแจ้งเตือนสำหรับกรณีที่ข้อมูลไม่เป็นตัวแทน</strong> ซึ่งเป็นกรณีที่เกิดขึ้นจริงในทางปฏิบัติ</p></div>
+  <p class="src">แหล่งที่มา: <code>results/real_i02.txt</code> · ข้อมูลปลายทางเหมือนกันทุกเงื่อนไขที่ 100,000 รายการ</p>
+  <div class="foot"><span>หน้าสำรอง</span><span>QuietFail</span></div>
 </section>
 
 <!-- S3 -->
 <section class="slide backup sm">
   <div class="kicker">หน้าสำรอง 3</div>
-  <h2>ตัวสอบทาน: อาการนี้เป็นธรรมชาติของ ANN ไม่ใช่บั๊กเฉพาะเจ้า</h2>
+  <h2>ตัวสอบทาน — อาการนี้เป็นลักษณะร่วมของวิธี ANN มิใช่ข้อบกพร่องเฉพาะระบบ</h2>
   <table>
-    <tr><th>เครื่องมือ · ค่าที่ตั้ง</th><th class="n">recall@10</th><th class="n">recall@100</th></tr>
-    <tr><td>pgvector · <code>ef_search=40</code></td><td class="n">0.8565</td><td class="n hot">0.3903</td></tr>
-    <tr><td>Qdrant · <code>hnsw_ef=40</code> (ค่าเท่ากัน)</td><td class="n">0.9945</td><td class="n">0.9895</td></tr>
-    <tr><td>Qdrant · ค่าตั้งต้นของตัวเอง</td><td class="n ok">1.0000</td><td class="n ok">0.9996</td></tr>
+    <tr><th>ระบบและค่าพารามิเตอร์</th><th class="n">recall@10</th><th class="n">recall@100</th></tr>
+    <tr><td>pgvector · <code>ef_search = 40</code></td><td class="n">0.8565</td><td class="n hot">0.3903</td></tr>
+    <tr><td>Qdrant · <code>hnsw_ef = 40</code> (ค่าเท่ากัน)</td><td class="n">0.9945</td><td class="n">0.9895</td></tr>
+    <tr><td>Qdrant · ค่าตั้งต้นของระบบเอง</td><td class="n ok">1.0000</td><td class="n ok">0.9996</td></tr>
   </table>
   <div class="cols c2">
-    <div class="note"><p><strong>พูดได้</strong> — recall ไม่ครบเกิดกับทั้งสองเครื่องมือ
-      (Qdrant แย่สุดต่อคำถาม 0.90) → <strong>เป็นธรรมชาติของ ANN</strong></p></div>
-    <div class="note"><p><strong>พูดไม่ได้</strong> — "ANN ทุกตัวพังเท่ากัน"
-      ขนาดต่างกันมหาศาล เพราะเจ้าอื่น<strong>ไม่ปล่อยให้ค่าตั้งต้นต่ำกว่าจำนวนที่ผู้ใช้ขอ</strong></p></div>
+    <div class="note"><p><strong>สรุปได้ว่า</strong> — ความไม่ครบถ้วนของผลลัพธ์เกิดขึ้นกับทั้งสองระบบ
+      (Qdrant มีค่าต่ำสุดต่อคำถามเท่ากับ 0.90) จึงเป็น<strong>ลักษณะร่วมของวิธี ANN</strong></p></div>
+    <div class="note"><p><strong>สรุปไม่ได้ว่า</strong> — ระบบที่ใช้วิธี ANN ทุกระบบมีปัญหาเท่ากัน
+      เนื่องจากขนาดของปัญหาต่างกันมาก เพราะระบบอื่น<strong>ไม่ปล่อยให้ค่าตั้งต้นต่ำกว่าจำนวนที่ผู้ใช้ร้องขอ</strong></p></div>
   </div>
-  <p class="src">เฉลยชุดเดียวกัน (จาก PostgreSQL) · ตัวสอบทาน: Qdrant โหมด exact ได้ 1.0000 ตรงกับเฉลย</p>
-  <div class="foot"><span>สำรอง</span><span>QuietFail</span></div>
+  <p class="src">ใช้คำตอบอ้างอิงชุดเดียวกันจาก PostgreSQL · ตัวสอบทาน: Qdrant โหมด exact ได้ค่า 1.0000 ตรงกับคำตอบอ้างอิง</p>
+  <div class="foot"><span>หน้าสำรอง</span><span>QuietFail</span></div>
 </section>
 
 <!-- S4 -->
 <section class="slide backup sm">
   <div class="kicker">หน้าสำรอง 4</div>
-  <h2>ทำไมต้องใช้ข้อมูลสังเคราะห์ ทั้งที่มีข้อมูลจริง</h2>
+  <h2>เหตุผลที่ต้องใช้ชุดข้อมูลควบคุมควบคู่กับข้อมูลจริง</h2>
   <ul>
-    <li><strong>ต้องรู้คำตอบที่ถูก 100%</strong> — ข้อมูลจริงไม่มีใครบอกได้ว่าเอกสารไหน "ควรเจอ"
-      ถ้าไม่มีเฉลยที่แน่นอน ก็วัดไม่ได้ว่าหายไปเท่าไหร่</li>
-    <li><strong>ต้องคุมโครงสร้างได้</strong> — ต้องรู้ว่าข้อมูลมีกี่กลุ่ม แต่ละกลุ่มห่างกันแค่ไหน
-      เพื่อแยกว่าผลที่เห็นมาจาก index หรือมาจากตัวข้อมูลเอง</li>
-    <li><strong>ต้องทำซ้ำได้เป๊ะ</strong> — สร้างด้วยสูตรตายตัว ไม่ใช้ตัวสุ่มที่ผลขึ้นกับลำดับการเรียก
-      รันกี่ครั้งก็ได้ข้อมูลชุดเดิม</li>
+    <li><strong>ต้องทราบคำตอบที่ถูกต้องอย่างครบถ้วน</strong> — ข้อมูลจริงไม่มีผู้ใดระบุได้ว่าเอกสารใด
+      “ควรปรากฏ” ในผลการสืบค้น หากไม่มีคำตอบอ้างอิงที่แน่นอน ย่อมไม่สามารถวัดปริมาณที่สูญหายได้</li>
+    <li><strong>ต้องควบคุมโครงสร้างของข้อมูลได้</strong> — จำเป็นต้องทราบว่าข้อมูลมีกี่กลุ่ม
+      และแต่ละกลุ่มมีระยะห่างเท่าใด เพื่อแยกแยะว่าผลที่สังเกตได้เกิดจากดัชนีหรือจากตัวข้อมูลเอง</li>
+    <li><strong>ต้องสร้างซ้ำได้ผลเหมือนเดิม</strong> — สร้างจากสูตรที่กำหนดผลลัพธ์ได้แน่นอน
+      ไม่ใช้ฟังก์ชันสุ่มที่ผลขึ้นกับลำดับการเรียกใช้ จึงได้ข้อมูลชุดเดิมทุกครั้งที่ประมวลผล</li>
   </ul>
-  <div class="note"><p><strong>แล้วจึงทดสอบซ้ำบนข้อมูลจริง 2 ชุด</strong> เพื่อตอบว่าข้อสรุปยกไปใช้ได้แค่ไหน
-    — ซึ่งเป็นที่มาของเส้นแบ่ง "กลไกยกได้ · ปริมาณยกไม่ได้"<br>
-    <strong>ลำดับนี้สำคัญ</strong>: ยืนยันกลไกกับข้อมูลที่ควบคุมได้ก่อน แล้วค่อยทดสอบความทั่วไป</p></div>
-  <div class="foot"><span>สำรอง</span><span>QuietFail</span></div>
+  <div class="note"><p><strong>ลำดับการดำเนินงานมีความสำคัญ</strong> — ยืนยันกลไกด้วยข้อมูลที่ควบคุมได้ก่อน
+    จากนั้นจึงทดสอบซ้ำบนข้อมูลจริง 2 ชุด เพื่อตอบว่าข้อสรุปนำไปใช้ได้ในขอบเขตเพียงใด
+    ซึ่งเป็นที่มาของเส้นแบ่ง <strong>“ข้อสรุปเชิงกลไกนำไปใช้ได้ · ข้อสรุปเชิงปริมาณนำไปใช้ไม่ได้”</strong></p></div>
+  <div class="foot"><span>หน้าสำรอง</span><span>QuietFail</span></div>
 </section>
 
 <!-- S5 -->
 <section class="slide backup sm">
   <div class="kicker">หน้าสำรอง 5</div>
-  <h2>ของส่งมอบ และวิธีทำซ้ำงานนี้</h2>
+  <h2>ผลงานที่ส่งมอบ และวิธีการทำซ้ำผลการทดลอง</h2>
   <table>
-    <tr><th style="width:30%">ของส่งมอบ</th><th>คืออะไร</th></tr>
-    <tr><td><strong>ชุดทดลอง</strong></td><td>ตัวฉีดความผิดพลาด 15 แบบ + เฉลย + สภาพแวดล้อมที่ตรึงเวอร์ชันแล้ว</td></tr>
-    <tr><td><strong>ตัวนับคะแนน</strong></td><td>บอกว่าตอนนี้ระบบมีความผิดพลาดแบบไหนอยู่ — ตอบ 3 แบบ</td></tr>
-    <tr><td><strong>เครื่องมือตรวจ</strong></td><td><strong>ยืนได้ด้วยตัวเอง</strong> — ชี้ไปที่ฐานข้อมูลของใครก็ได้
-      ไม่ต้องมีไฟล์เฉลย · ใช้ในระบบตรวจอัตโนมัติได้</td></tr>
-    <tr><td><strong>รายงานและเล่ม</strong></td><td>ผลการทดลองดิบทุกไฟล์ + รายงานสรุป + ปริญญานิพนธ์</td></tr>
+    <tr><th style="width:28%">ผลงานที่ส่งมอบ</th><th>รายละเอียด</th></tr>
+    <tr><td><strong>ชุดเครื่องมือทดลอง</strong></td>
+        <td>โปรแกรมสร้างความผิดพลาด 15 รูปแบบ พร้อมคำตอบอ้างอิง และสภาพแวดล้อมที่ตรึงรุ่นซอฟต์แวร์แล้ว</td></tr>
+    <tr><td><strong>โปรแกรมประเมินสถานะ</strong></td>
+        <td>รายงานว่าระบบมีความผิดพลาดรูปแบบใดอยู่ในขณะนั้น โดยให้คำตอบ 3 สถานะ</td></tr>
+    <tr><td><strong>เครื่องมือตรวจสอบ</strong></td>
+        <td><strong>ทำงานได้อย่างอิสระ</strong> — ใช้ตรวจสอบฐานข้อมูลของผู้ใช้รายอื่นได้
+            ไม่ต้องมีไฟล์คำตอบอ้างอิง และนำไปใช้ในระบบตรวจสอบอัตโนมัติได้</td></tr>
+    <tr><td><strong>รายงานและเล่มปริญญานิพนธ์</strong></td>
+        <td>ผลการทดลองดิบทุกไฟล์ รายงานสรุปผล และเล่มปริญญานิพนธ์</td></tr>
   </table>
-  <div class="note"><p><strong>ทำซ้ำได้ด้วยคำสั่งเดียว</strong> — สภาพแวดล้อมทั้งหมดอยู่ในคอนเทนเนอร์
-    ตรึงเวอร์ชัน PostgreSQL 17.10 และ pgvector 0.8.5 ไว้แล้ว<br>
-    มีโหมดรัน<strong>ตัวฉีดจริงซ้ำทั้งชุด</strong>เพื่อยืนยันว่าผลยังเกิดซ้ำได้ ไม่ใช่แค่ดูว่าไฟล์หลักฐานมีอยู่</p></div>
-  <div class="foot"><span>สำรอง</span><span>QuietFail</span></div>
+  <div class="note"><p><strong>ทำซ้ำได้ด้วยคำสั่งเดียว</strong> — สภาพแวดล้อมทั้งหมดบรรจุอยู่ในคอนเทนเนอร์
+    ตรึงรุ่น PostgreSQL 17.10 และ pgvector 0.8.5 ไว้แล้ว<br>
+    มีโหมดการทำงานที่<strong>ประมวลผลโปรแกรมสร้างความผิดพลาดซ้ำทั้งชุด</strong>
+    เพื่อยืนยันว่าผลยังคงเกิดซ้ำได้ มิใช่เพียงตรวจสอบว่าไฟล์หลักฐานมีอยู่</p></div>
+  <div class="foot"><span>หน้าสำรอง</span><span>QuietFail</span></div>
 </section>
 
 <!-- S6 -->
 <section class="slide backup sm">
   <div class="kicker">หน้าสำรอง 6</div>
-  <h2>ข้อมูลที่ค่าว่างหรือเป็นศูนย์ — หายถาวรโดยไม่มีใครรู้</h2>
+  <h2>ข้อมูลที่มีค่าว่างหรือค่าศูนย์ สูญหายจากผลการสืบค้นอย่างถาวร</h2>
   <table>
-    <tr><th>เส้นทางการค้น</th><th class="n">ขอ</th><th class="n">ได้</th>
-        <th class="n">แถวปกติ</th><th class="n">แถวค่าว่าง</th><th class="n">แถวค่าศูนย์</th></tr>
-    <tr><td>ไม่ใช้ index</td><td class="n">510</td><td class="n ok">510</td>
+    <tr><th>เส้นทางการสืบค้น</th><th class="n">ร้องขอ</th><th class="n">ได้รับ</th>
+        <th class="n">รายการปกติ</th><th class="n">รายการค่าว่าง</th><th class="n">รายการค่าศูนย์</th></tr>
+    <tr><td>ไม่ใช้ดัชนี</td><td class="n">510</td><td class="n ok">510</td>
         <td class="n">500</td><td class="n ok">5</td><td class="n ok">5</td></tr>
-    <tr><td>มี index แต่สั่งห้ามใช้</td><td class="n">510</td><td class="n ok">510</td>
+    <tr><td>มีดัชนีแต่กำหนดไม่ให้ใช้</td><td class="n">510</td><td class="n ok">510</td>
         <td class="n">500</td><td class="n ok">5</td><td class="n ok">5</td></tr>
-    <tr><td><strong>ใช้ index</strong></td><td class="n">510</td><td class="n hot"><strong>500</strong></td>
+    <tr><td><strong>ใช้ดัชนี</strong></td><td class="n">510</td><td class="n hot"><strong>500</strong></td>
         <td class="n">500</td><td class="n hot"><strong>0</strong></td><td class="n hot"><strong>0</strong></td></tr>
   </table>
-  <div class="note"><p><strong>แถวกลางคือกลุ่มควบคุมที่สำคัญ</strong> — index มีอยู่ครบ แต่สั่งไม่ให้ใช้
-    แล้วข้อมูลกลับมาครบ → พิสูจน์ว่า<strong>เส้นทางที่ใช้ index ต่างหากที่ทำหาย ไม่ใช่ข้อมูลหายไปจากตาราง</strong></p></div>
-  <p class="muted">เป็นปัญหา<strong>คุณภาพข้อมูล ไม่ใช่การตั้งค่า</strong> — ปรับค่าไหนก็ไม่ช่วย
-    แต่<strong>ตรวจง่ายที่สุดในชุด</strong> เพราะนับแถวที่ค่าว่างหรือเป็นศูนย์ก็รู้แล้ว</p>
-  <div class="foot"><span>สำรอง</span><span>QuietFail</span></div>
+  <div class="note"><p><strong>แถวกลางคือกลุ่มควบคุมที่สำคัญ</strong> — ดัชนีมีอยู่ครบถ้วนแต่กำหนดไม่ให้ใช้งาน
+    แล้วข้อมูลกลับมาครบ จึงเป็นการพิสูจน์ว่า<strong>เส้นทางที่ใช้ดัชนีเป็นสาเหตุของการสูญหาย
+    มิใช่ข้อมูลสูญหายไปจากตาราง</strong></p></div>
+  <p class="muted">เป็นปัญหาด้าน<strong>คุณภาพของข้อมูล มิใช่การตั้งค่าพารามิเตอร์</strong>
+    การปรับค่าใดก็ไม่สามารถแก้ไขได้ แต่<strong>ตรวจสอบได้ง่ายที่สุดในบรรดาความผิดพลาดทั้งหมด</strong>
+    เนื่องจากเพียงนับจำนวนรายการที่มีค่าว่างหรือค่าศูนย์ก็ทราบผล</p>
+  <div class="foot"><span>หน้าสำรอง</span><span>QuietFail</span></div>
 </section>
 
 </div>
@@ -827,12 +923,13 @@
 <script>
   const slides=[...document.querySelectorAll('.slide')],
         bar=document.getElementById('bar'), pg=document.getElementById('pg');
+  const MAIN=28;   // หน้าที่ 29 เป็นต้นไปคือหน้าสำรอง
   let i=Math.max(0,Math.min(slides.length-1,(parseInt(location.hash.slice(1))||1)-1));
   function go(n){
     i=Math.max(0,Math.min(slides.length-1,n));
     slides.forEach((s,k)=>s.classList.toggle('active',k===i));
     bar.style.width=((i+1)/slides.length*100)+'%';
-    pg.textContent=(i+1)+' / '+slides.length+(i>=26?'  (สำรอง)':'');
+    pg.textContent=(i+1)+' / '+slides.length+(i>=MAIN?'  (หน้าสำรอง)':'');
     history.replaceState(null,'','#'+(i+1));
   }
   addEventListener('keydown',e=>{
