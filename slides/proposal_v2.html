@@ -207,33 +207,47 @@
 <section class="slide sm">
   <div class="kicker">บทนำ — ขอบเขตของสิ่งที่ศึกษา</div>
   <h2>ความผิดพลาดที่โครงงานศึกษา 15 รูปแบบ</h2>
-  <table>
-    <tr><th style="width:20%">ช่วงที่เกิด</th><th style="width:15%">รหัส</th>
-        <th>อาการที่ผู้ใช้หรือผู้ดูแลระบบพบ</th></tr>
-    <tr><td rowspan="5"><strong>ขณะสร้างดัชนี</strong><br><span class="muted">5 รูปแบบ</span></td>
-        <td><code>I01</code></td><td>สร้างดัชนีด้วยวิธีวัดระยะที่ไม่ตรงกับตอนสืบค้น ดัชนีจึงไม่ถูกใช้งานเลย</td></tr>
-    <tr><td><code>I02</code></td><td>สร้างดัชนีขณะข้อมูลยังไม่เป็นตัวแทนของข้อมูลจริง</td></tr>
-    <tr><td><code>I03</code></td><td>สร้างดัชนีแล้วระบบเขียนข้อมูลไม่ได้ทั้งระบบ แต่ยังอ่านได้ตามปกติ</td></tr>
-    <tr><td><code>I04</code></td><td>สร้างดัชนีใหม่บนข้อมูลเดิม แล้วได้ผลลัพธ์ไม่เหมือนเดิม</td></tr>
-    <tr><td><code>I05</code></td><td>หน่วยความจำไม่เพียงพอขณะสร้าง ทำให้คุณภาพดัชนีลดลง</td></tr>
-    <tr><td rowspan="4"><strong>ขณะเขียนคำสั่งสืบค้น</strong><br><span class="muted">4 รูปแบบ</span></td>
-        <td><code>Q02</code></td><td>เขียนคำสั่งในรูปแบบที่ทำให้ดัชนีถูกใช้งานไม่ได้</td></tr>
-    <tr><td><code>Q03</code></td><td>กรองข้อมูลก่อนสืบค้น แล้วได้ผลลัพธ์ไม่ครบหรือไม่ได้เลย</td></tr>
-    <tr><td><code>Q04</code></td><td>ใช้ค่าพารามิเตอร์ตั้งต้นโดยไม่เคยวัดความครบถ้วน</td></tr>
-    <tr><td><code>Q06</code></td><td>ร้องขอผลลัพธ์เกินเพดานที่ค่าตั้งต้นรองรับ</td></tr>
-    <tr><td><strong>ขณะข้อมูลเปลี่ยน</strong></td><td><code>L02</code></td>
-        <td>ลบข้อมูลแล้วร่องรอยเดิมยังค้างในดัชนี ทำให้ผลลัพธ์หายไป</td></tr>
-    <tr><td><strong>คุณภาพของข้อมูล</strong></td><td><code>V07</code></td>
-        <td>ข้อมูลบางรายการมีค่าว่างหรือค่าศูนย์ จึงไม่ปรากฏในผลการสืบค้นอย่างถาวร</td></tr>
-    <tr><td><strong>กลุ่มควบคุม</strong><br><span class="muted">ความผิดพลาดของฐานข้อมูลทั่วไป</span></td>
-        <td><code>F01</code> <code>F03</code><br><code>F05</code> <code>F10</code></td>
+  <table style="font-size:.93em">
+    <tr><th style="width:13%">ช่วงที่เกิด</th><th style="width:7%">รหัส</th>
+        <th style="width:38%">อาการที่พบ</th><th>ทางแก้ที่วัดแล้ว</th></tr>
+    <tr><td rowspan="5"><strong>ขณะสร้าง<br>ดัชนี</strong></td>
+        <td><code>I01</code></td><td>ใช้วิธีวัดระยะไม่ตรงกับตอนสืบค้น ดัชนีจึงไม่ถูกใช้เลย</td>
+        <td>สร้างใหม่ให้ตรงกัน</td></tr>
+    <tr><td><code>I02</code></td><td>สร้างดัชนีขณะข้อมูลยังไม่เป็นตัวแทน</td>
+        <td>สร้างใหม่หลังข้อมูลครบ · <strong>0.4151 → 0.6653</strong></td></tr>
+    <tr><td><code>I03</code></td><td>สร้างดัชนีแล้วระบบเขียนไม่ได้ แต่ยังอ่านได้ปกติ</td>
+        <td>ใช้ <code>CREATE INDEX CONCURRENTLY</code></td></tr>
+    <tr><td><code>I04</code></td><td>สร้างดัชนีใหม่บนข้อมูลเดิม ได้ผลไม่เหมือนเดิม</td>
+        <td class="hot"><strong>ไม่มีทางแก้จากฝั่งคำสั่ง</strong> — ต้องบันทึกว่าวัดบนดัชนีชุดใด</td></tr>
+    <tr><td><code>I05</code></td><td>หน่วยความจำไม่พอขณะสร้าง คุณภาพดัชนีลดลง</td>
+        <td>เพิ่ม <code>maintenance_work_mem</code></td></tr>
+    <tr><td rowspan="4"><strong>ขณะเขียน<br>คำสั่งสืบค้น</strong></td>
+        <td><code>Q02</code></td><td>เขียนผิดรูปแบบจนดัชนีถูกใช้ไม่ได้</td>
+        <td>ใช้ <code>ORDER BY</code> คู่กับ <code>LIMIT</code> · buffers <strong>20,005 → 947</strong>
+            <br><span class="muted">ได้ความเร็ว มิใช่ความครบถ้วน</span></td></tr>
+    <tr><td><code>Q03</code></td><td>กรองข้อมูลก่อนสืบค้น แล้วได้ผลไม่ครบหรือไม่ได้เลย</td>
+        <td>เปิด <code>iterative_scan</code> และให้งบหน่วยความจำพอ · <strong>0 → 40 จาก 40</strong></td></tr>
+    <tr><td><code>Q04</code></td><td>ใช้ค่าตั้งต้นโดยไม่เคยวัดความครบถ้วน</td>
+        <td>ตั้ง <code>probes</code> ตามสูตรเอกสาร · <strong>0.6607 → 0.9527</strong></td></tr>
+    <tr><td><code>Q06</code></td><td>ร้องขอผลเกินเพดานที่ค่าตั้งต้นรองรับ</td>
+        <td>ตั้ง <code>ef_search</code> ≥ จำนวนที่ขอ · <strong>0.3864 → 0.9658</strong></td></tr>
+    <tr><td><strong>ข้อมูล<br>เปลี่ยน</strong></td><td><code>L02</code></td>
+        <td>ลบข้อมูลแล้วร่องรอยเดิมค้างในดัชนี</td>
+        <td><code>VACUUM</code> · หรือ <code>REINDEX</code> ซึ่ง<strong>ลดขนาดดัชนี 10 เท่า</strong></td></tr>
+    <tr><td><strong>คุณภาพ<br>ข้อมูล</strong></td><td><code>V07</code></td>
+        <td>ค่าว่างหรือค่าศูนย์ ไม่ปรากฏในผลอย่างถาวร</td>
+        <td class="hot"><strong>ไม่มีพารามิเตอร์ใดแก้ได้</strong> — ต้องกันที่ต้นทางของข้อมูล</td></tr>
+    <tr><td><strong>กลุ่ม<br>ควบคุม</strong></td>
+        <td><code>F01</code><br><code>F03</code><br><code>F05</code><br><code>F10</code></td>
         <td>การเชื่อมต่อค้าง · คำสั่งหมดเวลาจากสองสาเหตุที่ให้ข้อความเหมือนกัน ·
-            การล็อกตาราง · สถิติล้าสมัย<br>
-            <span class="muted">ใช้เปรียบเทียบว่าความล้มเหลวของระบบสืบค้นเชิงเวกเตอร์ต่างจากของเดิมอย่างไร</span></td></tr>
+            การล็อกตาราง · สถิติล้าสมัย</td>
+        <td>ปิด transaction ให้ถูก · ใช้ <code>lock_timeout</code> แยกสาเหตุ ·
+            สั่ง <code>ANALYZE</code> <span class="muted">(คลาด 1500 เท่า → 1.0 เท่า)</span></td></tr>
   </table>
   <div class="note"><p>ทั้ง 15 รูปแบบมี<strong>โปรแกรมสร้างความผิดพลาดและโปรแกรมตรวจจับครบทุกรูปแบบ</strong>
-    · รายการนี้ถูกตรึงไว้แล้ว การเพิ่มรูปแบบใหม่ต้องตัดรูปแบบเดิมออกหนึ่งรายการ
-    เพื่อควบคุมมิให้ขอบเขตขยายตัว<br>
+    · ทางแก้ทุกข้อ<strong>ผ่านการวัดจริง มิใช่การอ้างอิงจากเอกสารเพียงอย่างเดียว</strong><br>
+    <strong>สองรายการที่ไม่มีทางแก้เชิงพารามิเตอร์</strong> (<code>I04</code> · <code>V07</code>)
+    เป็นข้อค้นพบที่สำคัญ เพราะแสดงว่าการปรับค่าไม่ใช่คำตอบเสมอไป ·
     นอกจากนี้ยังมี <code>Q01</code> ซึ่งเป็น<strong>การวัดผลในตัวเอง</strong> มิใช่รูปแบบที่ต้องมีโปรแกรมตรวจจับแยก</p></div>
   <div class="foot"><span>ส่วนที่ 1 · ที่มาของปัญหา</span><span>QuietFail</span></div>
 </section>
